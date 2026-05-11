@@ -9,38 +9,197 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthedTeachersRouteImport } from './routes/_authed/teachers'
+import { Route as AuthedSubjectsRouteImport } from './routes/_authed/subjects'
+import { Route as AuthedStudentsRouteImport } from './routes/_authed/students'
+import { Route as AuthedSemestersRouteImport } from './routes/_authed/semesters'
+import { Route as AuthedReportsRouteImport } from './routes/_authed/reports'
+import { Route as AuthedMaterialsRouteImport } from './routes/_authed/materials'
+import { Route as AuthedIndicatorsRouteImport } from './routes/_authed/indicators'
+import { Route as AuthedGradesRouteImport } from './routes/_authed/grades'
+import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
+import { Route as AuthedClassesRouteImport } from './routes/_authed/classes'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedRoute = AuthedRouteImport.update({
+  id: '/_authed',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedTeachersRoute = AuthedTeachersRouteImport.update({
+  id: '/teachers',
+  path: '/teachers',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSubjectsRoute = AuthedSubjectsRouteImport.update({
+  id: '/subjects',
+  path: '/subjects',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedStudentsRoute = AuthedStudentsRouteImport.update({
+  id: '/students',
+  path: '/students',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSemestersRoute = AuthedSemestersRouteImport.update({
+  id: '/semesters',
+  path: '/semesters',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedReportsRoute = AuthedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedMaterialsRoute = AuthedMaterialsRouteImport.update({
+  id: '/materials',
+  path: '/materials',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedIndicatorsRoute = AuthedIndicatorsRouteImport.update({
+  id: '/indicators',
+  path: '/indicators',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedGradesRoute = AuthedGradesRouteImport.update({
+  id: '/grades',
+  path: '/grades',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedClassesRoute = AuthedClassesRouteImport.update({
+  id: '/classes',
+  path: '/classes',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/classes': typeof AuthedClassesRoute
+  '/dashboard': typeof AuthedDashboardRoute
+  '/grades': typeof AuthedGradesRoute
+  '/indicators': typeof AuthedIndicatorsRoute
+  '/materials': typeof AuthedMaterialsRoute
+  '/reports': typeof AuthedReportsRoute
+  '/semesters': typeof AuthedSemestersRoute
+  '/students': typeof AuthedStudentsRoute
+  '/subjects': typeof AuthedSubjectsRoute
+  '/teachers': typeof AuthedTeachersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/classes': typeof AuthedClassesRoute
+  '/dashboard': typeof AuthedDashboardRoute
+  '/grades': typeof AuthedGradesRoute
+  '/indicators': typeof AuthedIndicatorsRoute
+  '/materials': typeof AuthedMaterialsRoute
+  '/reports': typeof AuthedReportsRoute
+  '/semesters': typeof AuthedSemestersRoute
+  '/students': typeof AuthedStudentsRoute
+  '/subjects': typeof AuthedSubjectsRoute
+  '/teachers': typeof AuthedTeachersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authed': typeof AuthedRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_authed/classes': typeof AuthedClassesRoute
+  '/_authed/dashboard': typeof AuthedDashboardRoute
+  '/_authed/grades': typeof AuthedGradesRoute
+  '/_authed/indicators': typeof AuthedIndicatorsRoute
+  '/_authed/materials': typeof AuthedMaterialsRoute
+  '/_authed/reports': typeof AuthedReportsRoute
+  '/_authed/semesters': typeof AuthedSemestersRoute
+  '/_authed/students': typeof AuthedStudentsRoute
+  '/_authed/subjects': typeof AuthedSubjectsRoute
+  '/_authed/teachers': typeof AuthedTeachersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/classes'
+    | '/dashboard'
+    | '/grades'
+    | '/indicators'
+    | '/materials'
+    | '/reports'
+    | '/semesters'
+    | '/students'
+    | '/subjects'
+    | '/teachers'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/login'
+    | '/classes'
+    | '/dashboard'
+    | '/grades'
+    | '/indicators'
+    | '/materials'
+    | '/reports'
+    | '/semesters'
+    | '/students'
+    | '/subjects'
+    | '/teachers'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authed'
+    | '/login'
+    | '/_authed/classes'
+    | '/_authed/dashboard'
+    | '/_authed/grades'
+    | '/_authed/indicators'
+    | '/_authed/materials'
+    | '/_authed/reports'
+    | '/_authed/semesters'
+    | '/_authed/students'
+    | '/_authed/subjects'
+    | '/_authed/teachers'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthedRoute: typeof AuthedRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authed': {
+      id: '/_authed'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +207,113 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/teachers': {
+      id: '/_authed/teachers'
+      path: '/teachers'
+      fullPath: '/teachers'
+      preLoaderRoute: typeof AuthedTeachersRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/subjects': {
+      id: '/_authed/subjects'
+      path: '/subjects'
+      fullPath: '/subjects'
+      preLoaderRoute: typeof AuthedSubjectsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/students': {
+      id: '/_authed/students'
+      path: '/students'
+      fullPath: '/students'
+      preLoaderRoute: typeof AuthedStudentsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/semesters': {
+      id: '/_authed/semesters'
+      path: '/semesters'
+      fullPath: '/semesters'
+      preLoaderRoute: typeof AuthedSemestersRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/reports': {
+      id: '/_authed/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthedReportsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/materials': {
+      id: '/_authed/materials'
+      path: '/materials'
+      fullPath: '/materials'
+      preLoaderRoute: typeof AuthedMaterialsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/indicators': {
+      id: '/_authed/indicators'
+      path: '/indicators'
+      fullPath: '/indicators'
+      preLoaderRoute: typeof AuthedIndicatorsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/grades': {
+      id: '/_authed/grades'
+      path: '/grades'
+      fullPath: '/grades'
+      preLoaderRoute: typeof AuthedGradesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/dashboard': {
+      id: '/_authed/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthedDashboardRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/classes': {
+      id: '/_authed/classes'
+      path: '/classes'
+      fullPath: '/classes'
+      preLoaderRoute: typeof AuthedClassesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
+interface AuthedRouteChildren {
+  AuthedClassesRoute: typeof AuthedClassesRoute
+  AuthedDashboardRoute: typeof AuthedDashboardRoute
+  AuthedGradesRoute: typeof AuthedGradesRoute
+  AuthedIndicatorsRoute: typeof AuthedIndicatorsRoute
+  AuthedMaterialsRoute: typeof AuthedMaterialsRoute
+  AuthedReportsRoute: typeof AuthedReportsRoute
+  AuthedSemestersRoute: typeof AuthedSemestersRoute
+  AuthedStudentsRoute: typeof AuthedStudentsRoute
+  AuthedSubjectsRoute: typeof AuthedSubjectsRoute
+  AuthedTeachersRoute: typeof AuthedTeachersRoute
+}
+
+const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedClassesRoute: AuthedClassesRoute,
+  AuthedDashboardRoute: AuthedDashboardRoute,
+  AuthedGradesRoute: AuthedGradesRoute,
+  AuthedIndicatorsRoute: AuthedIndicatorsRoute,
+  AuthedMaterialsRoute: AuthedMaterialsRoute,
+  AuthedReportsRoute: AuthedReportsRoute,
+  AuthedSemestersRoute: AuthedSemestersRoute,
+  AuthedStudentsRoute: AuthedStudentsRoute,
+  AuthedSubjectsRoute: AuthedSubjectsRoute,
+  AuthedTeachersRoute: AuthedTeachersRoute,
+}
+
+const AuthedRouteWithChildren =
+  AuthedRoute._addFileChildren(AuthedRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthedRoute: AuthedRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
