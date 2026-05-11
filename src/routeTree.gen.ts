@@ -16,6 +16,7 @@ import { Route as AuthedTeachersRouteImport } from './routes/_authed/teachers'
 import { Route as AuthedSubjectsRouteImport } from './routes/_authed/subjects'
 import { Route as AuthedStudentsRouteImport } from './routes/_authed/students'
 import { Route as AuthedSemestersRouteImport } from './routes/_authed/semesters'
+import { Route as AuthedReportsRouteImport } from './routes/_authed/reports'
 import { Route as AuthedMaterialsRouteImport } from './routes/_authed/materials'
 import { Route as AuthedIndicatorsRouteImport } from './routes/_authed/indicators'
 import { Route as AuthedGradesRouteImport } from './routes/_authed/grades'
@@ -56,6 +57,11 @@ const AuthedSemestersRoute = AuthedSemestersRouteImport.update({
   path: '/semesters',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedReportsRoute = AuthedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedMaterialsRoute = AuthedMaterialsRouteImport.update({
   id: '/materials',
   path: '/materials',
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/grades': typeof AuthedGradesRoute
   '/indicators': typeof AuthedIndicatorsRoute
   '/materials': typeof AuthedMaterialsRoute
+  '/reports': typeof AuthedReportsRoute
   '/semesters': typeof AuthedSemestersRoute
   '/students': typeof AuthedStudentsRoute
   '/subjects': typeof AuthedSubjectsRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/grades': typeof AuthedGradesRoute
   '/indicators': typeof AuthedIndicatorsRoute
   '/materials': typeof AuthedMaterialsRoute
+  '/reports': typeof AuthedReportsRoute
   '/semesters': typeof AuthedSemestersRoute
   '/students': typeof AuthedStudentsRoute
   '/subjects': typeof AuthedSubjectsRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/_authed/grades': typeof AuthedGradesRoute
   '/_authed/indicators': typeof AuthedIndicatorsRoute
   '/_authed/materials': typeof AuthedMaterialsRoute
+  '/_authed/reports': typeof AuthedReportsRoute
   '/_authed/semesters': typeof AuthedSemestersRoute
   '/_authed/students': typeof AuthedStudentsRoute
   '/_authed/subjects': typeof AuthedSubjectsRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/grades'
     | '/indicators'
     | '/materials'
+    | '/reports'
     | '/semesters'
     | '/students'
     | '/subjects'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/grades'
     | '/indicators'
     | '/materials'
+    | '/reports'
     | '/semesters'
     | '/students'
     | '/subjects'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/_authed/grades'
     | '/_authed/indicators'
     | '/_authed/materials'
+    | '/_authed/reports'
     | '/_authed/semesters'
     | '/_authed/students'
     | '/_authed/subjects'
@@ -223,6 +235,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSemestersRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/reports': {
+      id: '/_authed/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthedReportsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/materials': {
       id: '/_authed/materials'
       path: '/materials'
@@ -267,6 +286,7 @@ interface AuthedRouteChildren {
   AuthedGradesRoute: typeof AuthedGradesRoute
   AuthedIndicatorsRoute: typeof AuthedIndicatorsRoute
   AuthedMaterialsRoute: typeof AuthedMaterialsRoute
+  AuthedReportsRoute: typeof AuthedReportsRoute
   AuthedSemestersRoute: typeof AuthedSemestersRoute
   AuthedStudentsRoute: typeof AuthedStudentsRoute
   AuthedSubjectsRoute: typeof AuthedSubjectsRoute
@@ -279,6 +299,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedGradesRoute: AuthedGradesRoute,
   AuthedIndicatorsRoute: AuthedIndicatorsRoute,
   AuthedMaterialsRoute: AuthedMaterialsRoute,
+  AuthedReportsRoute: AuthedReportsRoute,
   AuthedSemestersRoute: AuthedSemestersRoute,
   AuthedStudentsRoute: AuthedStudentsRoute,
   AuthedSubjectsRoute: AuthedSubjectsRoute,
