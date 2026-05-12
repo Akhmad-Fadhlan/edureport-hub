@@ -13,6 +13,22 @@ export const Route = createFileRoute("/_authed/reports")({
   component: ReportsPage,
 });
 
+async function urlToDataUrl(url: string | null | undefined): Promise<string | null> {
+  if (!url) return null;
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 function ReportsPage() {
   const semesters = useApiData<any[]>("/semesters");
   const classes = useApiData<any[]>("/classes");
@@ -72,6 +88,7 @@ function ReportsPage() {
           judul: m.judul,
           kode_rapor: m.kode_rapor,
           nama_mapel: m.nama_mapel,
+          catatan: m.catatan ?? null,
           indicators: visIndicators
             .filter((i: any) => i.material_id === m.id)
             .sort((a: any, b: any) => (a.urutan || 0) - (b.urutan || 0))
@@ -82,12 +99,15 @@ function ReportsPage() {
             })),
         }));
 
+      const photoUrl = studentPhotoUrl(student?.photo);
+      const photoDataUrl = await urlToDataUrl(photoUrl);
+
       setPdfData({
         student: {
           nama: student?.nama || "",
           email: student?.email || "",
           linkedin: student?.linkedin,
-          photoUrl: studentPhotoUrl(student?.photo),
+          photoDataUrl,
           nama_kelas: student?.nama_kelas,
         },
         semester: {
@@ -95,6 +115,7 @@ function ReportsPage() {
           tahun_ajaran: semester?.tahun_ajaran || "",
         },
         materials: pdfMaterials,
+        schoolName: "SMP IDN Boarding School",
       });
     } catch (e) {
       console.error(e);
