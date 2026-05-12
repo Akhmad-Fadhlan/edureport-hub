@@ -72,6 +72,7 @@ function ReportsPage() {
           judul: m.judul,
           kode_rapor: m.kode_rapor,
           nama_mapel: m.nama_mapel,
+          catatan: m.catatan ?? null,
           indicators: visIndicators
             .filter((i: any) => i.material_id === m.id)
             .sort((a: any, b: any) => (a.urutan || 0) - (b.urutan || 0))
@@ -82,12 +83,15 @@ function ReportsPage() {
             })),
         }));
 
+      const photoUrl = studentPhotoUrl(student?.photo);
+      const photoDataUrl = await urlToDataUrl(photoUrl);
+
       setPdfData({
         student: {
           nama: student?.nama || "",
           email: student?.email || "",
           linkedin: student?.linkedin,
-          photoUrl: studentPhotoUrl(student?.photo),
+          photoDataUrl,
           nama_kelas: student?.nama_kelas,
         },
         semester: {
@@ -95,6 +99,7 @@ function ReportsPage() {
           tahun_ajaran: semester?.tahun_ajaran || "",
         },
         materials: pdfMaterials,
+        schoolName: "SMP IDN Boarding School",
       });
     } catch (e) {
       console.error(e);
