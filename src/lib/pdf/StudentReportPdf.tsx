@@ -90,41 +90,32 @@ const styles = StyleSheet.create({
     display: "flex",
     flexDirection: "column",
   },
-  coverPreTitle: {
-    color: "rgba(255,255,255,0.88)",
-    fontSize: 40,
+  coverTitle: {
+    fontSize: 52,
     fontFamily: "Helvetica-Bold",
-    marginBottom: 6,
-  },
-  coverMainTitle: {
     color: "#ffffff",
-    fontSize: 70,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  coverSubtitle: {
+    fontSize: 24,
+    color: "rgba(255,255,255,0.9)",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  coverStudentName: {
+    fontSize: 32,
     fontFamily: "Helvetica-Bold",
-    letterSpacing: 3,
-    marginBottom: 18,
-  },
-  coverTagline: {
-    color: "rgba(255,255,255,0.82)",
-    fontSize: 30,
-    maxWidth: 500,
-  },
-  coverBuilding: {
-    flex: 1,
-    display: "flex",
-    alignItems: "flex-end",
-    justifyContent: "center",
+    color: "#ffffff",
     marginTop: "auto",
+    marginBottom: 16,
+    textAlign: "center",
   },
-  coverBuildingGradient: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: "60%",
-    backgroundGradient: "linear-gradient(135deg,#667eea 0%,#764ba2 100%)",
-    opacity: 0.15,
-    borderRadius: "10px 10px 0 0",
-    zIndex: 0,
+  coverClassInfo: {
+    fontSize: 20,
+    color: "rgba(255,255,255,0.85)",
+    textAlign: "center",
+    marginBottom: 40,
   },
   coverFooter: {
     borderTopWidth: 1,
@@ -158,7 +149,6 @@ const styles = StyleSheet.create({
   },
   forewordParagraph: {
     marginBottom: 16,
-    textIndent: 36,
   },
 
   // Content Page (Report Body)
@@ -341,13 +331,19 @@ const styles = StyleSheet.create({
   progressWrapper: {
     flexShrink: 0,
     marginLeft: "auto",
+    minWidth: 180,
+  },
+  progressBarContainer: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    minWidth: 180,
   },
   progressBarWrap: {
     display: "flex",
     flexDirection: "row",
     alignItems: "center",
-    gap: 70,
-    minWidth: 200,
+    gap: 8,
   },
   progressSegments: {
     display: "flex",
@@ -374,6 +370,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 27,
     flexShrink: 0,
+  },
+  progressText: {
+    fontSize: 9,
+    color: MUTED,
+    textAlign: "right",
   },
 
   // Comment Box
@@ -407,7 +408,7 @@ const styles = StyleSheet.create({
     display: "flex",
     flexDirection: "row",
     justifyContent: "flex-end",
-    marginTop: 250,
+    marginTop: 40,
     gap: 20,
   },
   sigBlock: {
@@ -433,6 +434,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Helvetica-Bold",
     color: NAVY,
+  },
+
+  // Nilai Explanation
+  nilaiExplanation: {
+    marginTop: 20,
+    padding: 12,
+    backgroundColor: SOFT,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  nilaiExplanationTitle: {
+    fontSize: 10,
+    fontFamily: "Helvetica-Bold",
+    color: NAVY,
+    marginBottom: 8,
+  },
+  nilaiExplanationText: {
+    fontSize: 9,
+    color: MUTED,
+    lineHeight: 1.5,
   },
 
   // Placeholder
@@ -517,36 +539,40 @@ function formatDate(): string {
 function getGradeLabel(className: string): string {
   const match = className.match(/(\d+)/);
   const gradeNum = match ? match[1] : "7";
-  return `${gradeNum}<sup>th</sup> Grade`;
+  return `${gradeNum}th Grade`;
 }
 
 function getSemesterLabel(semesterNum: number): string {
-  const ordinals: Record<number, string> = { 1: "1<sup>st</sup>", 2: "2<sup>nd</sup>", 3: "3<sup>rd</sup>" };
-  const ord = ordinals[semesterNum] || `${semesterNum}<sup>th</sup>`;
+  const ordinals: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd" };
+  const ord = ordinals[semesterNum] || `${semesterNum}th`;
   return `${ord} Semester`;
 }
 
-// Progress Bar Component
-function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
+// Progress Bar Component with label
+function ProgressBar({ nilai, max = 5, indicatorId }: { nilai: number; max: number; indicatorId: number }) {
   const totalSegs = 5;
   const filled = Math.round((nilai / max) * totalSegs);
+  const percentage = ((nilai / max) * 100).toFixed(0);
 
   return (
-    <View style={styles.progressBarWrap}>
-      <View style={styles.progressSegments}>
-        {Array.from({ length: totalSegs }).map((_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.progressSegment,
-              { backgroundColor: i < filled ? NAVY : "#e2e8f0" },
-            ]}
-          />
-        ))}
+    <View style={styles.progressBarContainer}>
+      <View style={styles.progressBarWrap}>
+        <View style={styles.progressSegments}>
+          {Array.from({ length: totalSegs }).map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.progressSegment,
+                { backgroundColor: i < filled ? NAVY : "#e2e8f0" },
+              ]}
+            />
+          ))}
+        </View>
+        <View style={styles.progressValue}>
+          <Text>{nilai.toFixed(1)}</Text>
+        </View>
       </View>
-      <View style={styles.progressValue}>
-        <Text>{nilai.toFixed(1)}</Text>
-      </View>
+      <Text style={styles.progressText}>{percentage}% dari {max}</Text>
     </View>
   );
 }
@@ -555,7 +581,6 @@ function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
 function wrapText(text: string, maxWords: number = 10): string {
   const words = text.split(" ");
   if (words.length <= maxWords) return text;
-  // For PDF, we just return the text as is since react-pdf handles wrapping
   return text;
 }
 
@@ -573,13 +598,14 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   const badgeColor = getBadgeColor(overallAvg);
   const badgeLabel = getBadgeLabel(overallAvg);
   const currentDate = formatDate();
-  const teacherName = data.teacher?.nama || "Guru IT";
+  const teacherName = data.teacher?.nama || "Guru Pembimbing";
   const studentName = data.student.nama || "-";
   const studentEmail = data.student.email || "-";
   const studentLinkedIn = data.student.linkedin || "-";
   const studentClass = data.student.nama_kelas || "-";
   const noteText = data.note || "Belum ada catatan.";
   const initials = getInitials(studentName);
+  const schoolName = data.schoolName || "SMP - SMK IDN Boarding School";
 
   // Get semester number for label
   const semesterNum = data.semester.semester || 1;
@@ -593,51 +619,60 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
   return (
     <Document>
-      {/* COVER PAGE */}
+      {/* COVER PAGE - UPDATED with proper title/cover text */}
       <Page size="A4" style={styles.page}>
         {data.coverBgDataUrl && <Image src={data.coverBgDataUrl} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} />}
         <View style={styles.cover}>
           {/* Watermark */}
           <View style={styles.coverWatermark}>
-            <Text>IDN RAPOR DIGITAL IDN RAPOR DIGITAL IDN RAPOR DIGITAL </Text>
+            <Text>LAPORAN PENCAPAIAN BELAJAR SISWA - LAPORAN PENCAPAIAN BELAJAR SISWA </Text>
           </View>
 
           <View style={styles.coverContent}>
-            <Text style={styles.coverPreTitle}>Competence Report of SMP</Text>
-            <Text style={styles.coverMainTitle}>JAGOAN IT</Text>
-            <Text style={styles.coverTagline}>Global Tech Starts with Global Communication</Text>
+            <Text style={styles.coverTitle}>LAPORAN PENCAPAIAN BELAJAR SISWA</Text>
+            <Text style={styles.coverSubtitle}>{schoolName}</Text>
+            <Text style={styles.coverStudentName}>{studentName}</Text>
+            <Text style={styles.coverClassInfo}>
+              {getGradeLabel(studentClass)} • {getSemesterLabel(semesterNum)} • {data.semester.tahun_ajaran}
+            </Text>
 
-            <View style={styles.coverBuilding}>
-              <View style={styles.coverBuildingGradient} />
-            </View>
-
-            <Text style={styles.coverFooterLine}>{studentName}</Text>
-            <Text style={styles.coverFooterLine}>
-              {getGradeLabel(studentClass)} | {getSemesterLabel(semesterNum)}
+            <Text style={styles.coverFooter}>
+              <Text>Laporan Pencapaian Belajar Siswa Semester {semesterNum}</Text>
             </Text>
           </View>
         </View>
       </Page>
 
-      {/* FOREWORD PAGE */}
+      {/* FOREWORD PAGE - UPDATED with proper paragraphs */}
       <Page size="A4" style={styles.page}>
         <View style={styles.forewordPage}>
-          <Text style={styles.forewordTitle}>Prakata</Text>
+          <Text style={styles.forewordTitle}>KATA PENGANTAR</Text>
           <View style={styles.forewordBody}>
             <Text style={styles.forewordParagraph}>
-              Alhamdulillahirabbil Alamin, segala puja dan puji syukur kami panjatkan kepada Allah subhanahu wa ta'ala, tanpa karunia-Nya, mustahil rasanya naskah laporan pencapaian belajar siswa ini terselesaikan tepat waktu mengingat tugas dan kewajiban lain yang bersamaan hadir.
+              Puji syukur kita panjatkan kehadirat Allah SWT yang telah melimpahkan rahmat dan hidayah-Nya, 
+              sehingga laporan pencapaian belajar siswa semester ini dapat diselesaikan dengan baik. 
+              Laporan ini merupakan bentuk pertanggungjawaban kami sebagai pendidik dalam memantau dan 
+              mengevaluasi perkembangan belajar siswa selama satu semester.
             </Text>
             <Text style={styles.forewordParagraph}>
-              Kami benar-benar merasa tertantang untuk mewujudkan naskah laporan ini sebagai bagian dari bentuk kewajiban kami sebagai guru untuk melaporkan pencapaian yang telah siswa dapatkan selama satu semester.
+              Kami menyadari bahwa setiap siswa memiliki potensi dan keunikan masing-masing dalam proses pembelajaran. 
+              Oleh karena itu, laporan ini tidak hanya berisi nilai akademik, tetapi juga mencakup pencapaian 
+              kompetensi dan keterampilan yang telah dikuasai siswa selama periode pembelajaran berlangsung.
             </Text>
             <Text style={styles.forewordParagraph}>
-              Berdasarkan pembelajaran selama satu semester siswa mengalami berbagai perkembangan yang wajib kami laporkan kepada wali siswa gunanya sebagai motivasi bagi seluruh elemen baik guru, siswa, wali siswa untuk mewujudkan tujuan kita bersama yang sesuai dengan slogan SMP - SMK IDN Boarding School yaitu "Expert Factory".
+              Laporan ini dibuat berdasarkan observasi, penilaian harian, tugas-tugas, serta ujian yang telah 
+              dilaksanakan selama satu semester. Kami berharap laporan ini dapat memberikan gambaran yang jelas 
+              tentang perkembangan dan pencapaian belajar siswa.
             </Text>
             <Text style={styles.forewordParagraph}>
-              Kami juga menyampaikan ucapan terima kasih kepada seluruh elemen terkait yang telah memberikan sumbangsih terwujudnya laporan pencapaian siswa pada semester ini, kami menyadari bahwa masih banyak kekurangan dalam penyajian laporan ini, karena itu, kami berharap agar pembaca berkenan menyampaikan masukan yang membangun.
+              Ucapan terima kasih kami sampaikan kepada seluruh pihak yang telah membantu dalam proses pembelajaran 
+              dan penyusunan laporan ini, terutama kepada orang tua/wali yang telah memberikan dukungan penuh 
+              kepada siswa dalam mengikuti pembelajaran.
             </Text>
             <Text style={styles.forewordParagraph}>
-              Akhir kata, kami berharap agar laporan ini dapat membawa manfaat kepada pembaca. Secara khusus, kami berharap semoga laporan ini dapat menginspirasi siswa agar menjadi generasi yang siap menghadapi perubahan teknologi kedepannya yang disertai dengan akhlak yang baik.
+              Kami menyadari bahwa laporan ini masih jauh dari sempurna. Kritik dan saran yang membangun sangat 
+              kami harapkan untuk perbaikan di masa yang akan datang. Semoga laporan ini bermanfaat bagi semua 
+              pihak, khususnya bagi siswa dalam meningkatkan prestasi belajarnya.
             </Text>
           </View>
         </View>
@@ -667,41 +702,51 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
         return (
           <Page key={pageIndex} size="A4" style={styles.page}>
             {bgUrl && <Image src={bgUrl} style={styles.contentBg} />}
+            {/* Mask bg if available */}
+            {data.maskBgDataUrl && (
+              <Image src={data.maskBgDataUrl} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0.15 }} />
+            )}
             <View style={[styles.reportBody, { position: "relative", zIndex: 1, flex: 1 }]}>
               {/* Student Card - only on first report page */}
               {isFirstReportPage && (
-                <View style={styles.studentCard}>
-                  <View style={styles.scLeft}>
-                    {/* Photo */}
-                    <View style={styles.scPhoto}>
-                      {data.student.photoDataUrl ? (
-                        <Image
-                          src={data.student.photoDataUrl}
-                          style={{ width: 82, height: 82, borderRadius: 8 }}
-                        />
-                      ) : (
-                        <View style={styles.avatarPlaceholder}>
-                          <Text style={styles.avatarInitials}>{initials}</Text>
-                        </View>
-                      )}
-                    </View>
-                    <View style={styles.scInfo}>
-                      <Text style={styles.scName}>{studentName}</Text>
-                      <View style={styles.scDetail}>
-                        <Text>{studentEmail}</Text>
+                <>
+                  <View style={styles.studentCard}>
+                    <View style={styles.scLeft}>
+                      {/* Photo - From API */}
+                      <View style={styles.scPhoto}>
+                        {data.student.photoDataUrl ? (
+                          <Image
+                            src={data.student.photoDataUrl}
+                            style={{ width: 82, height: 82, borderRadius: 8 }}
+                          />
+                        ) : (
+                          <View style={styles.avatarPlaceholder}>
+                            <Text style={styles.avatarInitials}>{initials}</Text>
+                          </View>
+                        )}
                       </View>
-                      <View style={styles.scDetail}>
-                        <Text>{studentLinkedIn}</Text>
+                      <View style={styles.scInfo}>
+                        <Text style={styles.scName}>{studentName}</Text>
+                        {studentEmail && (
+                          <View style={styles.scDetail}>
+                            <Text>📧 {studentEmail}</Text>
+                          </View>
+                        )}
+                        {studentLinkedIn && (
+                          <View style={styles.scDetail}>
+                            <Text>🔗 {studentLinkedIn}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                    <View style={styles.scRight}>
+                      <Text style={styles.scAvgValue}>{overallAvg.toFixed(2)}</Text>
+                      <View style={[styles.scAvgBadge, { backgroundColor: badgeColor }]}>
+                        <Text>{badgeLabel}</Text>
                       </View>
                     </View>
                   </View>
-                  <View style={styles.scRight}>
-                    <Text style={styles.scAvgValue}>{overallAvg.toFixed(2)}</Text>
-                    <View style={[styles.scAvgBadge, { backgroundColor: badgeColor }]}>
-                      <Text>{badgeLabel}</Text>
-                    </View>
-                  </View>
-                </View>
+                </>
               )}
 
               {/* Materials Grid */}
@@ -716,7 +761,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                           <Text>{material.judul}</Text>
                         </View>
                         <View style={styles.compScore}>
-                          <Text>{matAvg.toFixed(1)}</Text>
+                          <Text>Rata-rata: {matAvg.toFixed(1)}</Text>
                         </View>
                       </View>
                       <View style={styles.compIndicators}>
@@ -733,7 +778,11 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                                 <Text>{wrapText(indicator.deskripsi, 8)}</Text>
                               </View>
                               <View style={styles.progressWrapper}>
-                                <ProgressBar nilai={nilai} max={maxNilai} />
+                                <ProgressBar 
+                                  nilai={nilai} 
+                                  max={maxNilai} 
+                                  indicatorId={indicator.id}
+                                />
                               </View>
                             </View>
                           );
@@ -744,12 +793,22 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 })}
               </View>
 
+              {/* Nilai Explanation Section - above comment box */}
+              {isLastReportPage && (
+                <View style={styles.nilaiExplanation}>
+                  <Text style={styles.nilaiExplanationTitle}>📊 Keterangan Nilai:</Text>
+                  <Text style={styles.nilaiExplanationText}>
+                    4.6 - 5.0 : Sangat Memuaskan | 3.6 - 4.5 : Sangat Baik | 2.5 - 3.5 : Cukup | Kurang dari 2.5 : Butuh Perbaikan
+                  </Text>
+                </View>
+              )}
+
               {/* Comment and Signature - only on last report page */}
               {isLastReportPage && (
                 <>
                   <View style={styles.commentBox}>
                     <View style={styles.commentTitle}>
-                      <Text>📝 Komentar Akademik</Text>
+                      <Text>📝 Komentar Guru Pembimbing</Text>
                     </View>
                     <View style={styles.commentText}>
                       <Text>{noteText}</Text>
@@ -760,14 +819,16 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                     <View style={styles.sigBlock}>
                       <View style={styles.sigMeta}>
                         <Text>Bogor, {currentDate}</Text>
-                        <Text>Guru Pembimbing IT</Text>
+                        <Text>{data.teacher?.jabatan || "Guru Pembimbing"}</Text>
                       </View>
                       <View style={styles.sigBox}>
-                        {data.teacher?.ttdDataUrl && (
+                        {data.teacher?.ttdDataUrl ? (
                           <Image
                             src={data.teacher.ttdDataUrl}
                             style={{ width: "100%", height: "100%", objectFit: "contain" }}
                           />
+                        ) : (
+                          <Text style={{ textAlign: "center", marginTop: 25, color: MUTED }}>(Tanda Tangan)</Text>
                         )}
                       </View>
                       <View style={styles.sigName}>
