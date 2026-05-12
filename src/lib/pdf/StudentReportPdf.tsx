@@ -69,8 +69,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  // FIX #1: Remove zIndex entirely; render layers in DOM order instead.
-  // coverWatermark renders first (bottom layer), coverContent renders second (top layer).
+  // FIX COVER: coverContent must be position:absolute so it renders on top of coverBg image
   coverWatermark: {
     position: "absolute",
     top: 20,
@@ -81,8 +80,11 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
   },
   coverContent: {
-    // NOT absolute — normal flow so it sits above watermark in paint order
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -140,7 +142,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 28,
   },
-  // FIX #2: lineHeight & textAlign on Text, not View wrapper
   forewordParagraph: {
     fontSize: 11.5,
     lineHeight: 1.85,
@@ -175,7 +176,6 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     flex: 1,
   },
-  // FIX #3: wrap Image in a clipping View with overflow hidden for borderRadius
   scPhotoWrap: {
     width: 82,
     height: 82,
@@ -337,7 +337,6 @@ const styles = StyleSheet.create({
   },
 
   // ─── Progress bar ─────────────────────────────────────────────────────────
-  // FIX #4: Use explicit pixel widths — no nested flex: 1 inside flex: 1
   progressWrapper: {
     flexShrink: 0,
     width: 160,
@@ -351,11 +350,9 @@ const styles = StyleSheet.create({
   progressSegmentsRow: {
     flexDirection: "row",
     gap: 3,
-    // Explicit width = total - value badge width - gap
     width: 112,
   },
   progressSegment: {
-    // Explicit width per segment: (112 - 4*3gap) / 5 = (112-12)/5 = 20
     width: 20,
     height: 9,
     borderRadius: 3,
@@ -403,7 +400,6 @@ const styles = StyleSheet.create({
   },
 
   // ─── Comment box ──────────────────────────────────────────────────────────
-  // FIX #5: Ensure comment box has explicit background and no hidden overflow
   commentBox: {
     backgroundColor: "#fefce8",
     borderLeftWidth: 4,
@@ -541,7 +537,6 @@ function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
   return (
     <View style={styles.progressWrapper}>
       <View style={styles.progressBarWrap}>
-        {/* FIX #4: explicit-width segments, no flex:1 nesting */}
         <View style={styles.progressSegmentsRow}>
           {Array.from({ length: totalSegs }).map((_, i) => (
             <View
@@ -588,17 +583,17 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
       {/* ── COVER PAGE ──────────────────────────────────────────────────── */}
       <Page size="A4" style={styles.page}>
-        {/* Layer 1: background image */}
+        {/* Layer 1: background image (absolute, bottom) */}
         {data.coverBgDataUrl && (
           <Image src={data.coverBgDataUrl} style={styles.coverBg} />
         )}
-        {/* Layer 2: subtle watermark text — rendered BEFORE content so it's behind */}
+        {/* Layer 2: watermark text (absolute, middle) */}
         <View style={styles.coverWatermark}>
           <Text>
             LAPORAN PENCAPAIAN BELAJAR SISWA — LAPORAN PENCAPAIAN BELAJAR SISWA
           </Text>
         </View>
-        {/* FIX #1: Layer 3: main content in normal flow (not absolute), painted last = on top */}
+        {/* Layer 3: main content (absolute top/left/right/bottom = full page, on top) */}
         <View style={styles.coverContent}>
           <Text style={styles.coverTitle}>LAPORAN PENCAPAIAN BELAJAR SISWA</Text>
           <Text style={styles.coverSubtitle}>{schoolName}</Text>
@@ -613,10 +608,15 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
       </Page>
 
       {/* ── FOREWORD PAGE ───────────────────────────────────────────────── */}
+      {/*
+        FIX FOREWORD: No absolute-positioned image on this page, so normal flow works fine.
+        The issue was likely that coverContent's non-absolute positioning on the previous
+        version caused it to be hidden under the image. The foreword page itself is clean —
+        just ensure no stray absolute element is added here.
+      */}
       <Page size="A4" style={styles.page}>
         <View style={styles.forewordPage}>
-          <Text style={styles.forewordTitle}>KATA PENGANTAR</Text>
-          {/* FIX #2: Text directly with lineHeight + textAlign, no View wrapper needed */}
+          <Text style={styles.forewordTitle}>Prakata</Text>
           <Text style={styles.forewordParagraph}>
             Puji syukur kita panjatkan kehadirat Allah SWT yang telah melimpahkan rahmat dan
             hidayah-Nya, sehingga laporan pencapaian belajar siswa semester ini dapat diselesaikan
@@ -679,7 +679,6 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
               {isFirstReportPage && (
                 <View style={styles.studentCard}>
                   <View style={styles.scLeft}>
-                    {/* FIX #3: overflow:hidden on wrapper View clips the image to borderRadius */}
                     <View style={styles.scPhotoWrap}>
                       {data.student.photoDataUrl ? (
                         <Image src={data.student.photoDataUrl} style={styles.scPhoto} />
@@ -736,7 +735,6 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                             <View key={indicator.id} style={styles.indRow}>
                               <Text style={styles.indNum}>{indNum}</Text>
                               <Text style={styles.indText}>{indicator.deskripsi}</Text>
-                              {/* FIX #4: explicit-width progress bar */}
                               <ProgressBar nilai={nilai} max={maxNilai} />
                             </View>
                           );
@@ -757,7 +755,6 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 </View>
               )}
 
-              {/* FIX #5: Comment box & signature — last page only, no wrapping View that could clip */}
               {isLastReportPage && (
                 <View style={styles.commentBox}>
                   <Text style={styles.commentTitle}>Komentar Guru Pembimbing</Text>
