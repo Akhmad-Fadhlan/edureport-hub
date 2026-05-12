@@ -13,6 +13,22 @@ export const Route = createFileRoute("/_authed/reports")({
   component: ReportsPage,
 });
 
+async function urlToDataUrl(url: string | null | undefined): Promise<string | null> {
+  if (!url) return null;
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 function ReportsPage() {
   const semesters = useApiData<any[]>("/semesters");
   const classes = useApiData<any[]>("/classes");
