@@ -609,7 +609,21 @@ const styles = StyleSheet.create({
 
 function getPhotoSrc(photo?: string | null) {
   if (!photo) return null;
-  if (photo.startsWith("data:image")) return photo;
+
+  // data URL
+  if (photo.startsWith("data:image")) {
+    return photo;
+  }
+
+  // URL biasa
+  if (
+    photo.startsWith("http://") ||
+    photo.startsWith("https://")
+  ) {
+    return photo;
+  }
+
+  // fallback base64 lama
   return `data:image/png;base64,${photo}`;
 }
 
