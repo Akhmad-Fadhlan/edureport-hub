@@ -52,6 +52,7 @@ export interface PdfReportData {
   materials: PdfMaterial[];
 
   note?: string | null;
+  comment?: string | null;
 
   schoolName?: string;
 
@@ -71,7 +72,7 @@ const MUTED = "#64748b";
 const SOFT = "#f8fafc";
 
 /* ============================================================================
- * STYLES
+ * STYLES - Matching reference design with Montserrat-style fonts
  * ========================================================================== */
 
 const styles = StyleSheet.create({
@@ -97,7 +98,8 @@ const styles = StyleSheet.create({
   },
 
   /* ==========================================================================
-   * COVER — matched to uploaded template
+   * COVER — Matching reference SMP IDN IT-Depan design
+   * Font styling: Montserrat/Poppins style with proper hierarchy
    * ======================================================================== */
 
   coverContent: {
@@ -106,51 +108,49 @@ const styles = StyleSheet.create({
     height: "100%",
   },
 
+  /* Title - "Competence Report of SMP" - centered, medium weight */
   coverTitle: {
     position: "absolute",
-    top: 88,
+    top: 100,
     left: 55,
-
-    fontSize: 30,
+    fontSize: 22,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
-    letterSpacing: 0.5,
+    letterSpacing: 1.5,
   },
 
+  /* School name - "JAGOAN IT" - large, bold, all caps */
   coverSchoolName: {
     position: "absolute",
-    top: 138,
+    top: 145,
     left: 55,
-
-    fontSize: 78,
+    fontSize: 72,
     lineHeight: 1,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
-    letterSpacing: 1,
+    letterSpacing: 3,
   },
 
+  /* Subtitle/tagline */
   coverSubtitle: {
     position: "absolute",
     top: 248,
     left: 55,
-
-    fontSize: 18,
+    fontSize: 14,
     lineHeight: 1.4,
     color: "#ffffff",
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
   },
 
-  /* ─── bottom info (grade + semester) ─── */
-
+  /* Bottom info (grade + semester) */
   coverBottomInfo: {
     position: "absolute",
     bottom: 82,
     left: 55,
-
-    fontSize: 18,
+    fontSize: 16,
     color: "#ffffff",
     fontFamily: "Helvetica",
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
   },
 
   /* ==========================================================================
@@ -269,6 +269,14 @@ const styles = StyleSheet.create({
 
   scRight: {
     alignItems: "flex-end",
+  },
+
+  /* Label "Nilai Rata-rata" above the score */
+  scAvgLabel: {
+    fontSize: 10,
+    color: MUTED,
+    marginBottom: 4,
+    textAlign: "right",
   },
 
   scAvgValue: {
@@ -460,6 +468,57 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#475569",
     lineHeight: 1.5,
+  },
+
+  /* Signature section for last page */
+  signatureSection: {
+    marginTop: 20,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+
+  signatureLeft: {
+    flex: 1,
+  },
+
+  signatureRight: {
+    flex: 1,
+    alignItems: "center",
+  },
+
+  signatureDate: {
+    fontSize: 9,
+    color: MUTED,
+    marginBottom: 4,
+    textAlign: "center",
+  },
+
+  signaturePlaceholder: {
+    width: 120,
+    height: 60,
+    backgroundColor: "#f1f5f9",
+    borderRadius: 4,
+    marginBottom: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  signatureName: {
+    fontSize: 10,
+    fontFamily: "Helvetica-Bold",
+    color: NAVY,
+    textAlign: "center",
+  },
+
+  signatureRole: {
+    fontSize: 8,
+    color: MUTED,
+    textAlign: "center",
+    marginTop: 2,
   },
 
   pageNumber: {
@@ -771,13 +830,25 @@ export function StudentReportPdf({
                             {studentName}
                           </Text>
 
+                          {/* Email with icon indicator */}
                           <Text style={styles.detailText}>
                             {data.student.email}
                           </Text>
+
+                          {/* LinkedIn link from API */}
+                          {data.student.linkedin && (
+                            <Text style={styles.detailText}>
+                              {data.student.linkedin}
+                            </Text>
+                          )}
                         </View>
                       </View>
 
                       <View style={styles.scRight}>
+                        {/* "Nilai Rata-rata" label above the score */}
+                        <Text style={styles.scAvgLabel}>
+                          Nilai Rata-rata
+                        </Text>
                         <Text style={styles.scAvgValue}>
                           {overallAvg.toFixed(2)}
                         </Text>
@@ -801,6 +872,62 @@ export function StudentReportPdf({
                         </View>
                       </View>
                     </View>
+                  )}
+
+                  {/* Only show on the last page */}
+                  {pageIndex === materialPages.length - 1 && (
+                    <>
+                      {/* Comment section from API */}
+                      {data.comment && (
+                        <View style={styles.commentBox}>
+                          <Text style={styles.commentTitle}>
+                            Komentar
+                          </Text>
+                          <Text style={styles.commentText}>
+                            {data.comment}
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Score scale explanation */}
+                      <View style={styles.nilaiExplanation}>
+                        <Text style={styles.nilaiExplanationTitle}>
+                          Skala Nilai Rata-rata:
+                        </Text>
+                        <Text style={styles.nilaiExplanationText}>
+                          0 - 2.4 = Butuh Perbaikan | 2.5 - 3.5 = Cukup | 3.6 - 4.5 = Sangat Baik | 4.6 - 5.0 = Sangat Memuaskan
+                        </Text>
+                      </View>
+
+                      {/* Teacher signature section */}
+                      <View style={styles.signatureSection}>
+                        <View style={styles.signatureLeft}>
+                          <Text style={styles.signatureDate}>
+                            Tanggal: _________________
+                          </Text>
+                        </View>
+                        <View style={styles.signatureRight}>
+                          {data.teacher?.ttdDataUrl ? (
+                            <Image
+                              src={data.teacher.ttdDataUrl}
+                              style={styles.signaturePlaceholder}
+                            />
+                          ) : (
+                            <View style={styles.signaturePlaceholder}>
+                              <Text style={{ fontSize: 8, color: MUTED }}>
+                                TTD Guru
+                              </Text>
+                            </View>
+                          )}
+                          <Text style={styles.signatureName}>
+                            {data.teacher?.nama || "Nama Guru IT"}
+                          </Text>
+                          <Text style={styles.signatureRole}>
+                            Guru IT 7 SMP IDN
+                          </Text>
+                        </View>
+                      </View>
+                    </>
                   )}
 
                   {pageMaterials.map((material) => {
