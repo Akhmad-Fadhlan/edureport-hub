@@ -918,12 +918,12 @@ export function StudentReportPdf({
               <View
                 style={[
                   styles.reportBody,
-                  isFirstReportPage && data.reportFirstBgDataUrl
-                    ? styles.reportBodyTemplateFirst
-                    : null,
-                  isLastReportPage && data.reportLastBgDataUrl
-                    ? styles.reportBodyTemplateLast
-                    : null,
+                  ...(isFirstReportPage && data.reportFirstBgDataUrl
+                    ? [styles.reportBodyTemplateFirst]
+                    : []),
+                  ...(isLastReportPage && data.reportLastBgDataUrl
+                    ? [styles.reportBodyTemplateLast]
+                    : []),
                 ]}
               >
 
