@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   /* School name - "JAGOAN IT" - large, bold, all caps */
   coverSchoolName: {
     position: "absolute",
-    top: 260,
+    top: 240,
     left: 55,
     fontSize: 65,
     lineHeight: 2,
@@ -145,8 +145,8 @@ const styles = StyleSheet.create({
   /* Bottom info (grade + semester) */
   coverBottomInfo: {
     position: "absolute",
-    bottom: 60,
-    left: 230,
+    bottom: 50,
+    left: 225,
     fontSize: 16,
     color: "#ffffff",
     fontFamily: "Helvetica",
@@ -262,6 +262,8 @@ const styles = StyleSheet.create({
   },
 
   detailText: {
+    paddingTop:10,
+    paddingLeft:10,
     fontSize: 10.5,
     color: MUTED,
     marginBottom: 5,
@@ -269,7 +271,7 @@ const styles = StyleSheet.create({
 
   scRight: {
     alignItems: "flex-end",
-    paddingRight: 29,
+    paddingRight: 31,
     paddingTop: 28,
   },
 
@@ -956,7 +958,8 @@ export function StudentReportPdf({
                   })}
                 </View>
 
-                                 {/* Only show on the last page */}
+    
+                  {/* Only show on the last page */}
                   {pageIndex === materialPages.length - 1 && (
                     <>
                       {/* Comment section from API */}
@@ -970,6 +973,16 @@ export function StudentReportPdf({
                           </Text>
                         </View>
                       )}
+
+                      {/* Score scale explanation */}
+                      <View style={styles.nilaiExplanation}>
+                        <Text style={styles.nilaiExplanationTitle}>
+                          Skala Nilai Rata-rata:
+                        </Text>
+                        <Text style={styles.nilaiExplanationText}>
+                          0 - 2.4 = Butuh Perbaikan | 2.5 - 3.5 = Cukup | 3.6 - 4.5 = Sangat Baik | 4.6 - 5.0 = Sangat Memuaskan
+                        </Text>
+                      </View>
 
                       {/* Teacher signature section */}
                       <View style={styles.signatureSection}>
@@ -1001,6 +1014,89 @@ export function StudentReportPdf({
                       </View>
                     </>
                   )}
+
+                  {pageMaterials.map((material) => {
+                    const avg =
+                      calculateMaterialAverage([
+                        material,
+                      ]);
+
+                    return (
+                      <View
+                        key={material.id}
+                        style={styles.compSection}
+                      >
+                        <View
+                          style={styles.compHeader}
+                        >
+                          <Text
+                            style={
+                              styles.compTitleText
+                            }
+                          >
+                            {material.judul}
+                          </Text>
+
+                          <Text
+                            style={
+                              styles.compScoreText
+                            }
+                          >
+                            {avg.toFixed(1)}
+                          </Text>
+                        </View>
+
+                        <View
+                          style={
+                            styles.compIndicators
+                          }
+                        >
+                          {material.indicators.map(
+                            (
+                              indicator,
+                              index
+                            ) => (
+                              <View
+                                key={indicator.id}
+                                style={
+                                  styles.indRow
+                                }
+                              >
+                                <Text
+                                  style={
+                                    styles.indNum
+                                  }
+                                >
+                                  {index + 1}
+                                </Text>
+
+                                <Text
+                                  style={
+                                    styles.indText
+                                  }
+                                >
+                                  {
+                                    indicator.deskripsi
+                                  }
+                                </Text>
+
+                                <ProgressBar
+                                  nilai={
+                                    indicator.nilai ||
+                                    0
+                                  }
+                                  max={
+                                    indicator.nilai_max
+                                  }
+                                />
+                              </View>
+                            )
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
 
                 <Text
                   style={styles.pageNumber}
