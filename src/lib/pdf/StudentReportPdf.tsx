@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   /* Subtitle/tagline */
   coverSubtitle: {
     position: "absolute",
-    top: 348,
+    top: 330,
     left: 55,
     fontSize: 20,
     lineHeight: 1,
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
 
   detailText: {
     paddingTop:10,
-    paddingLeft:10,
+    paddingLeft:15,
     fontSize: 10.5,
     color: MUTED,
     marginBottom: 5,
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
 
   scRight: {
     alignItems: "flex-end",
-    paddingRight: 31,
+    paddingRight: 33,
     paddingTop: 28,
   },
 
@@ -888,16 +888,6 @@ export function StudentReportPdf({
                           </Text>
                         </View>
                       )}
-
-                      {/* Score scale explanation */}
-                      <View style={styles.nilaiExplanation}>
-                        <Text style={styles.nilaiExplanationTitle}>
-                          Skala Nilai Rata-rata:
-                        </Text>
-                        <Text style={styles.nilaiExplanationText}>
-                          0 - 2.4 = Butuh Perbaikan | 2.5 - 3.5 = Cukup | 3.6 - 4.5 = Sangat Baik | 4.6 - 5.0 = Sangat Memuaskan
-                        </Text>
-                      </View>
 
                       {/* Teacher signature section */}
                       <View style={styles.signatureSection}>
