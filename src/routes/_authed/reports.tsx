@@ -35,7 +35,6 @@ async function urlToDataUrl(url: string | null | undefined): Promise<string | nu
   try {
     const res = await fetch(url, {
       mode: "cors",
-      credentials: "include",
     });
 
     if (!res.ok) return null;
