@@ -94,5 +94,5 @@ export async function apiDelete<T>(path: string): Promise<T> {
 export function studentPhotoUrl(photo?: string | null): string | null {
   if (!photo) return null;
   if (photo.startsWith("http")) return photo;
-  return `${API_BASE_URL}/image/${photo}`;
+  return `${API_BASE_URL}/photo/${photo}`;
 }
