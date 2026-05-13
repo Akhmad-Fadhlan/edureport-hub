@@ -35,6 +35,10 @@ async function urlToDataUrl(url: string | null | undefined): Promise<string | nu
 function ReportsPage() {
   const semesters = useApiData<any[]>("/semesters");
   const classes = useApiData<any[]>("/classes");
+
+  // Fetch logged-in teacher/user data
+  const currentUser = useApiData<any>("/auth/me");
+
   const [semesterId, setSemesterId] = useState<string>("");
   const [classId, setClassId] = useState<string>("");
   const [studentId, setStudentId] = useState<string>("");
@@ -102,13 +106,39 @@ function ReportsPage() {
             })),
         }));
 
+      // Resolve teacher (logged-in user) data including TTD signature
+      const teacher = currentUser.data;
+      const teacherTtdUrl = teacher?.ttd
+        ? (teacher.ttd.startsWith("http") ? teacher.ttd : studentPhotoUrl(teacher.ttd))
+        : null;
+
       const photoUrl = studentPhotoUrl(student?.photo);
-      const [photoDataUrl, coverBgDataUrl, reportFirstBgDataUrl, reportLastBgDataUrl] = await Promise.all([
+
+      const [
+        photoDataUrl,
+        coverBgDataUrl,
+        reportFirstBgDataUrl,
+        reportLastBgDataUrl,
+        ttdDataUrl,
+      ] = await Promise.all([
         urlToDataUrl(photoUrl),
         urlToDataUrl(coverBgUrl),
         urlToDataUrl(reportFirstBgUrl),
         urlToDataUrl(reportLastBgUrl),
+        urlToDataUrl(teacherTtdUrl),
       ]);
+
+      // Fetch comment/note for this student + semester if available
+      let comment: string | null = null;
+      try {
+        const commentData = await apiGet<any>("/comments", {
+          student_id: studentId,
+          semester_id: semesterId,
+        });
+        comment = commentData?.comment ?? commentData?.catatan ?? null;
+      } catch {
+        // no comment endpoint — leave null
+      }
 
       setPdfData({
         student: {
@@ -122,7 +152,13 @@ function ReportsPage() {
           nama_semester: semester?.nama_semester || "",
           tahun_ajaran: semester?.tahun_ajaran || "",
         },
+        teacher: {
+          nama: teacher?.nama || teacher?.name || "Nama Guru IT",
+          jabatan: teacher?.jabatan || teacher?.role_label || "Guru IT 7 SMP IDN",
+          ttdDataUrl,
+        },
         materials: pdfMaterials,
+        comment,
         schoolName: "SMP IDN Boarding School",
         coverBgDataUrl,
         reportFirstBgDataUrl,
