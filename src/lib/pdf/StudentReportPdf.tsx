@@ -827,10 +827,14 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                     <View style={styles.scLeft}>
                       <View style={styles.scPhotoWrap}>
                         {getPhotoSrc(data.student.photoDataUrl) ? (
-                          <Image
-                            src={getPhotoSrc(data.student.photoDataUrl)!}
-                            style={styles.scPhoto}
-                          />
+                        <Image
+                          src={{
+                            uri: getPhotoSrc(data.student.photoDataUrl)!,
+                            method: "GET",
+                            headers: {},
+                          }}
+                          style={styles.scPhoto}
+                        />
                         ) : (
                           <View style={styles.avatarPlaceholder}>
                             <Text style={styles.avatarInitials}>
