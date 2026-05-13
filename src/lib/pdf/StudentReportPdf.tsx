@@ -681,6 +681,67 @@ function ProgressBar({
 }
 
 /* ============================================================================
+ * UTILITY FUNCTIONS FOR LOADING LOCAL IMAGES
+ * ========================================================================== */
+
+// Fungsi untuk memuat gambar lokal sebagai base64
+export const loadLocalImageAsBase64 = async (imagePath: string): Promise<string | null> => {
+  try {
+    // Untuk environment browser
+    if (typeof window !== 'undefined') {
+      const response = await fetch(imagePath);
+      const blob = await response.blob();
+      
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+    
+    // Untuk environment Node.js (jika diperlukan)
+    if (typeof process !== 'undefined') {
+      const fs = require('fs');
+      const path = require('path');
+      const absolutePath = path.resolve(process.cwd(), imagePath);
+      const imageBuffer = fs.readFileSync(absolutePath);
+      const base64 = imageBuffer.toString('base64');
+      const mimeType = getMimeType(imagePath);
+      return `data:${mimeType};base64,${base64}`;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error loading image:', error);
+    return null;
+  }
+};
+
+// Helper untuk mendapatkan mime type
+const getMimeType = (filePath: string): string => {
+  const ext = filePath.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'png':
+      return 'image/png';
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'gif':
+      return 'image/gif';
+    case 'webp':
+      return 'image/webp';
+    default:
+      return 'image/png';
+  }
+};
+
+// Fungsi untuk memuat background cover dari file lokal
+export const getCoverBackground = async (coverBgPath: string = '/cover-bg.png'): Promise<string | null> => {
+  return await loadLocalImageAsBase64(coverBgPath);
+};
+
+/* ============================================================================
  * MAIN COMPONENT
  * ========================================================================== */
 
@@ -728,6 +789,9 @@ export function StudentReportPdf({
 
   const totalReportPages = materialPages.length;
 
+  // Gunakan background cover dari data atau fallback ke local file
+  const coverBgToUse = data.coverBgDataUrl || '/cover-bg.png';
+
   return (
     <Document>
 
@@ -736,12 +800,11 @@ export function StudentReportPdf({
        * ======================================================================== */}
 
       <Page size="A4" style={styles.page}>
-        {data.coverBgDataUrl && (
-          <Image
-            src={data.coverBgDataUrl}
-            style={styles.coverBg}
-          />
-        )}
+        {/* Background dengan fallback ke local file */}
+        <Image
+          src={coverBgToUse}
+          style={styles.coverBg}
+        />
 
         <View style={styles.coverContent}>
           <Text style={styles.coverTitle}>
@@ -781,7 +844,7 @@ export function StudentReportPdf({
             Alhamdulillahirabbil Alamin,
             segala puja dan puji syukur kami
             panjatkan kepada Allah subhanahu
-            wa ta’ala, tanpa karunia-Nya,
+            wa ta'ala, tanpa karunia-Nya,
             mustahil rasanya naskah laporan
             pencapaian belajar siswa ini
             terselesaikan tepat waktu.
