@@ -731,7 +731,7 @@ export function StudentReportPdf({
               {bgUrl && (
                 <Image
                   src={bgUrl}
-                  style={[styles.absoluteBg, { opacity: 0.15 }]}
+                  style={[styles.absoluteBg]}
                   fixed
                 />
               )}
