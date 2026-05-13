@@ -122,13 +122,13 @@ const styles = StyleSheet.create({
   /* School name - "JAGOAN IT" - large, bold, all caps */
   coverSchoolName: {
     position: "absolute",
-    top: 230,
+    top: 270,
     left: 55,
-    fontSize: 72,
-    lineHeight: 1,
+    fontSize: 65,
+    lineHeight: 2,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
-    letterSpacing: 3,
+    letterSpacing: 1,
   },
 
   /* Subtitle/tagline */
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     top: 348,
     left: 55,
     fontSize: 20,
-    lineHeight: 1.4,
+    lineHeight: 1,
     color: "#ffffff",
     letterSpacing: 0.5,
   },
@@ -145,8 +145,8 @@ const styles = StyleSheet.create({
   /* Bottom info (grade + semester) */
   coverBottomInfo: {
     position: "absolute",
-    bottom: 50,
-    left: 160,
+    bottom: 60,
+    left: 250,
     fontSize: 16,
     color: "#ffffff",
     fontFamily: "Helvetica",
@@ -269,8 +269,8 @@ const styles = StyleSheet.create({
 
   scRight: {
     alignItems: "flex-end",
-    paddingRight: 20,
-    paddingBottom: 20,
+    paddingRight: 25,
+    paddingTop: 30,
   },
 
   /* Label "Nilai Rata-rata" above the score */
