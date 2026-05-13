@@ -16,6 +16,9 @@ export const api = axios.create({
 const TOKEN_KEY = "rapor_token";
 const USER_KEY = "rapor_user";
 
+// Cache untuk photo yang sudah di-load
+const photoCache = new Map<string, string>();
+
 export const tokenStorage = {
   get: (): string | null => {
     if (typeof window === "undefined") return null;
@@ -91,11 +94,23 @@ export async function apiDelete<T>(path: string): Promise<T> {
   return res.data.data;
 }
 
-// Fungsi baru untuk mengambil photo dari endpoint custom
+// Fungsi untuk mengambil photo dari endpoint custom dengan cache
 export async function getStudentPhotoBase64(filename: string): Promise<string | null> {
+  // Cek cache dulu
+  if (photoCache.has(filename)) {
+    return photoCache.get(filename) || null;
+  }
+
   try {
     const response = await apiPost<{ data: string }>('/get-student-photo', { filename });
-    return response.data;
+    const photoData = response.data;
+    
+    // Simpan ke cache
+    if (photoData) {
+      photoCache.set(filename, photoData);
+    }
+    
+    return photoData;
   } catch (error) {
     console.error('Error fetching student photo:', error);
     return null;
@@ -104,25 +119,65 @@ export async function getStudentPhotoBase64(filename: string): Promise<string | 
 
 // Fungsi untuk mengambil multiple photos sekaligus
 export async function getStudentPhotosBase64(filenames: string[]): Promise<Record<string, string>> {
+  // Filter yang belum ada di cache
+  const uncachedFilenames = filenames.filter(f => !photoCache.has(f));
+  
+  if (uncachedFilenames.length === 0) {
+    // Semua sudah di cache
+    const result: Record<string, string> = {};
+    filenames.forEach(f => {
+      const cached = photoCache.get(f);
+      if (cached) result[f] = cached;
+    });
+    return result;
+  }
+  
   try {
-    const response = await apiPost<Record<string, string>>('/get-student-photos', { filenames });
-    return response.data;
+    const response = await apiPost<Record<string, string>>('/get-student-photos', { filenames: uncachedFilenames });
+    
+    // Simpan ke cache
+    Object.entries(response.data).forEach(([key, value]) => {
+      photoCache.set(key, value);
+    });
+    
+    // Return semua (termasuk dari cache)
+    const result: Record<string, string> = {};
+    filenames.forEach(f => {
+      const cached = photoCache.get(f);
+      if (cached) result[f] = cached;
+    });
+    
+    return result;
   } catch (error) {
     console.error('Error fetching student photos:', error);
     return {};
   }
 }
 
-// Fungsi untuk mendapatkan URL photo (menggunakan UPLOADS_BASE)
-export function studentPhotoUrl(photo?: string | null): string | null {
+// Fungsi untuk mendapatkan URL photo - CEK APAKAH FILE EXISTS
+export async function studentPhotoUrlWithCheck(photo?: string | null): Promise<string | null> {
   if (!photo) return null;
   if (photo.startsWith("http")) return photo;
-  // Menggunakan UPLOADS_BASE untuk akses langsung ke file
-  return `${UPLOADS_BASE}/students/${photo}`;
+  
+  const url = `${UPLOADS_BASE}/students/${photo}`;
+  
+  try {
+    // Cek apakah file exists dengan HEAD request
+    const response = await fetch(url, { method: 'HEAD' });
+    if (response.ok) {
+      return url;
+    } else {
+      console.warn(`Photo not found: ${url}`);
+      return null;
+    }
+  } catch (error) {
+    console.error(`Error checking photo: ${url}`, error);
+    return null;
+  }
 }
 
-// Fungsi helper untuk menampilkan photo (prioritaskan base64 jika diperlukan)
-export async function getStudentPhotoDisplay(photo?: string | null): Promise<string | null> {
+// Fungsi untuk mendapatkan photo (prioritas base64 dari endpoint)
+export async function getStudentPhoto(photo?: string | null): Promise<string | null> {
   if (!photo) return null;
   
   // Jika sudah URL lengkap, return langsung
@@ -132,6 +187,20 @@ export async function getStudentPhotoDisplay(photo?: string | null): Promise<str
   const base64Photo = await getStudentPhotoBase64(photo);
   if (base64Photo) return base64Photo;
   
-  // Fallback ke URL biasa
+  // Jika base64 gagal, coba dengan URL
+  const url = `${UPLOADS_BASE}/students/${photo}`;
+  console.warn(`Using fallback URL for photo: ${url}`);
+  return url;
+}
+
+// Fungsi kompatibilitas untuk kode lama (tetap menggunakan URL)
+export function studentPhotoUrl(photo?: string | null): string | null {
+  if (!photo) return null;
+  if (photo.startsWith("http")) return photo;
   return `${UPLOADS_BASE}/students/${photo}`;
+}
+
+// Clear photo cache (misalnya setelah logout)
+export function clearPhotoCache() {
+  photoCache.clear();
 }
