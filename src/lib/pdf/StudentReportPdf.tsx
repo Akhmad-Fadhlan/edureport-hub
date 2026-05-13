@@ -891,6 +891,7 @@ export function StudentReportPdf({
             >
               {bgUrl && (
                 <Image
+                  fixed
                   src={bgUrl}
                   style={styles.contentBg}
                 />
@@ -914,7 +915,17 @@ export function StudentReportPdf({
                 SMP JAGOAN IT
               </Text>
 
-              <View style={styles.reportBody}>
+              <View
+                style={[
+                  styles.reportBody,
+                  isFirstReportPage && data.reportFirstBgDataUrl
+                    ? styles.reportBodyTemplateFirst
+                    : null,
+                  isLastReportPage && data.reportLastBgDataUrl
+                    ? styles.reportBodyTemplateLast
+                    : null,
+                ]}
+              >
 
                 {/* ==========================================================
                  * STUDENT CARD
