@@ -180,6 +180,9 @@ function ReportsPage() {
       // Gunakan pola yang sama dengan halaman students.tsx → studentPhotoUrl()
      const photoUrl = studentPhotoUrl(studentDetail?.photo);
       const photoDataUrl = await urlToDataUrl(photoUrl);
+      console.log("PHOTO:", studentDetail?.photo);
+console.log("PHOTO URL:", photoUrl);
+console.log("PHOTO DATA:", photoDataUrl);
       // ── 5. Resolve data guru (user yang sedang login) ──────────────────────
       const teacher = currentUser.data;
 
