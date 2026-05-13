@@ -31,17 +31,27 @@ export const Route = createFileRoute("/_authed/reports")({
 
 async function urlToDataUrl(url: string | null | undefined): Promise<string | null> {
   if (!url) return null;
+
   try {
-    const res = await fetch(url, { mode: "cors" });
+    const res = await fetch(url, {
+      mode: "cors",
+      credentials: "include",
+    });
+
     if (!res.ok) return null;
+
     const blob = await res.blob();
+
     return await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
+
       reader.onloadend = () => resolve(reader.result as string);
       reader.onerror = reject;
+
       reader.readAsDataURL(blob);
     });
-  } catch {
+  } catch (err) {
+    console.error("urlToDataUrl error:", err);
     return null;
   }
 }
