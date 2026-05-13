@@ -8,6 +8,9 @@ import { useApiData } from "@/hooks/use-api-data";
 import { apiGet, studentPhotoUrl } from "@/lib/api";
 import { Loader2, Download, FileText } from "lucide-react";
 import { StudentReportPdf, type PdfReportData } from "@/lib/pdf/StudentReportPdf";
+import coverBgUrl from "@/assets/cover-bg.png";
+import reportFirstBgUrl from "@/assets/report-first.png";
+import reportLastBgUrl from "@/assets/report-last.png";
 
 export const Route = createFileRoute("/_authed/reports")({
   component: ReportsPage,
@@ -100,7 +103,12 @@ function ReportsPage() {
         }));
 
       const photoUrl = studentPhotoUrl(student?.photo);
-      const photoDataUrl = await urlToDataUrl(photoUrl);
+      const [photoDataUrl, coverBgDataUrl, reportFirstBgDataUrl, reportLastBgDataUrl] = await Promise.all([
+        urlToDataUrl(photoUrl),
+        urlToDataUrl(coverBgUrl),
+        urlToDataUrl(reportFirstBgUrl),
+        urlToDataUrl(reportLastBgUrl),
+      ]);
 
       setPdfData({
         student: {
@@ -116,6 +124,9 @@ function ReportsPage() {
         },
         materials: pdfMaterials,
         schoolName: "SMP IDN Boarding School",
+        coverBgDataUrl,
+        reportFirstBgDataUrl,
+        reportLastBgDataUrl,
       });
     } catch (e) {
       console.error(e);
