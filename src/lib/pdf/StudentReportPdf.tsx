@@ -72,7 +72,7 @@ const MUTED = "#64748b";
 const SOFT = "#f8fafc";
 
 /* ============================================================================
- * STYLES - Matching reference design with Montserrat-style fonts
+ * STYLES
  * ========================================================================== */
 
 const styles = StyleSheet.create({
@@ -98,8 +98,7 @@ const styles = StyleSheet.create({
   },
 
   /* ==========================================================================
-   * COVER — Matching reference SMP IDN IT-Depan design
-   * Font styling: Montserrat/Poppins style with proper hierarchy
+   * COVER
    * ======================================================================== */
 
   coverContent: {
@@ -108,7 +107,6 @@ const styles = StyleSheet.create({
     height: "100%",
   },
 
-  /* Title - "Competence Report of SMP" - centered, medium weight */
   coverTitle: {
     position: "absolute",
     top: 200,
@@ -119,7 +117,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
 
-  /* School name - "JAGOAN IT" - large, bold, all caps */
   coverSchoolName: {
     position: "absolute",
     top: 240,
@@ -131,7 +128,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  /* Subtitle/tagline */
   coverSubtitle: {
     position: "absolute",
     top: 325,
@@ -142,7 +138,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  /* Bottom info (grade + semester) */
   coverBottomInfo: {
     position: "absolute",
     bottom: 50,
@@ -187,7 +182,7 @@ const styles = StyleSheet.create({
   },
 
   /* ==========================================================================
-   * REPORT BODY — top padding reduced so student card moves up
+   * REPORT BODY
    * ======================================================================== */
 
   reportBody: {
@@ -201,7 +196,7 @@ const styles = StyleSheet.create({
   },
 
   reportBodyLast: {
-    paddingBottom: 180,
+    paddingBottom: 20,
   },
 
   /* ==========================================================================
@@ -255,7 +250,7 @@ const styles = StyleSheet.create({
   },
 
   scName: {
-    paddingTop:10,
+    paddingTop: 10,
     fontSize: 18,
     fontFamily: "Helvetica-Bold",
     color: NAVY,
@@ -263,7 +258,7 @@ const styles = StyleSheet.create({
   },
 
   detailText: {
-    paddingLeft:25,
+    paddingLeft: 25,
     fontSize: 10.5,
     color: MUTED,
     marginBottom: 5,
@@ -275,7 +270,6 @@ const styles = StyleSheet.create({
     paddingTop: 28,
   },
 
-  /* Label "Nilai Rata-rata" above the score */
   scAvgLabel: {
     fontSize: 10,
     color: MUTED,
@@ -289,12 +283,12 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     color: NAVY,
     marginBottom: 8,
-    paddingRight:5,
+    paddingRight: 5,
   },
 
   scAvgBadge: {
     borderRadius: 20,
-    paddingLeft:5,
+    paddingLeft: 5,
     paddingHorizontal: 12,
     paddingVertical: 5,
   },
@@ -322,11 +316,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8fafc",
     paddingVertical: 10,
     paddingHorizontal: 14,
-
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-
     borderLeftWidth: 5,
     borderLeftColor: NAVY,
   },
@@ -361,11 +353,9 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 4,
     backgroundColor: SOFT,
-
     fontSize: 10,
     fontFamily: "Helvetica-Bold",
     color: NAVY,
-
     textAlign: "center",
     paddingTop: 5,
   },
@@ -429,30 +419,8 @@ const styles = StyleSheet.create({
   },
 
   /* ==========================================================================
-   * LAST PAGE
+   * COMMENT BOX
    * ======================================================================== */
-
-  nilaiExplanation: {
-    marginTop: 12,
-    padding: 10,
-    backgroundColor: SOFT,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-  },
-
-  nilaiExplanationTitle: {
-    fontSize: 9,
-    fontFamily: "Helvetica-Bold",
-    color: NAVY,
-    marginBottom: 4,
-  },
-
-  nilaiExplanationText: {
-    fontSize: 8,
-    color: MUTED,
-    lineHeight: 1.5,
-  },
 
   commentBox: {
     backgroundColor: "#fefce8",
@@ -461,6 +429,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 14,
     marginTop: 14,
+    marginHorizontal: 42,
   },
 
   commentTitle: {
@@ -476,41 +445,123 @@ const styles = StyleSheet.create({
     lineHeight: 1.5,
   },
 
-  /* Signature section for last page */
-  signatureSection: {
-    marginTop: 20,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
+  /* ==========================================================================
+   * BOTTOM SECTION — Skala Nilai + TTD Guru
+   * ======================================================================== */
+
+  bottomSection: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
+    marginTop: 16,
+    marginHorizontal: 42,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
   },
 
-  signatureLeft: {
+  /* Skala Nilai (kiri) */
+  scaleSection: {
     flex: 1,
+    paddingRight: 20,
   },
 
-  signatureRight: {
-    flex: 1,
+  scaleTitle: {
+    fontSize: 10,
+    fontFamily: "Helvetica-Bold",
+    color: TEXT,
+    marginBottom: 8,
+  },
+
+  scaleRow: {
+    flexDirection: "row",
     alignItems: "center",
+    marginBottom: 6,
+    gap: 6,
+  },
+
+  scaleBadge: {
+    width: 52,
+    borderRadius: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    alignItems: "center",
+  },
+
+  scaleBadgeText: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    color: "#ffffff",
+  },
+
+  scaleLabel: {
+    flex: 1,
+    borderRadius: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+
+  scaleLabelTextRed: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    color: "#dc2626",
+  },
+
+  scaleLabelTextOrange: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    color: "#ea580c",
+  },
+
+  scaleLabelTextBlue: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    color: "#2563eb",
+  },
+
+  scaleLabelTextGreen: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    color: "#16a34a",
+  },
+
+  /* TTD Guru (kanan) */
+  signatureSection: {
+    alignItems: "center",
+    minWidth: 160,
   },
 
   signatureDate: {
     fontSize: 9,
     color: MUTED,
-    marginBottom: 4,
+    marginBottom: 2,
     textAlign: "center",
   },
 
+  signatureSubLabel: {
+    fontSize: 9,
+    color: MUTED,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+
   signaturePlaceholder: {
-    width: 120,
-    height: 60,
+    width: 130,
+    height: 65,
     backgroundColor: "#f1f5f9",
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
     marginBottom: 8,
     justifyContent: "center",
     alignItems: "center",
+  },
+
+  signatureImage: {
+    width: 130,
+    height: 65,
+    objectFit: "contain",
+    marginBottom: 8,
   },
 
   signatureName: {
@@ -542,18 +593,13 @@ const styles = StyleSheet.create({
 
 function getPhotoSrc(photo?: string | null) {
   if (!photo) return null;
-
-  if (photo.startsWith("data:image")) {
-    return photo;
-  }
-
+  if (photo.startsWith("data:image")) return photo;
   return `data:image/png;base64,${photo}`;
 }
 
 function calculateOverallAverage(materials: PdfMaterial[]) {
   let total = 0;
   let count = 0;
-
   materials.forEach((m) => {
     m.indicators.forEach((i) => {
       if (i.nilai !== null && i.nilai !== undefined) {
@@ -562,14 +608,12 @@ function calculateOverallAverage(materials: PdfMaterial[]) {
       }
     });
   });
-
   return count > 0 ? total / count : 0;
 }
 
 function calculateMaterialAverage(material: PdfMaterial[]) {
   let total = 0;
   let count = 0;
-
   material.forEach((m) => {
     m.indicators.forEach((i) => {
       if (i.nilai !== null && i.nilai !== undefined) {
@@ -578,7 +622,6 @@ function calculateMaterialAverage(material: PdfMaterial[]) {
       }
     });
   });
-
   return count > 0 ? total / count : 0;
 }
 
@@ -607,11 +650,9 @@ function getBadgeColor(avg: number) {
 
 function chunkMaterials<T>(arr: T[], size: number): T[][] {
   const result: T[][] = [];
-
   for (let i = 0; i < arr.length; i += size) {
     result.push(arr.slice(i, i + size));
   }
-
   return result;
 }
 
@@ -619,19 +660,9 @@ function chunkMaterials<T>(arr: T[], size: number): T[][] {
  * PROGRESS BAR
  * ========================================================================== */
 
-function ProgressBar({
-  nilai,
-  max = 5,
-}: {
-  nilai: number;
-  max: number;
-}) {
+function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
   const totalSegs = 5;
-
-  const filled = Math.min(
-    Math.round((nilai / max) * totalSegs),
-    totalSegs
-  );
+  const filled = Math.min(Math.round((nilai / max) * totalSegs), totalSegs);
 
   return (
     <View style={styles.progressWrapper}>
@@ -642,20 +673,43 @@ function ProgressBar({
               key={i}
               style={[
                 styles.progressSegment,
-                {
-                  backgroundColor:
-                    i < filled ? NAVY : "#dbe4f0",
-                },
+                { backgroundColor: i < filled ? NAVY : "#dbe4f0" },
               ]}
             />
           ))}
         </View>
-
         <View style={styles.progressValue}>
-          <Text style={styles.progressValueText}>
-            {nilai.toFixed(1)}
-          </Text>
+          <Text style={styles.progressValueText}>{nilai.toFixed(1)}</Text>
         </View>
+      </View>
+    </View>
+  );
+}
+
+/* ============================================================================
+ * SKALA NILAI — komponen keterangan penilaian
+ * ========================================================================== */
+
+function SkalaRow({
+  range,
+  label,
+  badgeColor,
+  bgColor,
+  textStyle,
+}: {
+  range: string;
+  label: string;
+  badgeColor: string;
+  bgColor: string;
+  textStyle: object;
+}) {
+  return (
+    <View style={styles.scaleRow}>
+      <View style={[styles.scaleBadge, { backgroundColor: badgeColor }]}>
+        <Text style={styles.scaleBadgeText}>{range}</Text>
+      </View>
+      <View style={[styles.scaleLabel, { backgroundColor: bgColor }]}>
+        <Text style={textStyle}>{label}</Text>
       </View>
     </View>
   );
@@ -665,64 +719,31 @@ function ProgressBar({
  * MAIN COMPONENT
  * ========================================================================== */
 
-export function StudentReportPdf({
-  data,
-}: {
-  data: PdfReportData;
-}) {
-  const overallAvg = calculateOverallAverage(
-    data.materials
-  );
-
+export function StudentReportPdf({ data }: { data: PdfReportData }) {
+  const overallAvg = calculateOverallAverage(data.materials);
   const badgeColor = getBadgeColor(overallAvg);
   const badgeLabel = getBadgeLabel(overallAvg);
-
   const studentName = data.student.nama || "-";
-  const studentClass =
-    data.student.nama_kelas || "-";
-
+  const studentClass = data.student.nama_kelas || "-";
   const semesterLabel = `${data.semester.nama_semester}`;
-
-  const materialPages = chunkMaterials(
-    data.materials,
-    2
-  );
+  const materialPages = chunkMaterials(data.materials, 2);
 
   return (
     <Document>
-
-      {/* ==========================================================================
-       * COVER — text positioned to match reference image
-       * No logo / yellow line added (kept clean)
-       * ======================================================================== */}
-
+      {/* ====================================================================
+       * COVER
+       * ================================================================== */}
       <Page size="A4" style={styles.page}>
         {data.coverBgDataUrl && (
-          <Image
-            src={data.coverBgDataUrl}
-            style={styles.absoluteBg}
-            fixed
-          />
+          <Image src={data.coverBgDataUrl} style={styles.absoluteBg} fixed />
         )}
-
         <View style={styles.pageContent}>
           <View style={styles.coverContent}>
-            {/* Title — moved higher up */}
-            <Text style={styles.coverTitle}>
-              Competence Report of SMP
-            </Text>
-
-            {/* School name — large, bold */}
-            <Text style={styles.coverSchoolName}>
-              JAGOAN IT
-            </Text>
-
-            {/* Subtitle */}
+            <Text style={styles.coverTitle}>Competence Report of SMP</Text>
+            <Text style={styles.coverSchoolName}>JAGOAN IT</Text>
             <Text style={styles.coverSubtitle}>
               Global Tech Starts with Global Communication
             </Text>
-
-            {/* Bottom line: Grade + Semester (no student name on cover) */}
             <Text style={styles.coverBottomInfo}>
               {studentClass} | {semesterLabel}
             </Text>
@@ -730,289 +751,211 @@ export function StudentReportPdf({
         </View>
       </Page>
 
-      {/* ==========================================================================
+      {/* ====================================================================
        * FOREWORD
-       * ======================================================================== */}
-
+       * ================================================================== */}
       <Page size="A4" style={styles.page}>
         <View style={styles.forewordPage}>
-          <Text style={styles.forewordSmallTitle}>
-            Foreword
-          </Text>
-
-          <Text style={styles.forewordTitle}>
-            Prakata
-          </Text>
-
+          <Text style={styles.forewordSmallTitle}>Foreword</Text>
+          <Text style={styles.forewordTitle}>Prakata</Text>
           <Text style={styles.forewordParagraph}>
             Alhamdulillahirabbil Alamin...
           </Text>
         </View>
       </Page>
 
-      {/* ==========================================================================
-       * REPORT — student card moved up (reduced top padding)
-       * ======================================================================== */}
+      {/* ====================================================================
+       * REPORT PAGES
+       * ================================================================== */}
+      {materialPages.map((pageMaterials, pageIndex) => {
+        const isFirst = pageIndex === 0;
+        const isLast = pageIndex === materialPages.length - 1;
 
-      {materialPages.map(
-        (pageMaterials, pageIndex) => {
-          let bgUrl = null;
-          if (pageIndex === 0) {
-            bgUrl = data.reportFirstBgDataUrl;
-          } else if (pageIndex === materialPages.length - 1) {
-            bgUrl = data.reportLastBgDataUrl;
-          }
+        let bgUrl = null;
+        if (isFirst) bgUrl = data.reportFirstBgDataUrl;
+        else if (isLast) bgUrl = data.reportLastBgDataUrl;
 
-          return (
-            <Page
-              key={pageIndex}
-              size="A4"
-              style={styles.page}
-              wrap={false}
-            >
-              {bgUrl && (
-                <Image
-                  src={bgUrl}
-                  style={[styles.absoluteBg]}
-                  fixed
-                />
-              )}
+        return (
+          <Page key={pageIndex} size="A4" style={styles.page} wrap={false}>
+            {bgUrl && (
+              <Image src={bgUrl} style={[styles.absoluteBg]} fixed />
+            )}
 
-              <View style={styles.pageContent}>
-                <View
-                  style={[
-                    styles.reportBody,
-                    ...(pageIndex === 0
-                      ? [styles.reportBodyFirst]
-                      : []),
-                    ...(pageIndex ===
-                    materialPages.length - 1
-                      ? [styles.reportBodyLast]
-                      : []),
-                  ]}
-                >
-
-                  {pageIndex === 0 && (
-                    <View style={styles.studentCard}>
-                      <View style={styles.scLeft}>
-                        <View style={styles.scPhotoWrap}>
-                          {getPhotoSrc(
-                            data.student.photoDataUrl
-                          ) ? (
-                            <Image
-                              src={
-                                getPhotoSrc(
-                                  data.student
-                                    .photoDataUrl
-                                )!
-                              }
-                              style={styles.scPhoto}
-                            />
-                          ) : (
-                            <View
-                              style={
-                                styles.avatarPlaceholder
-                              }
-                            >
-                              <Text
-                                style={
-                                  styles.avatarInitials
-                                }
-                              >
-                                {getInitials(
-                                  studentName
-                                )}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-
-                        <View style={styles.scInfo}>
-                          <Text style={styles.scName}>
-                            {studentName}
-                          </Text>
-
-                          {/* Email with icon indicator */}
-                          <Text style={styles.detailText}>
-                            {data.student.email}
-                          </Text>
-
-                          {/* LinkedIn link from API */}
-                          {data.student.linkedin && (
-                            <Text style={styles.detailText}>
-                              {data.student.linkedin}
+            <View style={styles.pageContent}>
+              <View
+                style={[
+                  styles.reportBody,
+                  ...(isFirst ? [styles.reportBodyFirst] : []),
+                  ...(isLast ? [styles.reportBodyLast] : []),
+                ]}
+              >
+                {/* Student Card — hanya di halaman pertama */}
+                {isFirst && (
+                  <View style={styles.studentCard}>
+                    <View style={styles.scLeft}>
+                      <View style={styles.scPhotoWrap}>
+                        {getPhotoSrc(data.student.photoDataUrl) ? (
+                          <Image
+                            src={getPhotoSrc(data.student.photoDataUrl)!}
+                            style={styles.scPhoto}
+                          />
+                        ) : (
+                          <View style={styles.avatarPlaceholder}>
+                            <Text style={styles.avatarInitials}>
+                              {getInitials(studentName)}
                             </Text>
-                          )}
-                        </View>
+                          </View>
+                        )}
                       </View>
-
-                      <View style={styles.scRight}>
-                        {/* "Nilai Rata-rata" label above the score */}
-                        <Text style={styles.scAvgValue}>
-                          {overallAvg.toFixed(2)}
+                      <View style={styles.scInfo}>
+                        <Text style={styles.scName}>{studentName}</Text>
+                        <Text style={styles.detailText}>
+                          {data.student.email}
                         </Text>
-
-                        <View
-                          style={[
-                            styles.scAvgBadge,
-                            {
-                              backgroundColor:
-                                badgeColor,
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={
-                              styles.scAvgBadgeText
-                            }
-                          >
-                            {badgeLabel}
+                        {data.student.linkedin && (
+                          <Text style={styles.detailText}>
+                            {data.student.linkedin}
                           </Text>
-                        </View>
+                        )}
                       </View>
+                    </View>
+                    <View style={styles.scRight}>
+                      <Text style={styles.scAvgValue}>
+                        {overallAvg.toFixed(2)}
+                      </Text>
+                      <View
+                        style={[
+                          styles.scAvgBadge,
+                          { backgroundColor: badgeColor },
+                        ]}
+                      >
+                        <Text style={styles.scAvgBadgeText}>{badgeLabel}</Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Material Cards */}
+                {pageMaterials.map((material) => {
+                  const avg = calculateMaterialAverage([material]);
+                  return (
+                    <View key={material.id} style={styles.compSection}>
+                      <View style={styles.compHeader}>
+                        <Text style={styles.compTitleText}>
+                          {material.judul}
+                        </Text>
+                        <Text style={styles.compScoreText}>
+                          {avg.toFixed(1)}
+                        </Text>
+                      </View>
+                      <View style={styles.compIndicators}>
+                        {material.indicators.map((indicator, index) => (
+                          <View key={indicator.id} style={styles.indRow}>
+                            <Text style={styles.indNum}>{index + 1}</Text>
+                            <Text style={styles.indText}>
+                              {indicator.deskripsi}
+                            </Text>
+                            <ProgressBar
+                              nilai={indicator.nilai || 0}
+                              max={indicator.nilai_max}
+                            />
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+
+              {/* ============================================================
+               * HALAMAN TERAKHIR — Comment + Skala Nilai + TTD Guru
+               * ========================================================== */}
+              {isLast && (
+                <>
+                  {/* Kolom Komentar */}
+                  {data.comment && (
+                    <View style={styles.commentBox}>
+                      <Text style={styles.commentTitle}>Comment</Text>
+                      <Text style={styles.commentText}>{data.comment}</Text>
                     </View>
                   )}
 
-                  {pageMaterials.map((material) => {
-                    const avg =
-                      calculateMaterialAverage([
-                        material,
-                      ]);
+                  {/* Bottom: Skala Nilai (kiri) + TTD Guru (kanan) */}
+                  <View style={styles.bottomSection}>
 
-                    return (
-                      <View
-                        key={material.id}
-                        style={styles.compSection}
-                      >
-                        <View
-                          style={styles.compHeader}
-                        >
+                    {/* Kiri: Skala Nilai Rata-rata */}
+                    <View style={styles.scaleSection}>
+                      <Text style={styles.scaleTitle}>Skala Nilai Rata-rata :</Text>
+
+                      <SkalaRow
+                        range="0 - 2.4"
+                        label="Butuh Perbaikan"
+                        badgeColor="#dc2626"
+                        bgColor="#fee2e2"
+                        textStyle={styles.scaleLabelTextRed}
+                      />
+                      <SkalaRow
+                        range="2.5 - 3.5"
+                        label="Cukup"
+                        badgeColor="#ea580c"
+                        bgColor="#ffedd5"
+                        textStyle={styles.scaleLabelTextOrange}
+                      />
+                      <SkalaRow
+                        range="3.6 - 4.5"
+                        label="Sangat Baik"
+                        badgeColor="#2563eb"
+                        bgColor="#dbeafe"
+                        textStyle={styles.scaleLabelTextBlue}
+                      />
+                      <SkalaRow
+                        range="4.6 - 5"
+                        label="Sangat Memuaskan"
+                        badgeColor="#16a34a"
+                        bgColor="#dcfce7"
+                        textStyle={styles.scaleLabelTextGreen}
+                      />
+                    </View>
+
+                    {/* Kanan: TTD Guru */}
+                    <View style={styles.signatureSection}>
+                      <Text style={styles.signatureDate}>Tanggal</Text>
+                      <Text style={styles.signatureSubLabel}>
+                        Guru IT 7 SMP IDN
+                      </Text>
+
+                      {data.teacher?.ttdDataUrl ? (
+                        <Image
+                          src={data.teacher.ttdDataUrl}
+                          style={styles.signatureImage}
+                        />
+                      ) : (
+                        <View style={styles.signaturePlaceholder}>
                           <Text
-                            style={
-                              styles.compTitleText
-                            }
+                            style={{ fontSize: 8, color: MUTED }}
                           >
-                            {material.judul}
-                          </Text>
-
-                          <Text
-                            style={
-                              styles.compScoreText
-                            }
-                          >
-                            {avg.toFixed(1)}
-                          </Text>
-                        </View>
-
-                        <View
-                          style={
-                            styles.compIndicators
-                          }
-                        >
-                          {material.indicators.map(
-                            (
-                              indicator,
-                              index
-                            ) => (
-                              <View
-                                key={indicator.id}
-                                style={
-                                  styles.indRow
-                                }
-                              >
-                                <Text
-                                  style={
-                                    styles.indNum
-                                  }
-                                >
-                                  {index + 1}
-                                </Text>
-
-                                <Text
-                                  style={
-                                    styles.indText
-                                  }
-                                >
-                                  {
-                                    indicator.deskripsi
-                                  }
-                                </Text>
-
-                                <ProgressBar
-                                  nilai={
-                                    indicator.nilai ||
-                                    0
-                                  }
-                                  max={
-                                    indicator.nilai_max
-                                  }
-                                />
-                              </View>
-                            )
-                          )}
-                        </View>
-                      </View>
-                    );
-                  }
-                  )}
-                </View>
-                                                       {/* Only show on the last page */}
-                  {pageIndex === materialPages.length - 1 && (
-                    <>
-                      {/* Comment section from API */}
-                      {data.comment && (
-                        <View style={styles.commentBox}>
-                          <Text style={styles.commentTitle}>
-                            Komentar
-                          </Text>
-                          <Text style={styles.commentText}>
-                            {data.comment}
+                            TTD Guru
                           </Text>
                         </View>
                       )}
 
-                      {/* Teacher signature section */}
-                      <View style={styles.signatureSection}>
-                        <View style={styles.signatureLeft}>
-                          <Text style={styles.signatureDate}>
-                            Tanggal: _________________
-                          </Text>
-                        </View>
-                        <View style={styles.signatureRight}>
-                          {data.teacher?.ttdDataUrl ? (
-                            <Image
-                              src={data.teacher.ttdDataUrl}
-                              style={styles.signaturePlaceholder}
-                            />
-                          ) : (
-                            <View style={styles.signaturePlaceholder}>
-                              <Text style={{ fontSize: 8, color: MUTED }}>
-                                TTD Guru
-                              </Text>
-                            </View>
-                          )}
-                          <Text style={styles.signatureName}>
-                            {data.teacher?.nama || "Nama Guru IT"}
-                          </Text>
-                          <Text style={styles.signatureRole}>
-                            Guru IT 7 SMP IDN
-                          </Text>
-                        </View>
-                      </View>
-                    </>
-                  )}
-                <Text
-                  style={styles.pageNumber}
-                  render={({ pageNumber }) =>
-                    `${pageNumber}`
-                  }
-                  fixed
-                />
-              </View>
-            </Page>
-          );
-        }
-      )}
+                      <Text style={styles.signatureName}>
+                        {data.teacher?.nama || "Nama Guru IT"}
+                      </Text>
+                    </View>
+                  </View>
+                </>
+              )}
+
+              <Text
+                style={styles.pageNumber}
+                render={({ pageNumber }) => `${pageNumber}`}
+                fixed
+              />
+            </View>
+          </Page>
+        );
+      })}
     </Document>
   );
 }
