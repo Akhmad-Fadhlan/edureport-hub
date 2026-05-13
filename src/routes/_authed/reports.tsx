@@ -103,7 +103,12 @@ function ReportsPage() {
         }));
 
       const photoUrl = studentPhotoUrl(student?.photo);
-      const photoDataUrl = await urlToDataUrl(photoUrl);
+      const [photoDataUrl, coverBgDataUrl, reportFirstBgDataUrl, reportLastBgDataUrl] = await Promise.all([
+        urlToDataUrl(photoUrl),
+        urlToDataUrl(coverBgUrl),
+        urlToDataUrl(reportFirstBgUrl),
+        urlToDataUrl(reportLastBgUrl),
+      ]);
 
       setPdfData({
         student: {
@@ -119,6 +124,9 @@ function ReportsPage() {
         },
         materials: pdfMaterials,
         schoolName: "SMP IDN Boarding School",
+        coverBgDataUrl,
+        reportFirstBgDataUrl,
+        reportLastBgDataUrl,
       });
     } catch (e) {
       console.error(e);
