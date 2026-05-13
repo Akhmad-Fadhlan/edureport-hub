@@ -8,6 +8,9 @@ import { useApiData } from "@/hooks/use-api-data";
 import { apiGet, studentPhotoUrl } from "@/lib/api";
 import { Loader2, Download, FileText } from "lucide-react";
 import { StudentReportPdf, type PdfReportData } from "@/lib/pdf/StudentReportPdf";
+import coverBgUrl from "@/assets/cover-bg.png";
+import reportFirstBgUrl from "@/assets/report-first.png";
+import reportLastBgUrl from "@/assets/report-last.png";
 
 export const Route = createFileRoute("/_authed/reports")({
   component: ReportsPage,
