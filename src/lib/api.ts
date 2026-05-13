@@ -5,7 +5,7 @@ export const API_BASE_URL =
   (import.meta.env.VITE_API_URL as string | undefined) ||
   "https://rapor.codestechno.com/api";
 
-export const UPLOADS_BASE = "https://rapor.codestechno.com/uploads";
+export const UPLOADS_BASE = "https://rapor.codestechno.com/upload";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -94,5 +94,5 @@ export async function apiDelete<T>(path: string): Promise<T> {
 export function studentPhotoUrl(photo?: string | null): string | null {
   if (!photo) return null;
   if (photo.startsWith("http")) return photo;
-  return `${UPLOADS_BASE}/students/${photo}`;
+  return `${API_BASE_URL}/image/${photo}`;
 }
