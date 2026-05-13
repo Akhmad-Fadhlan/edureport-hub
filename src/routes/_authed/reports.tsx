@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useApiData } from "@/hooks/use-api-data";
-import { apiGet, studentPhotoUrl } from "@/lib/api";
+import { apiGet, getStudentPhoto } from "@/lib/api"; // Hapus studentPhotoUrl, tambah getStudentPhoto
 import { Loader2, Download, FileText } from "lucide-react";
 import {
   StudentReportPdf,
@@ -58,14 +58,34 @@ async function urlToDataUrl(url: string | null | undefined): Promise<string | nu
 /**
  * Normalisasi URL foto / TTD:
  * - Jika sudah absolute (http/https) → pakai langsung
- * - Jika relative path  → delegasikan ke studentPhotoUrl()
- * - Null / undefined    → null
+ * - Jika relative path  → konversi ke data URL melalui API
  */
-function resolveMediaUrl(raw: string | null | undefined): string | null {
+async function resolveMediaUrl(raw: string | null | undefined): Promise<string | null> {
   if (!raw) return null;
   if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-  // pakai helper yang sama dengan halaman students
-  return studentPhotoUrl(raw) ?? null;
+  
+  // Untuk photo siswa, gunakan getStudentPhoto
+  // Untuk TTD, konversi ke data URL melalui fetch
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://rapor.codestechno.com/api'}/get-ttd`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ filename: raw }),
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.data) {
+        return data.data;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching TTD:", error);
+    return null;
+  }
 }
 
 /* ============================================================================
@@ -77,8 +97,6 @@ function ReportsPage() {
   const classes = useApiData<any[]>("/classes");
 
   // ── ambil data user yang sedang login ──────────────────────────────────────
-  // Endpoint /auth/me harus ada di backend; kalau belum, tambahkan route-nya.
-  // Field yang mungkin dikembalikan: id, nama, name, jabatan, role_label, ttd
   const currentUser = useApiData<any>("/auth/me");
 
   const [semesterId, setSemesterId] = useState<string>("");
@@ -125,7 +143,6 @@ function ReportsPage() {
     try {
       // ── 1. Fetch semua data paralel ────────────────────────────────────────
       const [studentDetail, materials, indicators, grades] = await Promise.all([
-        // Coba endpoint individual; fallback ke list yang sudah ada di state
         apiGet<any>(`/students/${studentId}`).catch(
           () =>
             (students.data?.items ?? []).find(
@@ -175,34 +192,35 @@ function ReportsPage() {
             })),
         }));
 
-      // ── 4. Resolve foto siswa ──────────────────────────────────────────────
-      // Gunakan pola yang sama dengan halaman students.tsx → studentPhotoUrl()
-     const photoUrl = studentPhotoUrl(studentDetail?.photo);
-      const photoDataUrl = studentPhotoUrl(studentDetail?.photo) ?? null;
-      console.log("PHOTO:", studentDetail?.photo);
-console.log("PHOTO URL:", photoUrl);
-console.log("PHOTO DATA:", photoDataUrl);
+      // ── 4. Ambil foto siswa melalui API (base64) ───────────────────────────
+      console.log("Fetching photo for student:", studentDetail?.photo);
+      const photoDataUrl = await getStudentPhoto(studentDetail?.photo);
+      console.log("Photo data URL obtained:", !!photoDataUrl);
+
       // ── 5. Resolve data guru (user yang sedang login) ──────────────────────
       const teacher = currentUser.data;
 
-      // Field nama: bisa "nama" atau "name" tergantung backend
       const teacherNama: string =
         teacher?.nama ?? teacher?.name ?? "Nama Guru IT";
 
-      // Field jabatan: bisa "jabatan" atau "role_label"
       const teacherJabatan: string =
         teacher?.jabatan ?? teacher?.role_label ?? "Guru IT";
 
-      // Field TTD: bisa "ttd" (path relatif atau URL absolut)
-      const ttdRawUrl = resolveMediaUrl(teacher?.ttd);
-      const ttdDataUrl = await urlToDataUrl(ttdRawUrl);
+      // Resolve TTD
+      const ttdRawUrl = teacher?.ttd;
+      let ttdDataUrl: string | null = null;
+      
+      if (ttdRawUrl) {
+        try {
+          // Coba ambil TTD melalui endpoint API
+          const response = await apiGet<{ data: string }>('/get-ttd', { filename: ttdRawUrl });
+          ttdDataUrl = response?.data || null;
+        } catch (error) {
+          console.error("Error fetching TTD:", error);
+        }
+      }
 
       // ── 6. Fetch catatan / comment ─────────────────────────────────────────
-      // Backend: GET /notes?student_id=X&semester_id=Y
-      // Response yang mungkin:
-      //   { success: true, data: { comment: "...", catatan: "..." } }
-      //   { success: true, data: [{ comment: "...", catatan: "..." }] }
-      //   { success: true, data: null }
       let comment: string | null = null;
       try {
         const noteRes = await apiGet<any>("/notes", {
@@ -211,9 +229,7 @@ console.log("PHOTO DATA:", photoDataUrl);
         });
 
         if (noteRes) {
-          // Kalau response array, ambil item pertama
           const noteItem = Array.isArray(noteRes) ? noteRes[0] : noteRes;
-          // Normalise field: comment atau catatan
           comment =
             noteItem?.comment ??
             noteItem?.catatan ??
@@ -221,7 +237,7 @@ console.log("PHOTO DATA:", photoDataUrl);
             null;
         }
       } catch {
-        // Endpoint notes tidak tersedia atau belum ada data → biarkan null
+        // Endpoint notes tidak tersedia → biarkan null
       }
 
       // ── 7. Convert asset backgrounds ──────────────────────────────────────
@@ -238,7 +254,6 @@ console.log("PHOTO DATA:", photoDataUrl);
           nama: studentDetail?.nama ?? "",
           email: studentDetail?.email ?? "",
           linkedin: studentDetail?.linkedin ?? undefined,
-          // photoDataUrl sudah base64 data URL atau null
           photoDataUrl: photoDataUrl ?? null,
           nama_kelas:
             studentDetail?.nama_kelas ??
