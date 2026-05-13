@@ -50,14 +50,13 @@ export interface PdfReportData {
   };
 
   materials: PdfMaterial[];
-
   note?: string | null;
-
   schoolName?: string;
 
   coverBgDataUrl?: string | null;
   reportFirstBgDataUrl?: string | null;
   reportLastBgDataUrl?: string | null;
+  maskBgDataUrl?: string | null;
 }
 
 /* ============================================================================
@@ -76,95 +75,101 @@ const SOFT = "#f8fafc";
 
 const styles = StyleSheet.create({
   page: {
-    position: "relative",
     backgroundColor: "#ffffff",
     fontFamily: "Helvetica",
     color: TEXT,
   },
 
-  absoluteBg: {
+  /* ==========================================================================
+   * BACKGROUNDS
+   * ======================================================================== */
+
+  bgAbsolute: {
     position: "absolute",
     top: 0,
     left: 0,
     width: "100%",
     height: "100%",
-    objectFit: "cover",
   },
 
-  pageContent: {
-    flex: 1,
-    position: "relative",
+  maskAbsolute: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    opacity: 0.08,
   },
 
   /* ==========================================================================
    * COVER
    * ======================================================================== */
 
-  coverContent: {
-    position: "relative",
-    width: "100%",
-    height: "100%",
+  coverTopContent: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    paddingLeft: 48,
+    paddingRight: 48,
+    paddingTop: 60,
   },
 
-  coverTitle: {
-    position: "absolute",
-    top: 180,
-    left: 62,
-
-    fontSize: 28,
+  coverReportLabel: {
+    fontSize: 18,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
+    marginBottom: 2,
   },
 
   coverSchoolName: {
-    position: "absolute",
-    top: 235,
-    left: 62,
-
-    fontSize: 56,
+    fontSize: 52,
+    fontFamily: "Helvetica-Bold",
+    color: "#ffffff",
     lineHeight: 1.1,
+    marginBottom: 12,
+  },
+
+  coverTagline: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.85)",
+    lineHeight: 1.5,
+  },
+
+  coverBottomContent: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingBottom: 48,
+    paddingLeft: 48,
+    paddingRight: 48,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  coverGradeText: {
+    fontSize: 16,
+    color: "#ffffff",
     fontFamily: "Helvetica-Bold",
-    color: "#ffffff",
   },
 
-  coverSubtitle: {
-    position: "absolute",
-    top: 385,
-    left: 62,
-
-    width: 320,
-
-    fontSize: 18,
-    lineHeight: 1.4,
-    color: "#ffffff",
+  coverSeparator: {
+    width: 1,
+    height: 18,
+    backgroundColor: "rgba(255,255,255,0.5)",
+    marginHorizontal: 12,
   },
 
-  coverStudentName: {
-    position: "absolute",
-    bottom: 135,
-    left: 62,
-
-    fontSize: 30,
+  coverSemesterText: {
+    fontSize: 16,
+    color: "#ffffff",
     fontFamily: "Helvetica-Bold",
-    color: "#ffffff",
-  },
-
-  coverClassInfo: {
-    position: "absolute",
-    bottom: 95,
-    left: 62,
-
-    fontSize: 18,
-    color: "#ffffff",
-  },
-
-  coverSemester: {
-    position: "absolute",
-    bottom: 70,
-    left: 62,
-
-    fontSize: 18,
-    color: "#ffffff",
   },
 
   /* ==========================================================================
@@ -205,17 +210,22 @@ const styles = StyleSheet.create({
    * ======================================================================== */
 
   reportBody: {
-    paddingTop: 120,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     paddingHorizontal: 42,
-    paddingBottom: 40,
   },
 
-  reportBodyFirst: {
-    paddingTop: 150,
-  },
-
-  reportBodyLast: {
-    paddingBottom: 180,
+  watermark: {
+    position: "absolute",
+    top: "42%",
+    left: 60,
+    fontSize: 44,
+    color: "rgba(30,41,59,0.04)",
+    transform: "rotate(-20deg)",
+    fontFamily: "Helvetica-Bold",
   },
 
   /* ==========================================================================
@@ -226,7 +236,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 24,
+    marginBottom: 22,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    borderRadius: 10,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#dbe4f0",
   },
 
   scLeft: {
@@ -243,17 +258,17 @@ const styles = StyleSheet.create({
   },
 
   scPhoto: {
-    width: "100%",
-    height: "100%",
+    width: 82,
+    height: 82,
     objectFit: "cover",
   },
 
   avatarPlaceholder: {
-    width: "100%",
-    height: "100%",
+    width: 82,
+    height: 82,
+    backgroundColor: "#94a3b8",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#94a3b8",
   },
 
   avatarInitials: {
@@ -283,6 +298,7 @@ const styles = StyleSheet.create({
 
   scRight: {
     alignItems: "flex-end",
+    minWidth: 100,
   },
 
   scAvgValue: {
@@ -310,7 +326,7 @@ const styles = StyleSheet.create({
    * ======================================================================== */
 
   compSection: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "rgba(255,255,255,0.94)",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#dbe4f0",
@@ -322,11 +338,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8fafc",
     paddingVertical: 10,
     paddingHorizontal: 14,
-
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-
     borderLeftWidth: 5,
     borderLeftColor: NAVY,
   },
@@ -361,11 +375,9 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 4,
     backgroundColor: SOFT,
-
     fontSize: 10,
     fontFamily: "Helvetica-Bold",
     color: NAVY,
-
     textAlign: "center",
     paddingTop: 5,
   },
@@ -380,7 +392,7 @@ const styles = StyleSheet.create({
   },
 
   /* ==========================================================================
-   * PROGRESS
+   * PROGRESS BAR
    * ======================================================================== */
 
   progressWrapper: {
@@ -429,7 +441,7 @@ const styles = StyleSheet.create({
   },
 
   /* ==========================================================================
-   * LAST PAGE
+   * LAST PAGE EXTRAS
    * ======================================================================== */
 
   nilaiExplanation: {
@@ -476,10 +488,46 @@ const styles = StyleSheet.create({
     lineHeight: 1.5,
   },
 
+  sigSection: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 24,
+  },
+
+  sigBlock: {
+    width: 180,
+    alignItems: "center",
+  },
+
+  sigMeta: {
+    fontSize: 10,
+    color: "#475569",
+    marginBottom: 4,
+  },
+
+  sigBox: {
+    width: 160,
+    height: 70,
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    borderRadius: 8,
+    backgroundColor: "#ffffff",
+    marginVertical: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+
+  sigName: {
+    fontSize: 10,
+    fontFamily: "Helvetica-Bold",
+    color: NAVY,
+  },
+
   pageNumber: {
     position: "absolute",
-    bottom: 14,
-    right: 24,
+    bottom: 12,
+    right: 22,
     fontSize: 9,
     color: "#64748b",
   },
@@ -489,98 +537,75 @@ const styles = StyleSheet.create({
  * HELPERS
  * ========================================================================== */
 
-function getPhotoSrc(photo?: string | null) {
-  if (!photo) return null;
-
-  if (photo.startsWith("data:image")) {
-    return photo;
-  }
-
-  return `data:image/png;base64,${photo}`;
+function extractProgramName(schoolName: string): string {
+  // "SMP JAGOAN IT" → "JAGOAN IT"
+  // "SMP IDN Boarding School" → "IDN Boarding School"
+  // "JAGOAN IT" → "JAGOAN IT" (no change if no prefix)
+  return schoolName.replace(/^SMP\s+/i, "").trim();
 }
 
-function calculateOverallAverage(materials: PdfMaterial[]) {
-  let total = 0;
-  let count = 0;
-
-  materials.forEach((m) => {
-    m.indicators.forEach((i) => {
-      if (i.nilai !== null && i.nilai !== undefined) {
-        total += Number(i.nilai);
-        count++;
-      }
-    });
-  });
-
-  return count > 0 ? total / count : 0;
-}
-
-function calculateMaterialAverage(material: PdfMaterial[]) {
-  let total = 0;
-  let count = 0;
-
-  material.forEach((m) => {
-    m.indicators.forEach((i) => {
-      if (i.nilai !== null && i.nilai !== undefined) {
-        total += Number(i.nilai);
-        count++;
-      }
-    });
-  });
-
-  return count > 0 ? total / count : 0;
-}
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-function getBadgeLabel(avg: number) {
+function getBadgeLabel(avg: number): string {
   if (avg >= 4.6) return "Sangat Memuaskan";
   if (avg >= 3.6) return "Sangat Baik";
   if (avg >= 2.5) return "Cukup";
   return "Butuh Perbaikan";
 }
 
-function getBadgeColor(avg: number) {
+function getBadgeColor(avg: number): string {
   if (avg >= 4.6) return "#16a34a";
   if (avg >= 3.6) return "#2563eb";
   if (avg >= 2.5) return "#ea580c";
   return "#dc2626";
 }
 
+function calculateOverallAverage(materials: PdfMaterial[]): number {
+  let total = 0;
+  let count = 0;
+  for (const material of materials) {
+    for (const indicator of material.indicators) {
+      if (indicator.nilai !== null && indicator.nilai !== undefined) {
+        total += Number(indicator.nilai);
+        count++;
+      }
+    }
+  }
+  return count > 0 ? total / count : 0;
+}
+
+function calculateMaterialAverage(material: PdfMaterial): number {
+  let total = 0;
+  let count = 0;
+  for (const indicator of material.indicators) {
+    if (indicator.nilai !== null && indicator.nilai !== undefined) {
+      total += Number(indicator.nilai);
+      count++;
+    }
+  }
+  return count > 0 ? total / count : 0;
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
 function chunkMaterials<T>(arr: T[], size: number): T[][] {
   const result: T[][] = [];
-
   for (let i = 0; i < arr.length; i += size) {
     result.push(arr.slice(i, i + size));
   }
-
   return result;
 }
 
 /* ============================================================================
- * PROGRESS BAR
+ * PROGRESS BAR COMPONENT
  * ========================================================================== */
 
-function ProgressBar({
-  nilai,
-  max = 5,
-}: {
-  nilai: number;
-  max: number;
-}) {
+function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
   const totalSegs = 5;
-
-  const filled = Math.min(
-    Math.round((nilai / max) * totalSegs),
-    totalSegs
-  );
+  const filled = Math.min(Math.round((nilai / max) * totalSegs), totalSegs);
+  const percentage = ((nilai / max) * 100).toFixed(0);
 
   return (
     <View style={styles.progressWrapper}>
@@ -591,329 +616,335 @@ function ProgressBar({
               key={i}
               style={[
                 styles.progressSegment,
-                {
-                  backgroundColor:
-                    i < filled ? NAVY : "#dbe4f0",
-                },
+                { backgroundColor: i < filled ? NAVY : "#dbe4f0" },
               ]}
             />
           ))}
         </View>
-
         <View style={styles.progressValue}>
-          <Text style={styles.progressValueText}>
-            {nilai.toFixed(1)}
-          </Text>
+          <Text style={styles.progressValueText}>{nilai.toFixed(1)}</Text>
         </View>
       </View>
-
       <Text style={styles.progressLabel}>
-        {((nilai / max) * 100).toFixed(0)}% dari {max}
+        {percentage}% dari {max}
       </Text>
     </View>
   );
 }
 
 /* ============================================================================
- * MAIN COMPONENT
+ * MAIN DOCUMENT COMPONENT
  * ========================================================================== */
 
-export function StudentReportPdf({
-  data,
-}: {
-  data: PdfReportData;
-}) {
-  const overallAvg = calculateOverallAverage(
-    data.materials
-  );
-
+export function StudentReportPdf({ data }: { data: PdfReportData }) {
+  const overallAvg = calculateOverallAverage(data.materials);
   const badgeColor = getBadgeColor(overallAvg);
   const badgeLabel = getBadgeLabel(overallAvg);
 
   const studentName = data.student.nama || "-";
-  const studentClass =
-    data.student.nama_kelas || "-";
+  const studentEmail = data.student.email || "-";
+  const studentLinkedIn = data.student.linkedin || "-";
+  const studentClass = data.student.nama_kelas || "-";
+  const initials = getInitials(studentName);
 
-  const semesterLabel = `${data.semester.nama_semester} ${data.semester.tahun_ajaran}`;
+  const schoolName = data.schoolName || "SMP JAGOAN IT";
+  // "SMP JAGOAN IT" → label kecil pakai "SMP", baris besar pakai "JAGOAN IT"
+  const programName = extractProgramName(schoolName);
 
-  const materialPages = chunkMaterials(
-    data.materials,
-    2
-  );
+  const semesterNum = data.semester.semester || 1;
+  const semesterLabel =
+    [data.semester.nama_semester, data.semester.tahun_ajaran]
+      .filter(Boolean)
+      .join(" ") || `${semesterNum}nd Semester`;
+
+  const noteText = data.note || "Belum ada catatan.";
+  const teacherName = data.teacher?.nama || "Guru Pembimbing";
+
+  const materialPages = chunkMaterials(data.materials, 2);
+  const totalReportPages = materialPages.length;
+
+  // Grade label from class name e.g. "8A" → "8th Grade"
+  const gradeMatch = studentClass.match(/(\d+)/);
+  const gradeNumber = gradeMatch ? gradeMatch[1] : "7";
+  const gradeLabel = `${gradeNumber}th Grade`;
 
   return (
     <Document>
 
-      {/* ==========================================================================
-       * COVER
-       * ======================================================================== */}
-
+      {/* ====================================================================
+       * COVER PAGE
+       * Image rendered FIRST → behind all content
+       * ================================================================== */}
       <Page size="A4" style={styles.page}>
+
+        {/* LAYER 1 — background image (first = behind) */}
         {data.coverBgDataUrl && (
-          <Image
-            src={data.coverBgDataUrl}
-            style={styles.absoluteBg}
-            fixed
-          />
+          <Image src={data.coverBgDataUrl} style={styles.bgAbsolute} />
         )}
 
-        <View style={styles.pageContent}>
-          <View style={styles.coverContent}>
-            <Text style={styles.coverTitle}>
-              Competence Report of SMP
-            </Text>
-
-            <Text style={styles.coverSchoolName}>
-              JAGOAN IT
-            </Text>
-
-            <Text style={styles.coverSubtitle}>
-              Global Tech Starts with Global
-              Communication
-            </Text>
-
-            <Text style={styles.coverStudentName}>
-              {studentName}
-            </Text>
-
-            <Text style={styles.coverClassInfo}>
-              {studentClass}
-            </Text>
-
-            <Text style={styles.coverSemester}>
-              {semesterLabel}
-            </Text>
-          </View>
+        {/* LAYER 2 — top text block: label + program name + tagline */}
+        <View style={styles.coverTopContent}>
+          <Text style={styles.coverReportLabel}>
+            Competence Report of SMP
+          </Text>
+          {/* Only the program part shown large, e.g. "JAGOAN IT" */}
+          <Text style={styles.coverSchoolName}>{programName}</Text>
+          <Text style={styles.coverTagline}>
+            Global Tech Starts with Global{"\n"}Communication
+          </Text>
         </View>
+
+        {/* LAYER 3 — bottom: grade | semester */}
+        <View style={styles.coverBottomContent}>
+          <Text style={styles.coverGradeText}>{gradeLabel}</Text>
+          <View style={styles.coverSeparator} />
+          <Text style={styles.coverSemesterText}>{semesterLabel}</Text>
+        </View>
+
       </Page>
 
-      {/* ==========================================================================
-       * FOREWORD
-       * ======================================================================== */}
-
+      {/* ====================================================================
+       * FOREWORD PAGE
+       * ================================================================== */}
       <Page size="A4" style={styles.page}>
         <View style={styles.forewordPage}>
-          <Text style={styles.forewordSmallTitle}>
-            Foreword
-          </Text>
-
-          <Text style={styles.forewordTitle}>
-            Prakata
-          </Text>
-
+          <Text style={styles.forewordSmallTitle}>Foreword</Text>
+          <Text style={styles.forewordTitle}>Prakata</Text>
           <Text style={styles.forewordParagraph}>
-            Alhamdulillahirabbil Alamin...
+            Alhamdulillahirabbil Alamin, segala puja dan puji syukur kami
+            panjatkan kepada Allah subhanahu wa ta'ala, tanpa karunia-Nya,
+            mustahil rasanya naskah laporan pencapaian belajar siswa ini
+            terselesaikan tepat waktu.
+          </Text>
+          <Text style={styles.forewordParagraph}>
+            Kami benar-benar merasa tertantang untuk mewujudkan laporan ini
+            sebagai bagian dari kewajiban kami sebagai guru untuk melaporkan
+            pencapaian yang telah siswa dapatkan selama satu semester.
+          </Text>
+          <Text style={styles.forewordParagraph}>
+            Berdasarkan pembelajaran selama satu semester siswa mengalami
+            berbagai perkembangan yang wajib kami laporkan kepada wali siswa.
+          </Text>
+          <Text style={styles.forewordParagraph}>
+            Kami berharap laporan ini dapat membawa manfaat kepada pembaca dan
+            menjadi motivasi untuk terus berkembang dalam menghadapi perubahan
+            teknologi kedepannya.
           </Text>
         </View>
       </Page>
 
-      {/* ==========================================================================
-       * REPORT
-       * ======================================================================== */}
+      {/* ====================================================================
+       * REPORT PAGES
+       * Image rendered FIRST per page → always behind content
+       * ================================================================== */}
+      {materialPages.map((pageMaterials, pageIndex) => {
+        const isFirstReportPage = pageIndex === 0;
+        const isLastReportPage = pageIndex === totalReportPages - 1;
 
-      {materialPages.map(
-        (pageMaterials, pageIndex) => {
-          const bgUrl =
-            pageIndex === materialPages.length - 1
-              ? data.reportLastBgDataUrl
-              : data.reportFirstBgDataUrl;
+        // Select background for this page
+        let bgUrl: string | null = null;
+        if (isFirstReportPage) {
+          bgUrl = data.reportFirstBgDataUrl || null;
+        } else if (isLastReportPage) {
+          bgUrl = data.reportLastBgDataUrl || null;
+        } else {
+          bgUrl = data.reportFirstBgDataUrl || null;
+        }
 
-          return (
-            <Page
-              key={pageIndex}
-              size="A4"
-              style={styles.page}
-              wrap={false}
+        // Sequential indicator numbering across pages
+        let indicatorCounter = 1;
+        for (let i = 0; i < pageIndex; i++) {
+          for (const mat of materialPages[i]) {
+            indicatorCounter += mat.indicators.length;
+          }
+        }
+
+        // Dynamic padding based on template
+        const topPadding =
+          isFirstReportPage && data.reportFirstBgDataUrl ? 148 : 108;
+        const bottomPadding =
+          isLastReportPage && data.reportLastBgDataUrl ? 190 : 32;
+
+        return (
+          <Page key={pageIndex} size="A4" style={styles.page} wrap={false}>
+
+            {/* LAYER 1 — background image (first child = behind everything) */}
+            {bgUrl && (
+              <Image src={bgUrl} style={styles.bgAbsolute} />
+            )}
+
+            {/* LAYER 2 — optional mask/pattern overlay */}
+            {data.maskBgDataUrl && (
+              <Image src={data.maskBgDataUrl} style={styles.maskAbsolute} />
+            )}
+
+            {/* LAYER 3 — faint watermark text */}
+            <Text style={styles.watermark}>SMP JAGOAN IT</Text>
+
+            {/* LAYER 4 — all report content (position absolute, on top) */}
+            <View
+              style={[
+                styles.reportBody,
+                { paddingTop: topPadding, paddingBottom: bottomPadding },
+              ]}
             >
-              {bgUrl && (
-                <Image
-                  src={bgUrl}
-                  style={styles.absoluteBg}
-                  fixed
-                />
+
+              {/* ============================================================
+               * STUDENT CARD — first report page only
+               * photoDataUrl comes from API (base64 or https URL)
+               * ========================================================== */}
+              {isFirstReportPage && (
+                <View style={styles.studentCard}>
+                  <View style={styles.scLeft}>
+
+                    {/* Photo — from API data */}
+                    <View style={styles.scPhotoWrap}>
+                      {data.student.photoDataUrl ? (
+                        <Image
+                          src={data.student.photoDataUrl}
+                          style={styles.scPhoto}
+                        />
+                      ) : (
+                        <View style={styles.avatarPlaceholder}>
+                          <Text style={styles.avatarInitials}>
+                            {initials}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Name & contact */}
+                    <View style={styles.scInfo}>
+                      <Text style={styles.scName}>{studentName}</Text>
+                      <Text style={styles.detailText}>
+                        Email: {studentEmail}
+                      </Text>
+                      {studentLinkedIn !== "-" && (
+                        <Text style={styles.detailText}>
+                          LinkedIn: {studentLinkedIn}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Overall average */}
+                  <View style={styles.scRight}>
+                    <Text style={styles.scAvgValue}>
+                      {overallAvg.toFixed(2)}
+                    </Text>
+                    <View
+                      style={[
+                        styles.scAvgBadge,
+                        { backgroundColor: badgeColor },
+                      ]}
+                    >
+                      <Text style={styles.scAvgBadgeText}>
+                        {badgeLabel}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
               )}
 
-              <View style={styles.pageContent}>
-                <View
-                  style={[
-                    styles.reportBody,
-                    ...(pageIndex === 0
-                      ? [styles.reportBodyFirst]
-                      : []),
-                    ...(pageIndex ===
-                    materialPages.length - 1
-                      ? [styles.reportBodyLast]
-                      : []),
-                  ]}
-                >
+              {/* ============================================================
+               * COMPETENCY SECTIONS
+               * ========================================================== */}
+              {pageMaterials.map((material) => {
+                const matAvg = calculateMaterialAverage(material);
 
-                  {pageIndex === 0 && (
-                    <View style={styles.studentCard}>
-                      <View style={styles.scLeft}>
-                        <View style={styles.scPhotoWrap}>
-                          {getPhotoSrc(
-                            data.student.photoDataUrl
-                          ) ? (
-                            <Image
-                              src={
-                                getPhotoSrc(
-                                  data.student
-                                    .photoDataUrl
-                                )!
-                              }
-                              style={styles.scPhoto}
-                            />
-                          ) : (
-                            <View
-                              style={
-                                styles.avatarPlaceholder
-                              }
-                            >
-                              <Text
-                                style={
-                                  styles.avatarInitials
-                                }
-                              >
-                                {getInitials(
-                                  studentName
-                                )}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-
-                        <View style={styles.scInfo}>
-                          <Text style={styles.scName}>
-                            {studentName}
-                          </Text>
-
-                          <Text style={styles.detailText}>
-                            {data.student.email}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.scRight}>
-                        <Text style={styles.scAvgValue}>
-                          {overallAvg.toFixed(2)}
-                        </Text>
-
-                        <View
-                          style={[
-                            styles.scAvgBadge,
-                            {
-                              backgroundColor:
-                                badgeColor,
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={
-                              styles.scAvgBadgeText
-                            }
-                          >
-                            {badgeLabel}
-                          </Text>
-                        </View>
-                      </View>
+                return (
+                  <View
+                    key={material.id}
+                    style={styles.compSection}
+                    wrap={false}
+                  >
+                    <View style={styles.compHeader}>
+                      <Text style={styles.compTitleText}>
+                        {material.judul}
+                      </Text>
+                      <Text style={styles.compScoreText}>
+                        Rata-rata: {matAvg.toFixed(1)}
+                      </Text>
                     </View>
-                  )}
 
-                  {pageMaterials.map((material) => {
-                    const avg =
-                      calculateMaterialAverage([
-                        material,
-                      ]);
+                    <View style={styles.compIndicators}>
+                      {material.indicators.map((indicator) => {
+                        const nilai = indicator.nilai ?? 0;
+                        const maxNilai = indicator.nilai_max || 5;
+                        const indNum = indicatorCounter++;
 
-                    return (
-                      <View
-                        key={material.id}
-                        style={styles.compSection}
-                      >
-                        <View
-                          style={styles.compHeader}
-                        >
-                          <Text
-                            style={
-                              styles.compTitleText
-                            }
-                          >
-                            {material.judul}
-                          </Text>
+                        return (
+                          <View key={indicator.id} style={styles.indRow}>
+                            <Text style={styles.indNum}>{indNum}</Text>
+                            <Text style={styles.indText}>
+                              {indicator.deskripsi}
+                            </Text>
+                            <ProgressBar nilai={nilai} max={maxNilai} />
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </View>
+                );
+              })}
 
-                          <Text
-                            style={
-                              styles.compScoreText
-                            }
-                          >
-                            {avg.toFixed(1)}
-                          </Text>
-                        </View>
+              {/* ============================================================
+               * LAST PAGE: grade scale + comment + signatures
+               * ========================================================== */}
+              {isLastReportPage && (
+                <>
+                  <View style={styles.nilaiExplanation}>
+                    <Text style={styles.nilaiExplanationTitle}>
+                      Keterangan Nilai:
+                    </Text>
+                    <Text style={styles.nilaiExplanationText}>
+                      4.6 - 5.0 : Sangat Memuaskan | 3.6 - 4.5 : Sangat Baik |
+                      2.5 - 3.5 : Cukup | Kurang dari 2.5 : Butuh Perbaikan
+                    </Text>
+                  </View>
 
-                        <View
-                          style={
-                            styles.compIndicators
-                          }
-                        >
-                          {material.indicators.map(
-                            (
-                              indicator,
-                              index
-                            ) => (
-                              <View
-                                key={indicator.id}
-                                style={
-                                  styles.indRow
-                                }
-                              >
-                                <Text
-                                  style={
-                                    styles.indNum
-                                  }
-                                >
-                                  {index + 1}
-                                </Text>
+                  <View style={styles.commentBox}>
+                    <Text style={styles.commentTitle}>
+                      Komentar Guru Pembimbing
+                    </Text>
+                    <Text style={styles.commentText}>{noteText}</Text>
+                  </View>
 
-                                <Text
-                                  style={
-                                    styles.indText
-                                  }
-                                >
-                                  {
-                                    indicator.deskripsi
-                                  }
-                                </Text>
-
-                                <ProgressBar
-                                  nilai={
-                                    indicator.nilai ||
-                                    0
-                                  }
-                                  max={
-                                    indicator.nilai_max
-                                  }
-                                />
-                              </View>
-                            )
+                  <View style={styles.sigSection}>
+                    {["Multimedia", "Robotik"].map((subject) => (
+                      <View key={subject} style={styles.sigBlock}>
+                        <Text style={styles.sigMeta}>{subject}</Text>
+                        <View style={styles.sigBox}>
+                          {data.teacher?.ttdDataUrl && (
+                            <Image
+                              src={data.teacher.ttdDataUrl}
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "contain",
+                              }}
+                            />
                           )}
                         </View>
+                        <Text style={styles.sigName}>
+                          {teacherName}
+                        </Text>
                       </View>
-                    );
-                  })}
-                </View>
+                    ))}
+                  </View>
+                </>
+              )}
+            </View>
 
-                <Text
-                  style={styles.pageNumber}
-                  render={({ pageNumber }) =>
-                    `${pageNumber}`
-                  }
-                  fixed
-                />
-              </View>
-            </Page>
-          );
-        }
-      )}
+            {/* Page number */}
+            <Text
+              style={styles.pageNumber}
+              render={({ pageNumber }) => `${pageNumber}`}
+              fixed
+            />
+          </Page>
+        );
+      })}
     </Document>
   );
 }
