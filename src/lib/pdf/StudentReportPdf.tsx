@@ -190,10 +190,25 @@ const styles = StyleSheet.create({
    * ======================================================================== */
 
   reportBody: {
-    paddingTop: 95,
+    position: "relative",
+    zIndex: 2,
+    paddingTop: 108,
     paddingHorizontal: 42,
     paddingBottom: 32,
     height: "100%",
+  },
+
+  reportBodyTemplateFirst: {
+    paddingTop: 148,
+    paddingHorizontal: 42,
+    paddingBottom: 32,
+  },
+
+  reportBodyTemplateLast: {
+    justifyContent: "flex-end",
+    paddingTop: 108,
+    paddingHorizontal: 42,
+    paddingBottom: 86,
   },
 
   watermark: {
@@ -204,6 +219,10 @@ const styles = StyleSheet.create({
     color: "rgba(30,41,59,0.04)",
     transform: "rotate(-20deg)",
     fontFamily: "Helvetica-Bold",
+  },
+
+  hiddenOnTemplate: {
+    opacity: 0,
   },
 
   /* ==========================================================================
