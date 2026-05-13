@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   /* Subtitle/tagline */
   coverSubtitle: {
     position: "absolute",
-    top: 330,
+    top: 325,
     left: 55,
     fontSize: 20,
     lineHeight: 1,
@@ -255,6 +255,7 @@ const styles = StyleSheet.create({
   },
 
   scName: {
+    paddingTop:10,
     fontSize: 18,
     fontFamily: "Helvetica-Bold",
     color: NAVY,
@@ -263,7 +264,7 @@ const styles = StyleSheet.create({
 
   detailText: {
     paddingTop:10,
-    paddingLeft:15,
+    paddingLeft:20,
     fontSize: 10.5,
     color: MUTED,
     marginBottom: 5,
@@ -874,51 +875,6 @@ export function StudentReportPdf({
                       </View>
                     </View>
                   )}
-                  {/* Only show on the last page */}
-                  {pageIndex === materialPages.length - 1 && (
-                    <>
-                      {/* Comment section from API */}
-                      {data.comment && (
-                        <View style={styles.commentBox}>
-                          <Text style={styles.commentTitle}>
-                            Komentar
-                          </Text>
-                          <Text style={styles.commentText}>
-                            {data.comment}
-                          </Text>
-                        </View>
-                      )}
-
-                      {/* Teacher signature section */}
-                      <View style={styles.signatureSection}>
-                        <View style={styles.signatureLeft}>
-                          <Text style={styles.signatureDate}>
-                            Tanggal: _________________
-                          </Text>
-                        </View>
-                        <View style={styles.signatureRight}>
-                          {data.teacher?.ttdDataUrl ? (
-                            <Image
-                              src={data.teacher.ttdDataUrl}
-                              style={styles.signaturePlaceholder}
-                            />
-                          ) : (
-                            <View style={styles.signaturePlaceholder}>
-                              <Text style={{ fontSize: 8, color: MUTED }}>
-                                TTD Guru
-                              </Text>
-                            </View>
-                          )}
-                          <Text style={styles.signatureName}>
-                            {data.teacher?.nama || "Nama Guru IT"}
-                          </Text>
-                          <Text style={styles.signatureRole}>
-                            Guru IT 7 SMP IDN
-                          </Text>
-                        </View>
-                      </View>
-                    </>
-                  )}
 
                   {pageMaterials.map((material) => {
                     const avg =
@@ -1000,7 +956,53 @@ export function StudentReportPdf({
                         </View>
                       </View>
                     );
-                  })}
+                  }
+                                                       {/* Only show on the last page */}
+                  {pageIndex === materialPages.length - 1 && (
+                    <>
+                      {/* Comment section from API */}
+                      {data.comment && (
+                        <View style={styles.commentBox}>
+                          <Text style={styles.commentTitle}>
+                            Komentar
+                          </Text>
+                          <Text style={styles.commentText}>
+                            {data.comment}
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Teacher signature section */}
+                      <View style={styles.signatureSection}>
+                        <View style={styles.signatureLeft}>
+                          <Text style={styles.signatureDate}>
+                            Tanggal: _________________
+                          </Text>
+                        </View>
+                        <View style={styles.signatureRight}>
+                          {data.teacher?.ttdDataUrl ? (
+                            <Image
+                              src={data.teacher.ttdDataUrl}
+                              style={styles.signaturePlaceholder}
+                            />
+                          ) : (
+                            <View style={styles.signaturePlaceholder}>
+                              <Text style={{ fontSize: 8, color: MUTED }}>
+                                TTD Guru
+                              </Text>
+                            </View>
+                          )}
+                          <Text style={styles.signatureName}>
+                            {data.teacher?.nama || "Nama Guru IT"}
+                          </Text>
+                          <Text style={styles.signatureRole}>
+                            Guru IT 7 SMP IDN
+                          </Text>
+                        </View>
+                      </View>
+                    </>
+                  )}
+                  )}
                 </View>
 
                 <Text
