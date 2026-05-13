@@ -178,8 +178,7 @@ function ReportsPage() {
 
       // ── 4. Resolve foto siswa ──────────────────────────────────────────────
       // Gunakan pola yang sama dengan halaman students.tsx → studentPhotoUrl()
-      const photoRawUrl = resolveMediaUrl(studentDetail?.photo);
-      const photoDataUrl = await urlToDataUrl(photoRawUrl);
+      const photoDataUrl = studentPhotoUrl(studentDetail?.photo) ?? null;
 
       // ── 5. Resolve data guru (user yang sedang login) ──────────────────────
       const teacher = currentUser.data;
