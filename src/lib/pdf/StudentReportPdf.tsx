@@ -79,6 +79,7 @@ const SOFT = "#f8fafc";
 
 const styles = StyleSheet.create({
   page: {
+    position: "relative",
     backgroundColor: "#ffffff",
     fontFamily: "Helvetica",
     color: TEXT,
@@ -95,6 +96,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     objectFit: "cover",
+    zIndex: 0,
   },
 
   contentBg: {
@@ -104,6 +106,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     objectFit: "cover",
+    zIndex: 0,
   },
 
   /* ==========================================================================
@@ -111,42 +114,50 @@ const styles = StyleSheet.create({
    * ======================================================================== */
 
   coverContent: {
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 2,
     flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 60,
-    paddingVertical: 80,
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+    paddingTop: 185,
+    paddingLeft: 70,
+    paddingRight: 70,
   },
 
   coverTitle: {
+    fontSize: 24,
+    fontFamily: "Helvetica-Bold",
+    color: "#ffffff",
+    marginBottom: 6,
+  },
+
+  coverSchoolName: {
     fontSize: 30,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
-    textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 8,
   },
 
   coverSubtitle: {
-    fontSize: 17,
-    color: "rgba(255,255,255,0.92)",
-    marginBottom: 30,
-    textAlign: "center",
+    fontSize: 14,
+    color: "#ffffff",
+    marginBottom: 48,
   },
 
   coverStudentName: {
-    fontSize: 34,
+    fontSize: 32,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
-    marginTop: 60,
-    marginBottom: 10,
-    textAlign: "center",
+    marginBottom: 8,
   },
 
   coverClassInfo: {
     fontSize: 16,
     color: "#ffffff",
-    textAlign: "center",
   },
 
   /* ==========================================================================
@@ -187,10 +198,24 @@ const styles = StyleSheet.create({
    * ======================================================================== */
 
   reportBody: {
-    paddingTop: 95,
+    position: "relative",
+    zIndex: 2,
+    paddingTop: 108,
     paddingHorizontal: 42,
     paddingBottom: 32,
-    height: "100%",
+    flexGrow: 1,
+  },
+
+  reportBodyTemplateFirst: {
+    paddingTop: 148,
+    paddingHorizontal: 42,
+    paddingBottom: 32,
+  },
+
+  reportBodyTemplateLast: {
+    paddingTop: 108,
+    paddingHorizontal: 42,
+    paddingBottom: 190,
   },
 
   watermark: {
@@ -201,6 +226,10 @@ const styles = StyleSheet.create({
     color: "rgba(30,41,59,0.04)",
     transform: "rotate(-20deg)",
     fontFamily: "Helvetica-Bold",
+  },
+
+  hiddenOnTemplate: {
+    opacity: 0,
   },
 
   /* ==========================================================================
@@ -700,12 +729,15 @@ export function StudentReportPdf({
 
   const initials = getInitials(studentName);
 
-  const schoolName =
-    data.schoolName ||
-    "SMP JAGOAN IT";
+  const schoolName = data.schoolName || "SMP JAGOAN IT";
 
   const semesterNum =
     data.semester.semester || 1;
+
+  const semesterLabel = [
+    data.semester.nama_semester,
+    data.semester.tahun_ajaran,
+  ].filter(Boolean).join(" ") || getSemesterLabel(semesterNum);
 
   const currentDate = formatDate();
 
@@ -732,6 +764,7 @@ export function StudentReportPdf({
       <Page size="A4" style={styles.page}>
         {data.coverBgDataUrl && (
           <Image
+            fixed
             src={data.coverBgDataUrl}
             style={styles.coverBg}
           />
@@ -739,11 +772,13 @@ export function StudentReportPdf({
 
         <View style={styles.coverContent}>
           <Text style={styles.coverTitle}>
-            Competence Report of SMP
+            Competence Report of
           </Text>
 
+          <Text style={styles.coverSchoolName}>{schoolName}</Text>
+
           <Text style={styles.coverSubtitle}>
-            {schoolName}
+            Global Tech Start with Global Communication
           </Text>
 
           <Text style={styles.coverStudentName}>
@@ -751,8 +786,11 @@ export function StudentReportPdf({
           </Text>
 
           <Text style={styles.coverClassInfo}>
-            {getGradeLabel(studentClass)} |{" "}
-            {getSemesterLabel(semesterNum)}
+            {studentClass}
+          </Text>
+
+          <Text style={styles.coverClassInfo}>
+            {semesterLabel}
           </Text>
         </View>
       </Page>
@@ -850,9 +888,11 @@ export function StudentReportPdf({
               key={pageIndex}
               size="A4"
               style={styles.page}
+              wrap={false}
             >
               {bgUrl && (
                 <Image
+                  fixed
                   src={bgUrl}
                   style={styles.contentBg}
                 />
@@ -876,7 +916,17 @@ export function StudentReportPdf({
                 SMP JAGOAN IT
               </Text>
 
-              <View style={styles.reportBody}>
+              <View
+                style={[
+                  styles.reportBody,
+                  ...(isFirstReportPage && data.reportFirstBgDataUrl
+                    ? [styles.reportBodyTemplateFirst]
+                    : []),
+                  ...(isLastReportPage && data.reportLastBgDataUrl
+                    ? [styles.reportBodyTemplateLast]
+                    : []),
+                ]}
+              >
 
                 {/* ==========================================================
                  * STUDENT CARD
