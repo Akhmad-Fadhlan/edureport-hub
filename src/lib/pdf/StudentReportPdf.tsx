@@ -112,8 +112,8 @@ const styles = StyleSheet.create({
   coverTitle: {
     position: "absolute",
     top: 200,
-    left: 55,
-    fontSize: 22,
+    left: 58,
+    fontSize: 30,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
     letterSpacing: 1.5,
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   /* School name - "JAGOAN IT" - large, bold, all caps */
   coverSchoolName: {
     position: "absolute",
-    top: 225,
+    top: 230,
     left: 55,
     fontSize: 72,
     lineHeight: 1,
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 348,
     left: 55,
-    fontSize: 14,
+    fontSize: 20,
     lineHeight: 1.4,
     color: "#ffffff",
     letterSpacing: 0.5,
@@ -145,8 +145,8 @@ const styles = StyleSheet.create({
   /* Bottom info (grade + semester) */
   coverBottomInfo: {
     position: "absolute",
-    bottom: 82,
-    left: 120,
+    bottom: 50,
+    left: 160,
     fontSize: 16,
     color: "#ffffff",
     fontFamily: "Helvetica",
@@ -269,6 +269,8 @@ const styles = StyleSheet.create({
 
   scRight: {
     alignItems: "flex-end",
+    paddingRight: 20,
+    paddingBottom: 20,
   },
 
   /* Label "Nilai Rata-rata" above the score */
@@ -679,7 +681,7 @@ export function StudentReportPdf({
   const studentClass =
     data.student.nama_kelas || "-";
 
-  const semesterLabel = `${data.semester.nama_semester} ${data.semester.tahun_ajaran}`;
+  const semesterLabel = `${data.semester.nama_semester}`;
 
   const materialPages = chunkMaterials(
     data.materials,
@@ -846,9 +848,6 @@ export function StudentReportPdf({
 
                       <View style={styles.scRight}>
                         {/* "Nilai Rata-rata" label above the score */}
-                        <Text style={styles.scAvgLabel}>
-                          Nilai Rata-rata
-                        </Text>
                         <Text style={styles.scAvgValue}>
                           {overallAvg.toFixed(2)}
                         </Text>
