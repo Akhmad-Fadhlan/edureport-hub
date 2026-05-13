@@ -78,133 +78,60 @@ export async function apiGet<T>(path: string, params?: any): Promise<T> {
   const res = await api.get<ApiResponse<T>>(path, { params });
   return res.data.data;
 }
-
 export async function apiPost<T>(path: string, body?: any, config?: any): Promise<T> {
   const res = await api.post<ApiResponse<T>>(path, body, config);
   return res.data.data;
 }
-
 export async function apiPut<T>(path: string, body?: any): Promise<T> {
   const res = await api.put<ApiResponse<T>>(path, body);
   return res.data.data;
 }
-
 export async function apiDelete<T>(path: string): Promise<T> {
   const res = await api.delete<ApiResponse<T>>(path);
   return res.data.data;
 }
 
-// ============================================================
-// STUDENT PHOTO FUNCTIONS - CORS FIX
-// ============================================================
-
-/**
- * Mendapatkan foto siswa dalam bentuk base64
- * @param photo - Nama file foto atau URL
- * @returns Base64 string atau null
- */
-export async function getStudentPhotoBase64(photo: string | null | undefined): Promise<string | null> {
-  if (!photo) return null;
-  
-  // Jika sudah dalam format base64, return langsung
-  if (photo.startsWith('data:')) return photo;
-  
-  // Jika sudah URL eksternal, return langsung
-  if (photo.startsWith('http')) return photo;
-  
+// Fungsi baru untuk mengambil photo dari endpoint custom
+export async function getStudentPhotoBase64(filename: string): Promise<string | null> {
   try {
-    const response = await apiPost<{ data: string }>('/get-student-photo', { filename: photo });
+    const response = await apiPost<{ data: string }>('/get-student-photo', { filename });
     return response.data;
   } catch (error) {
-    console.error('Failed to load photo:', photo, error);
+    console.error('Error fetching student photo:', error);
     return null;
   }
 }
 
-/**
- * Mendapatkan multiple foto siswa sekaligus (batch)
- * @param filenames - Array nama file foto
- * @returns Object dengan key filename dan value base64 string
- */
-export async function getMultipleStudentPhotos(filenames: string[]): Promise<Record<string, string | null>> {
-  if (!filenames.length) return {};
-  
+// Fungsi untuk mengambil multiple photos sekaligus
+export async function getStudentPhotosBase64(filenames: string[]): Promise<Record<string, string>> {
   try {
     const response = await apiPost<Record<string, string>>('/get-student-photos', { filenames });
-    return response;
+    return response.data;
   } catch (error) {
-    console.error('Failed to load photos:', error);
+    console.error('Error fetching student photos:', error);
     return {};
   }
 }
 
-/**
- * Cache untuk foto siswa (menyimpan base64 agar tidak perlu request ulang)
- */
-export class StudentPhotoCache {
-  private static cache = new Map<string, string>();
-  private static pendingRequests = new Map<string, Promise<string | null>>();
+// Fungsi untuk mendapatkan URL photo (menggunakan UPLOADS_BASE)
+export function studentPhotoUrl(photo?: string | null): string | null {
+  if (!photo) return null;
+  if (photo.startsWith("http")) return photo;
+  // Menggunakan UPLOADS_BASE untuk akses langsung ke file
+  return `${UPLOADS_BASE}/students/${photo}`;
+}
+
+// Fungsi helper untuk menampilkan photo (prioritaskan base64 jika diperlukan)
+export async function getStudentPhotoDisplay(photo?: string | null): Promise<string | null> {
+  if (!photo) return null;
   
-  /**
-   * Mendapatkan foto dari cache atau melakukan request jika belum ada
-   * @param photo - Nama file foto
-   * @returns Base64 string atau null
-   */
-  static async get(photo: string | null | undefined): Promise<string | null> {
-    if (!photo) return null;
-    
-    // Return dari cache jika ada
-    if (this.cache.has(photo)) {
-      return this.cache.get(photo)!;
-    }
-    
-    // Cegah duplicate request untuk foto yang sama
-    if (this.pendingRequests.has(photo)) {
-      return this.pendingRequests.get(photo)!;
-    }
-    
-    // Buat request baru
-    const promise = getStudentPhotoBase64(photo).then(result => {
-      if (result) {
-        this.cache.set(photo, result);
-      }
-      this.pendingRequests.delete(photo);
-      return result;
-    });
-    
-    this.pendingRequests.set(photo, promise);
-    return promise;
-  }
+  // Jika sudah URL lengkap, return langsung
+  if (photo.startsWith("http")) return photo;
   
-  /**
-   * Hapus cache untuk satu foto
-   * @param photo - Nama file foto
-   */
-  static remove(photo: string): void {
-    this.cache.delete(photo);
-  }
+  // Coba ambil sebagai base64 dari endpoint khusus
+  const base64Photo = await getStudentPhotoBase64(photo);
+  if (base64Photo) return base64Photo;
   
-  /**
-   * Clear semua cache
-   */
-  static clear(): void {
-    this.cache.clear();
-    this.pendingRequests.clear();
-  }
-  
-  /**
-   * Preload multiple photos sekaligus
-   * @param photos - Array nama file foto
-   */
-  static async preload(photos: (string | null | undefined)[]): Promise<void> {
-    const validPhotos = photos.filter((p): p is string => !!p);
-    if (!validPhotos.length) return;
-    
-    const results = await getMultipleStudentPhotos(validPhotos);
-    for (const [filename, base64] of Object.entries(results)) {
-      if (base64) {
-        this.cache.set(filename, base64);
-      }
-    }
-  }
+  // Fallback ke URL biasa
+  return `${UPLOADS_BASE}/students/${photo}`;
 }
