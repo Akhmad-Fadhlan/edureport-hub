@@ -729,12 +729,15 @@ export function StudentReportPdf({
 
   const initials = getInitials(studentName);
 
-  const schoolName =
-    data.schoolName ||
-    "SMP JAGOAN IT";
+  const schoolName = data.schoolName || "SMP JAGOAN IT";
 
   const semesterNum =
     data.semester.semester || 1;
+
+  const semesterLabel = [
+    data.semester.nama_semester,
+    data.semester.tahun_ajaran,
+  ].filter(Boolean).join(" ") || getSemesterLabel(semesterNum);
 
   const currentDate = formatDate();
 
@@ -761,6 +764,7 @@ export function StudentReportPdf({
       <Page size="A4" style={styles.page}>
         {data.coverBgDataUrl && (
           <Image
+            fixed
             src={data.coverBgDataUrl}
             style={styles.coverBg}
           />
@@ -768,11 +772,13 @@ export function StudentReportPdf({
 
         <View style={styles.coverContent}>
           <Text style={styles.coverTitle}>
-            Competence Report of SMP
+            Competence Report of
           </Text>
 
+          <Text style={styles.coverSchoolName}>{schoolName}</Text>
+
           <Text style={styles.coverSubtitle}>
-            {schoolName}
+            Global Tech Start with Global Communication
           </Text>
 
           <Text style={styles.coverStudentName}>
@@ -780,8 +786,11 @@ export function StudentReportPdf({
           </Text>
 
           <Text style={styles.coverClassInfo}>
-            {getGradeLabel(studentClass)} |{" "}
-            {getSemesterLabel(semesterNum)}
+            {studentClass}
+          </Text>
+
+          <Text style={styles.coverClassInfo}>
+            {semesterLabel}
           </Text>
         </View>
       </Page>
