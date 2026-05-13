@@ -91,8 +91,47 @@ export async function apiDelete<T>(path: string): Promise<T> {
   return res.data.data;
 }
 
-export function studentPhotoUrl(photo?: string | null): string | null {
+// Hapus fungsi studentPhotoUrl yang lama, ganti dengan ini:
+
+export async function getStudentPhotoBase64(photo: string | null | undefined): Promise<string | null> {
   if (!photo) return null;
-  if (photo.startsWith("http")) return photo;
-  return `${API_BASE_URL}/photo-base64/${photo}`;
+  if (photo.startsWith('data:')) return photo; // Already base64
+  if (photo.startsWith('http')) return photo; // External URL
+  
+  try {
+    const response = await apiPost<{ data: string }>('/get-student-photo', { filename: photo });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to load photo:', photo, error);
+    return null;
+  }
+}
+
+// Optional: Batch load multiple photos
+export async function getMultipleStudentPhotos(filenames: string[]): Promise<Record<string, string | null>> {
+  try {
+    const response = await apiPost<Record<string, string>>('/get-student-photos', { filenames });
+    return response;
+  } catch (error) {
+    console.error('Failed to load photos:', error);
+    return {};
+  }
+}
+
+// Mock untuk komponen yang butuh sync (gunakan state management)
+export class StudentPhotoCache {
+  private static cache = new Map<string, string>();
+  
+  static async get(photo: string | null | undefined): Promise<string | null> {
+    if (!photo) return null;
+    if (this.cache.has(photo)) return this.cache.get(photo)!;
+    
+    const base64 = await getStudentPhotoBase64(photo);
+    if (base64) this.cache.set(photo, base64);
+    return base64;
+  }
+  
+  static clear(): void {
+    this.cache.clear();
+  }
 }
