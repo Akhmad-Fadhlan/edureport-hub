@@ -111,18 +111,12 @@ const styles = StyleSheet.create({
    * ======================================================================== */
 
   coverContent: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-
-    display: "flex",
+    flex: 1,
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
-
     paddingHorizontal: 60,
+    paddingVertical: 80,
   },
 
   coverTitle: {
