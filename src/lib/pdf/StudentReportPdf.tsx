@@ -55,7 +55,6 @@ export interface PdfReportData {
 
   schoolName?: string;
 
-  /* uploaded backgrounds */
   coverBgDataUrl?: string | null;
   reportFirstBgDataUrl?: string | null;
   reportLastBgDataUrl?: string | null;
@@ -67,7 +66,6 @@ export interface PdfReportData {
  * ========================================================================== */
 
 const NAVY = "#1e3a8a";
-const BLUE = "#2563eb";
 const ORANGE = "#f59e0b";
 const TEXT = "#1e293b";
 const MUTED = "#64748b";
@@ -84,75 +82,12 @@ const styles = StyleSheet.create({
     color: TEXT,
   },
 
-  /* ==========================================================================
-   * BACKGROUNDS
-   * ======================================================================== */
-
-  coverBg: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-  },
-
   contentBg: {
     position: "absolute",
     top: 0,
     left: 0,
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-  },
-
-  /* ==========================================================================
-   * COVER
-   * ======================================================================== */
-
-  coverContent: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-
-    paddingHorizontal: 60,
-  },
-
-  coverTitle: {
-    fontSize: 30,
-    fontFamily: "Helvetica-Bold",
-    color: "#ffffff",
-    textAlign: "center",
-    marginBottom: 10,
-  },
-
-  coverSubtitle: {
-    fontSize: 17,
-    color: "rgba(255,255,255,0.92)",
-    marginBottom: 30,
-    textAlign: "center",
-  },
-
-  coverStudentName: {
-    fontSize: 34,
-    fontFamily: "Helvetica-Bold",
-    color: "#ffffff",
-    marginTop: 60,
-    marginBottom: 10,
-    textAlign: "center",
-  },
-
-  coverClassInfo: {
-    fontSize: 16,
-    color: "#ffffff",
-    textAlign: "center",
+    width: 595,
+    height: 842,
   },
 
   /* ==========================================================================
@@ -201,11 +136,11 @@ const styles = StyleSheet.create({
 
   watermark: {
     position: "absolute",
-    top: "45%",
-    left: 70,
-    fontSize: 44,
-    color: "rgba(30,41,59,0.04)",
-    transform: "rotate(-20deg)",
+    top: "46%",
+    left: 110,
+    fontSize: 34,
+    color: "rgba(30,41,59,0.03)",
+    transform: "rotate(-18deg)",
     fontFamily: "Helvetica-Bold",
   },
 
@@ -216,8 +151,11 @@ const styles = StyleSheet.create({
   studentCard: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 22,
+    alignItems: "center",
+    marginBottom: 24,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
   },
 
   scLeft: {
@@ -332,13 +270,6 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     color: NAVY,
     flex: 1,
-    marginRight: 10,
-  },
-
-  compScoreText: {
-    fontSize: 11,
-    fontFamily: "Helvetica-Bold",
-    color: "#111827",
   },
 
   compIndicators: {
@@ -425,7 +356,7 @@ const styles = StyleSheet.create({
   },
 
   /* ==========================================================================
-   * NILAI INFO
+   * KETERANGAN
    * ======================================================================== */
 
   nilaiExplanation: {
@@ -561,20 +492,6 @@ function calculateOverallAverage(materials: PdfMaterial[]): number {
   return count > 0 ? total / count : 0;
 }
 
-function calculateMaterialAverage(material: PdfMaterial): number {
-  let total = 0;
-  let count = 0;
-
-  for (const indicator of material.indicators) {
-    if (indicator.nilai !== null && indicator.nilai !== undefined) {
-      total += Number(indicator.nilai);
-      count++;
-    }
-  }
-
-  return count > 0 ? total / count : 0;
-}
-
 function getInitials(name: string): string {
   const parts = name.trim().split(" ");
 
@@ -585,37 +502,14 @@ function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-function formatDate(): string {
-  const date = new Date();
-
-  const months = [
-    "Januari",
-    "Februari",
-    "Maret",
-    "April",
-    "Mei",
-    "Juni",
-    "Juli",
-    "Agustus",
-    "September",
-    "Oktober",
-    "November",
-    "Desember",
-  ];
-
-  return `${date.getDate()} ${
-    months[date.getMonth()]
-  } ${date.getFullYear()}`;
-}
-
 function getGradeLabel(className: string): string {
   const match = className.match(/(\d+)/);
 
-  return `${match ? match[1] : "8"}th Grade`;
+  return `Kelas ${match ? match[1] : "8"}`;
 }
 
 function getSemesterLabel(num: number): string {
-  return `${num}st Semester`;
+  return `Semester ${num}`;
 }
 
 function chunkMaterials<T>(arr: T[], size: number): T[][] {
@@ -707,13 +601,10 @@ export function StudentReportPdf({
   const initials = getInitials(studentName);
 
   const schoolName =
-    data.schoolName ||
-    "SMP JAGOAN IT";
+    data.schoolName || "SMP JAGOAN IT";
 
   const semesterNum =
     data.semester.semester || 1;
-
-  const currentDate = formatDate();
 
   const noteText =
     data.note || "Belum ada catatan.";
@@ -732,31 +623,93 @@ export function StudentReportPdf({
     <Document>
 
       {/* ==========================================================================
-       * COVER PAGE
+       * COVER
        * ======================================================================== */}
 
       <Page size="A4" style={styles.page}>
-        {data.coverBgDataUrl && (
+        {data.coverBgDataUrl ? (
           <Image
             src={data.coverBgDataUrl}
-            style={styles.coverBg}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: 595,
+              height: 842,
+            }}
+          />
+        ) : (
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              backgroundColor: "#0f172a",
+            }}
           />
         )}
 
-        <View style={styles.coverContent}>
-          <Text style={styles.coverTitle}>
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(15,23,42,0.35)",
+          }}
+        />
+
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 60,
+            paddingTop: 80,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 28,
+              color: "#ffffff",
+              fontFamily: "Helvetica-Bold",
+              textAlign: "center",
+              marginBottom: 12,
+            }}
+          >
             Competence Report of SMP
           </Text>
 
-          <Text style={styles.coverSubtitle}>
+          <Text
+            style={{
+              fontSize: 18,
+              color: "#ffffff",
+              marginBottom: 50,
+            }}
+          >
             {schoolName}
           </Text>
 
-          <Text style={styles.coverStudentName}>
+          <Text
+            style={{
+              fontSize: 36,
+              color: "#ffffff",
+              fontFamily: "Helvetica-Bold",
+              marginBottom: 14,
+            }}
+          >
             {studentName}
           </Text>
 
-          <Text style={styles.coverClassInfo}>
+          <Text
+            style={{
+              fontSize: 15,
+              color: "#ffffff",
+            }}
+          >
             {getGradeLabel(studentClass)} |{" "}
             {getSemesterLabel(semesterNum)}
           </Text>
@@ -779,43 +732,29 @@ export function StudentReportPdf({
 
           <Text style={styles.forewordParagraph}>
             Alhamdulillahirabbil Alamin,
-            segala puja dan puji syukur kami
-            panjatkan kepada Allah subhanahu
-            wa ta’ala, tanpa karunia-Nya,
-            mustahil rasanya naskah laporan
-            pencapaian belajar siswa ini
-            terselesaikan tepat waktu.
+            segala puji dan syukur kami
+            panjatkan kepada Allah SWT atas
+            segala rahmat dan karunia-Nya.
           </Text>
 
           <Text style={styles.forewordParagraph}>
-            Kami benar-benar merasa
-            tertantang untuk mewujudkan
-            laporan ini sebagai bagian dari
-            kewajiban kami sebagai guru untuk
-            melaporkan pencapaian yang telah
-            siswa dapatkan selama satu
-            semester.
+            Laporan ini disusun sebagai bentuk
+            evaluasi perkembangan pembelajaran
+            siswa selama satu semester.
           </Text>
 
           <Text style={styles.forewordParagraph}>
-            Berdasarkan pembelajaran selama
-            satu semester siswa mengalami
-            berbagai perkembangan yang wajib
-            kami laporkan kepada wali siswa.
-          </Text>
-
-          <Text style={styles.forewordParagraph}>
-            Kami berharap laporan ini dapat
-            membawa manfaat kepada pembaca
-            dan menjadi motivasi untuk terus
-            berkembang dalam menghadapi
-            perubahan teknologi kedepannya.
+            Semoga laporan ini dapat menjadi
+            motivasi siswa untuk terus
+            berkembang dan meningkatkan
+            kompetensi akademik maupun soft
+            skill.
           </Text>
         </View>
       </Page>
 
       {/* ==========================================================================
-       * REPORT PAGES
+       * REPORT
        * ======================================================================== */}
 
       {materialPages.map(
@@ -864,30 +803,11 @@ export function StudentReportPdf({
                 />
               )}
 
-              {data.maskBgDataUrl && (
-                <Image
-                  src={data.maskBgDataUrl}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    opacity: 0.1,
-                  }}
-                />
-              )}
-
               <Text style={styles.watermark}>
                 SMP JAGOAN IT
               </Text>
 
               <View style={styles.reportBody}>
-
-                {/* ==========================================================
-                 * STUDENT CARD
-                 * ======================================================== */}
-
                 {isFirstReportPage && (
                   <View style={styles.studentCard}>
                     <View style={styles.scLeft}>
@@ -948,9 +868,17 @@ export function StudentReportPdf({
 
                     <View style={styles.scRight}>
                       <Text
-                        style={
-                          styles.scAvgValue
-                        }
+                        style={{
+                          fontSize: 12,
+                          color: "#64748b",
+                          marginBottom: 6,
+                        }}
+                      >
+                        Nilai Rata-rata
+                      </Text>
+
+                      <Text
+                        style={styles.scAvgValue}
                       >
                         {overallAvg.toFixed(2)}
                       </Text>
@@ -976,122 +904,96 @@ export function StudentReportPdf({
                   </View>
                 )}
 
-                {/* ==========================================================
-                 * MATERIALS
-                 * ======================================================== */}
-
                 <View
                   style={styles.twoMaterialsGrid}
                 >
                   {pageMaterials.map(
-                    (material) => {
-                      const matAvg =
-                        calculateMaterialAverage(
-                          material
-                        );
-
-                      return (
+                    (material) => (
+                      <View
+                        key={material.id}
+                        style={
+                          styles.compSection
+                        }
+                        wrap={false}
+                      >
                         <View
-                          key={material.id}
                           style={
-                            styles.compSection
+                            styles.compHeader
                           }
-                          wrap={false}
                         >
-                          <View
+                          <Text
                             style={
-                              styles.compHeader
+                              styles.compTitleText
                             }
                           >
-                            <Text
-                              style={
-                                styles.compTitleText
-                              }
-                            >
-                              {material.judul}
-                            </Text>
+                            {material.judul}
+                          </Text>
+                        </View>
 
-                            <Text
-                              style={
-                                styles.compScoreText
-                              }
-                            >
-                              Rata-rata:{" "}
-                              {matAvg.toFixed(
-                                1
-                              )}
-                            </Text>
-                          </View>
+                        <View
+                          style={
+                            styles.compIndicators
+                          }
+                        >
+                          {material.indicators.map(
+                            (
+                              indicator
+                            ) => {
+                              const nilai =
+                                indicator.nilai ??
+                                0;
 
-                          <View
-                            style={
-                              styles.compIndicators
-                            }
-                          >
-                            {material.indicators.map(
-                              (
-                                indicator
-                              ) => {
-                                const nilai =
-                                  indicator.nilai ??
-                                  0;
+                              const maxNilai =
+                                indicator.nilai_max ||
+                                5;
 
-                                const maxNilai =
-                                  indicator.nilai_max ||
-                                  5;
+                              const indNum =
+                                indicatorCounter++;
 
-                                const indNum =
-                                  indicatorCounter++;
-
-                                return (
-                                  <View
-                                    key={
-                                      indicator.id
-                                    }
+                              return (
+                                <View
+                                  key={
+                                    indicator.id
+                                  }
+                                  style={
+                                    styles.indRow
+                                  }
+                                >
+                                  <Text
                                     style={
-                                      styles.indRow
+                                      styles.indNum
                                     }
                                   >
-                                    <Text
-                                      style={
-                                        styles.indNum
-                                      }
-                                    >
-                                      {indNum}
-                                    </Text>
+                                    {indNum}
+                                  </Text>
 
-                                    <Text
-                                      style={
-                                        styles.indText
-                                      }
-                                    >
-                                      {
-                                        indicator.deskripsi
-                                      }
-                                    </Text>
+                                  <Text
+                                    style={
+                                      styles.indText
+                                    }
+                                  >
+                                    {
+                                      indicator.deskripsi
+                                    }
+                                  </Text>
 
-                                    <ProgressBar
-                                      nilai={
-                                        nilai
-                                      }
-                                      max={
-                                        maxNilai
-                                      }
-                                    />
-                                  </View>
-                                );
-                              }
-                            )}
-                          </View>
+                                  <ProgressBar
+                                    nilai={
+                                      nilai
+                                    }
+                                    max={
+                                      maxNilai
+                                    }
+                                  />
+                                </View>
+                              );
+                            }
+                          )}
                         </View>
-                      );
-                    }
+                      </View>
+                    )
                   )}
                 </View>
-
-                {/* ==========================================================
-                 * LAST PAGE SECTION
-                 * ======================================================== */}
 
                 {isLastReportPage && (
                   <>
@@ -1114,12 +1016,10 @@ export function StudentReportPdf({
                         }
                       >
                         4.6 - 5.0 :
-                        Sangat Memuaskan |
-                        3.6 - 4.5 :
-                        Sangat Baik | 2.5 -
-                        3.5 : Cukup |
-                        Kurang dari 2.5 :
-                        Butuh Perbaikan
+                        Sangat Memuaskan | 3.6 -
+                        4.5 : Sangat Baik | 2.5 -
+                        3.5 : Cukup | Kurang dari
+                        2.5 : Butuh Perbaikan
                       </Text>
                     </View>
 
@@ -1207,33 +1107,14 @@ export function StudentReportPdf({
                           style={
                             styles.sigBox
                           }
-                        >
-                          {data.teacher
-                            ?.ttdDataUrl ? (
-                            <Image
-                              src={
-                                data
-                                  .teacher
-                                  .ttdDataUrl
-                              }
-                              style={{
-                                width:
-                                  "100%",
-                                height:
-                                  "100%",
-                                objectFit:
-                                  "contain",
-                              }}
-                            />
-                          ) : null}
-                        </View>
+                        />
 
                         <Text
                           style={
                             styles.sigName
                           }
                         >
-                          {teacherName}
+                          Guru Pembimbing
                         </Text>
                       </View>
                     </View>
