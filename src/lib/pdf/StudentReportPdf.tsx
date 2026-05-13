@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   },
 
   /* ==========================================================================
-   * COVER
+   * COVER — matched to uploaded template
    * ======================================================================== */
 
   coverContent: {
@@ -108,63 +108,49 @@ const styles = StyleSheet.create({
 
   coverTitle: {
     position: "absolute",
-    top: 180,
-    left: 62,
-
-    fontSize: 28,
-    fontFamily: "Helvetica-Bold",
-    color: "#ffffff",
-  },
-
-  coverSchoolName: {
-    position: "absolute",
-    top: 235,
-    left: 62,
-
-    fontSize: 56,
-    lineHeight: 1.1,
-    fontFamily: "Helvetica-Bold",
-    color: "#ffffff",
-  },
-
-  coverSubtitle: {
-    position: "absolute",
-    top: 385,
-    left: 62,
-
-    width: 320,
-
-    fontSize: 18,
-    lineHeight: 1.4,
-    color: "#ffffff",
-  },
-
-  coverStudentName: {
-    position: "absolute",
-    bottom: 135,
-    left: 62,
+    top: 88,
+    left: 55,
 
     fontSize: 30,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
+    letterSpacing: 0.5,
   },
 
-  coverClassInfo: {
+  coverSchoolName: {
     position: "absolute",
-    bottom: 95,
-    left: 62,
+    top: 138,
+    left: 55,
+
+    fontSize: 78,
+    lineHeight: 1,
+    fontFamily: "Helvetica-Bold",
+    color: "#ffffff",
+    letterSpacing: 1,
+  },
+
+  coverSubtitle: {
+    position: "absolute",
+    top: 248,
+    left: 55,
+
+    fontSize: 18,
+    lineHeight: 1.4,
+    color: "#ffffff",
+    letterSpacing: 0.3,
+  },
+
+  /* ─── bottom info (grade + semester) ─── */
+
+  coverBottomInfo: {
+    position: "absolute",
+    bottom: 82,
+    left: 55,
 
     fontSize: 18,
     color: "#ffffff",
-  },
-
-  coverSemester: {
-    position: "absolute",
-    bottom: 70,
-    left: 62,
-
-    fontSize: 18,
-    color: "#ffffff",
+    fontFamily: "Helvetica",
+    letterSpacing: 0.3,
   },
 
   /* ==========================================================================
@@ -201,17 +187,17 @@ const styles = StyleSheet.create({
   },
 
   /* ==========================================================================
-   * REPORT BODY
+   * REPORT BODY — top padding reduced so student card moves up
    * ======================================================================== */
 
   reportBody: {
-    paddingTop: 120,
+    paddingTop: 55,
     paddingHorizontal: 42,
     paddingBottom: 40,
   },
 
   reportBodyFirst: {
-    paddingTop: 150,
+    paddingTop: 80,
   },
 
   reportBodyLast: {
@@ -645,7 +631,8 @@ export function StudentReportPdf({
     <Document>
 
       {/* ==========================================================================
-       * COVER
+       * COVER — text positioned to match reference image
+       * No logo / yellow line added (kept clean)
        * ======================================================================== */}
 
       <Page size="A4" style={styles.page}>
@@ -659,29 +646,24 @@ export function StudentReportPdf({
 
         <View style={styles.pageContent}>
           <View style={styles.coverContent}>
+            {/* Title — moved higher up */}
             <Text style={styles.coverTitle}>
               Competence Report of SMP
             </Text>
 
+            {/* School name — large, bold */}
             <Text style={styles.coverSchoolName}>
               JAGOAN IT
             </Text>
 
+            {/* Subtitle */}
             <Text style={styles.coverSubtitle}>
-              Global Tech Starts with Global
-              Communication
+              Global Tech Starts with Global Communication
             </Text>
 
-            <Text style={styles.coverStudentName}>
-              {studentName}
-            </Text>
-
-            <Text style={styles.coverClassInfo}>
-              {studentClass}
-            </Text>
-
-            <Text style={styles.coverSemester}>
-              {semesterLabel}
+            {/* Bottom line: Grade + Semester (no student name on cover) */}
+            <Text style={styles.coverBottomInfo}>
+              {studentClass} | {semesterLabel}
             </Text>
           </View>
         </View>
@@ -708,12 +690,11 @@ export function StudentReportPdf({
       </Page>
 
       {/* ==========================================================================
-       * REPORT
+       * REPORT — student card moved up (reduced top padding)
        * ======================================================================== */}
 
       {materialPages.map(
         (pageMaterials, pageIndex) => {
-          // HANYA halaman pertama & terakhir yang pakai background
           let bgUrl = null;
           if (pageIndex === 0) {
             bgUrl = data.reportFirstBgDataUrl;
