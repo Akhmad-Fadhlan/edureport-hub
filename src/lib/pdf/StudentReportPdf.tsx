@@ -69,6 +69,7 @@ const ORANGE = "#f59e0b";
 const TEXT = "#1e293b";
 const MUTED = "#64748b";
 const SOFT = "#f8fafc";
+const BLUE_BAR = "#3646c2"; // Matches the blue in your Screenshot 2
 
 /* ============================================================================
  * STYLES
@@ -97,7 +98,7 @@ const styles = StyleSheet.create({
   },
 
   /* ==========================================================================
-   * COVER — matched to uploaded template
+   * COVER — Updated positions to avoid overlapping with logo
    * ======================================================================== */
 
   coverContent: {
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
 
   coverTitle: {
     position: "absolute",
-    top: 88,
+    top: 140, // Moved down to avoid logo
     left: 55,
 
     fontSize: 30,
@@ -119,7 +120,7 @@ const styles = StyleSheet.create({
 
   coverSchoolName: {
     position: "absolute",
-    top: 138,
+    top: 185, // Moved down
     left: 55,
 
     fontSize: 78,
@@ -131,7 +132,7 @@ const styles = StyleSheet.create({
 
   coverSubtitle: {
     position: "absolute",
-    top: 248,
+    top: 300, // Moved down
     left: 55,
 
     fontSize: 18,
@@ -139,8 +140,6 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     letterSpacing: 0.3,
   },
-
-  /* ─── bottom info (grade + semester) ─── */
 
   coverBottomInfo: {
     position: "absolute",
@@ -187,21 +186,50 @@ const styles = StyleSheet.create({
   },
 
   /* ==========================================================================
-   * REPORT BODY — top padding reduced so student card moves up
+   * REPORT BODY
    * ======================================================================== */
 
   reportBody: {
-    paddingTop: 55,
+    paddingTop: 20, // Reduced so the header sits higher
     paddingHorizontal: 42,
     paddingBottom: 40,
   },
 
   reportBodyFirst: {
-    paddingTop: 80,
+    paddingTop: 0, // Adjusted to let the Navbar take space
   },
 
   reportBodyLast: {
     paddingBottom: 180,
+  },
+
+  /* ==========================================================================
+   * NEW BLUE HEADER BAR (Student Report)
+   * ======================================================================== */
+
+  navbar: {
+    height: 48,
+    backgroundColor: BLUE_BAR,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 42,
+    marginHorizontal: -42, // Makes it span full width of the page
+    marginBottom: 24,
+  },
+
+  navbarIcon: {
+    width: 16,
+    height: 16,
+    backgroundColor: "#ffffff", // Placeholder for the logo icon
+    borderRadius: 3,
+    marginRight: 10,
+  },
+
+  navbarTitle: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 0.5,
   },
 
   /* ==========================================================================
@@ -250,7 +278,7 @@ const styles = StyleSheet.create({
 
   scInfo: {
     marginLeft: 14,
-    paddingTop: 10,
+    paddingTop: 4,
     flex: 1,
   },
 
@@ -258,7 +286,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: "Helvetica-Bold",
     color: NAVY,
-    marginBottom: 10,
+    marginBottom: 8,
   },
 
   detailText: {
@@ -269,6 +297,12 @@ const styles = StyleSheet.create({
 
   scRight: {
     alignItems: "flex-end",
+  },
+
+  scAvgLabel: {
+    fontSize: 10,
+    color: MUTED,
+    marginBottom: 2,
   },
 
   scAvgValue: {
@@ -617,10 +651,10 @@ export function StudentReportPdf({
   const badgeLabel = getBadgeLabel(overallAvg);
 
   const studentName = data.student.nama || "-";
-  const studentClass =
-    data.student.nama_kelas || "-";
+  const studentClass = data.student.nama_kelas || "-";
 
-  const semesterLabel = `${data.semester.nama_semester} ${data.semester.tahun_ajaran}`;
+  // FIXED: Ensure the semester string is clean without year duplication
+  const semesterString = `${data.semester.nama_semester} ${data.semester.tahun_ajaran}`;
 
   const materialPages = chunkMaterials(
     data.materials,
@@ -631,8 +665,7 @@ export function StudentReportPdf({
     <Document>
 
       {/* ==========================================================================
-       * COVER — text positioned to match reference image
-       * No logo / yellow line added (kept clean)
+       * COVER
        * ======================================================================== */}
 
       <Page size="A4" style={styles.page}>
@@ -646,24 +679,21 @@ export function StudentReportPdf({
 
         <View style={styles.pageContent}>
           <View style={styles.coverContent}>
-            {/* Title — moved higher up */}
             <Text style={styles.coverTitle}>
               Competence Report of SMP
             </Text>
 
-            {/* School name — large, bold */}
             <Text style={styles.coverSchoolName}>
               JAGOAN IT
             </Text>
 
-            {/* Subtitle */}
             <Text style={styles.coverSubtitle}>
               Global Tech Starts with Global Communication
             </Text>
 
-            {/* Bottom line: Grade + Semester (no student name on cover) */}
+            {/* CLEANED: No more year duplication */}
             <Text style={styles.coverBottomInfo}>
-              {studentClass} | {semesterLabel}
+              {studentClass} | {semesterString}
             </Text>
           </View>
         </View>
@@ -690,7 +720,7 @@ export function StudentReportPdf({
       </Page>
 
       {/* ==========================================================================
-       * REPORT — student card moved up (reduced top padding)
+       * REPORT BODY WITH HEADER
        * ======================================================================== */}
 
       {materialPages.map(
@@ -731,78 +761,88 @@ export function StudentReportPdf({
                   ]}
                 >
 
+                  {/* --- HEADER ONLY ON FIRST PAGE --- */}
                   {pageIndex === 0 && (
-                    <View style={styles.studentCard}>
-                      <View style={styles.scLeft}>
-                        <View style={styles.scPhotoWrap}>
-                          {getPhotoSrc(
-                            data.student.photoDataUrl
-                          ) ? (
-                            <Image
-                              src={
-                                getPhotoSrc(
-                                  data.student
-                                    .photoDataUrl
-                                )!
-                              }
-                              style={styles.scPhoto}
-                            />
-                          ) : (
-                            <View
-                              style={
-                                styles.avatarPlaceholder
-                              }
-                            >
-                              <Text
+                    <>
+                      <View style={styles.navbar}>
+                        <View style={styles.navbarIcon} /> 
+                        <Text style={styles.navbarTitle}>Student Report</Text>
+                      </View>
+
+                      <View style={styles.studentCard}>
+                        <View style={styles.scLeft}>
+                          <View style={styles.scPhotoWrap}>
+                            {getPhotoSrc(
+                              data.student.photoDataUrl
+                            ) ? (
+                              <Image
+                                src={
+                                  getPhotoSrc(
+                                    data.student
+                                      .photoDataUrl
+                                  )!
+                                }
+                                style={styles.scPhoto}
+                              />
+                            ) : (
+                              <View
                                 style={
-                                  styles.avatarInitials
+                                  styles.avatarPlaceholder
                                 }
                               >
-                                {getInitials(
-                                  studentName
-                                )}
-                              </Text>
-                            </View>
-                          )}
+                                <Text
+                                  style={
+                                    styles.avatarInitials
+                                  }
+                                >
+                                  {getInitials(
+                                    studentName
+                                  )}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+
+                          <View style={styles.scInfo}>
+                            <Text style={styles.scName}>
+                              {studentName}
+                            </Text>
+
+                            <Text style={styles.detailText}>
+                              {data.student.email}
+                            </Text>
+                          </View>
                         </View>
 
-                        <View style={styles.scInfo}>
-                          <Text style={styles.scName}>
-                            {studentName}
+                        <View style={styles.scRight}>
+                          <Text style={styles.scAvgLabel}>Nilai Rata-rata</Text>
+                          <Text style={styles.scAvgValue}>
+                            {overallAvg.toFixed(2)}
                           </Text>
 
-                          <Text style={styles.detailText}>
-                            {data.student.email}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.scRight}>
-                        <Text style={styles.scAvgValue}>
-                          {overallAvg.toFixed(2)}
-                        </Text>
-
-                        <View
-                          style={[
-                            styles.scAvgBadge,
-                            {
-                              backgroundColor:
-                                badgeColor,
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={
-                              styles.scAvgBadgeText
-                            }
+                          <View
+                            style={[
+                              styles.scAvgBadge,
+                              {
+                                backgroundColor:
+                                  badgeColor,
+                              },
+                            ]}
                           >
-                            {badgeLabel}
-                          </Text>
+                            <Text
+                              style={
+                                styles.scAvgBadgeText
+                              }
+                            >
+                              {badgeLabel}
+                            </Text>
+                          </View>
                         </View>
                       </View>
-                    </View>
+                    </>
                   )}
 
+                  {/* --- REST OF MATERIALS --- */}
                   {pageMaterials.map((material) => {
                     const avg =
                       calculateMaterialAverage([
