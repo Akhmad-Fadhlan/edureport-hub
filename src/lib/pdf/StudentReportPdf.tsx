@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     paddingTop: 108,
     paddingHorizontal: 42,
     paddingBottom: 32,
-    height: "100%",
+    flexGrow: 1,
   },
 
   reportBodyTemplateFirst: {
@@ -213,10 +213,9 @@ const styles = StyleSheet.create({
   },
 
   reportBodyTemplateLast: {
-    justifyContent: "flex-end",
     paddingTop: 108,
     paddingHorizontal: 42,
-    paddingBottom: 86,
+    paddingBottom: 190,
   },
 
   watermark: {
