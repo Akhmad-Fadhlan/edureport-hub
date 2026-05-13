@@ -153,29 +153,36 @@ const styles = StyleSheet.create({
    * ======================================================================== */
 
   forewordPage: {
-    paddingTop: 80,
-    paddingHorizontal: 55,
-    paddingBottom: 55,
+    paddingTop: 70,
+    paddingHorizontal: 60,
+    paddingBottom: 60,
   },
 
-  forewordSmallTitle: {
-    fontSize: 12,
-    color: MUTED,
-    textAlign: "center",
-    marginBottom: 4,
-  },
-
-  forewordTitle: {
-    fontSize: 24,
+  forewordHeading: {
+    fontSize: 28,
     fontFamily: "Helvetica-Bold",
     color: NAVY,
-    textAlign: "center",
-    marginBottom: 26,
+    marginBottom: 2,
+  },
+
+  forewordSubheading: {
+    fontSize: 14,
+    color: NAVY,
+    marginBottom: 28,
   },
 
   forewordParagraph: {
     fontSize: 11,
-    lineHeight: 1.85,
+    lineHeight: 1.9,
+    textAlign: "justify",
+    color: "#334155",
+    marginBottom: 14,
+    textIndent: 30,
+  },
+
+  forewordParagraphNoIndent: {
+    fontSize: 11,
+    lineHeight: 1.9,
     textAlign: "justify",
     color: "#334155",
     marginBottom: 14,
@@ -419,30 +426,40 @@ const styles = StyleSheet.create({
   },
 
   /* ==========================================================================
-   * COMMENT BOX
+   * COMMENT BOX — now inside reportBody, below material cards
    * ======================================================================== */
 
-  commentBox: {
-    backgroundColor: "#fefce8",
-    borderLeftWidth: 4,
-    borderLeftColor: ORANGE,
+  commentOuter: {
     borderRadius: 8,
-    padding: 14,
-    marginTop: 14,
-    marginHorizontal: 42,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    overflow: "hidden",
+    marginBottom: 14,
+  },
+
+  commentHeader: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
   },
 
   commentTitle: {
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: "Helvetica-Bold",
-    color: NAVY,
-    marginBottom: 6,
+    color: TEXT,
+  },
+
+  commentBody: {
+    backgroundColor: "#f8fafc",
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+    padding: 14,
+    minHeight: 60,
   },
 
   commentText: {
     fontSize: 10,
     color: "#475569",
-    lineHeight: 1.5,
+    lineHeight: 1.6,
   },
 
   /* ==========================================================================
@@ -453,8 +470,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginTop: 16,
-    marginHorizontal: 42,
+    marginTop: 8,
     paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: "#e2e8f0",
@@ -752,14 +768,32 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
       </Page>
 
       {/* ====================================================================
-       * FOREWORD
+       * FOREWORD — styled like the image reference
        * ================================================================== */}
       <Page size="A4" style={styles.page}>
         <View style={styles.forewordPage}>
-          <Text style={styles.forewordSmallTitle}>Foreword</Text>
-          <Text style={styles.forewordTitle}>Prakata</Text>
+          {/* Heading: bold "Foreword" + smaller "Prakata" */}
+          <Text style={styles.forewordHeading}>Foreword</Text>
+          <Text style={styles.forewordSubheading}>Prakata</Text>
+
           <Text style={styles.forewordParagraph}>
-            Alhamdulillahirabbil Alamin...
+            Alhamdulillahirabbil Alamin, segala puja dan puji syukur kami panjatkan kepada Allah subhanahu wa ta'ala, tanpa karunia-Nya, mustahil rasanya naskah laporan pencapaian belajar siswa ini terselesaikan tepat waktu mengingat tugas dan kewajiban lain yang bersamaan hadir.
+          </Text>
+
+          <Text style={styles.forewordParagraphNoIndent}>
+            Kami benar-benar merasa tertantang untuk untuk mewujudkan naskah laporan ini sebagai bagian dari bentuk kewajiban kami sebagai guru untuk melaporkan pencapaian yang telah siswa dapatkan selama satu semester.
+          </Text>
+
+          <Text style={styles.forewordParagraphNoIndent}>
+            Berdasarkan pembelajaran selama satu semester siswa mengalami berbagai perkembangan yang wajib kami laporkan kepada wali siswa gunanya sebagai motivasi bagi seluruh elemen baik guru, siswa, wali siswa untuk mewujudkan tujuan kita bersama yang sesuai dengan slogan SMP - SMK IDN Boarding School yaitu "Expert Factory".
+          </Text>
+
+          <Text style={styles.forewordParagraphNoIndent}>
+            Kami juga menyampaikan ucapan terima kasih kepada seluruh elemen terkait yang telah memberikan sumbangsih terwujudnya laporan pencapaian siswa pada semester ini, kami menyadari bahwa masih banyak kekurangan dalam penyajian laporan ini, karena itu, kami berharap agar pembaca berkenan menyampaikan masukan yang membangun.
+          </Text>
+
+          <Text style={styles.forewordParagraphNoIndent}>
+            Akhir kata, kami berharap agar laporan ini dapat membawa manfaat kepada pembaca. Secara khusus, kami berharap semoga laporan ini dapat menginspirasi siswa agar menjadi generasi yang siap menghadapi perubahan teknologi kedepannya yang disertai dengan akhlak yang baik.
           </Text>
         </View>
       </Page>
@@ -865,87 +899,95 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                     </View>
                   );
                 })}
-              </View>
 
-              {/* ============================================================
-               * HALAMAN TERAKHIR — Comment + Skala Nilai + TTD Guru
-               * ========================================================== */}
-              {isLast && (
-                <>
-                  {/* Kolom Komentar */}
-                  {data.comment && (
-                    <View style={styles.commentBox}>
-                      <Text style={styles.commentTitle}>Comment</Text>
-                      <Text style={styles.commentText}>{data.comment}</Text>
-                    </View>
-                  )}
-
-                  {/* Bottom: Skala Nilai (kiri) + TTD Guru (kanan) */}
-                  <View style={styles.bottomSection}>
-
-                    {/* Kiri: Skala Nilai Rata-rata */}
-                    <View style={styles.scaleSection}>
-                      <Text style={styles.scaleTitle}>Skala Nilai Rata-rata :</Text>
-
-                      <SkalaRow
-                        range="0 - 2.4"
-                        label="Butuh Perbaikan"
-                        badgeColor="#dc2626"
-                        bgColor="#fee2e2"
-                        textStyle={styles.scaleLabelTextRed}
-                      />
-                      <SkalaRow
-                        range="2.5 - 3.5"
-                        label="Cukup"
-                        badgeColor="#ea580c"
-                        bgColor="#ffedd5"
-                        textStyle={styles.scaleLabelTextOrange}
-                      />
-                      <SkalaRow
-                        range="3.6 - 4.5"
-                        label="Sangat Baik"
-                        badgeColor="#2563eb"
-                        bgColor="#dbeafe"
-                        textStyle={styles.scaleLabelTextBlue}
-                      />
-                      <SkalaRow
-                        range="4.6 - 5"
-                        label="Sangat Memuaskan"
-                        badgeColor="#16a34a"
-                        bgColor="#dcfce7"
-                        textStyle={styles.scaleLabelTextGreen}
-                      />
+                {/* ============================================================
+                 * HALAMAN TERAKHIR — Comment + Skala Nilai + TTD Guru
+                 * ========================================================== */}
+                {isLast && (
+                  <>
+                    {/* Comment box — di bawah material cards, sebelum bottom section */}
+                    <View style={styles.commentOuter}>
+                      <View style={styles.commentHeader}>
+                        <Text style={styles.commentTitle}>Comment</Text>
+                      </View>
+                      <View style={styles.commentBody}>
+                        <Text style={styles.commentText}>
+                          {data.comment ||
+                            "Disini akan tampil feedback dari guru pengampu tentang progres mapping skill dan ability siswa dalam pelajaran bahasa inggris dan praktek nya."}
+                        </Text>
+                      </View>
                     </View>
 
-                    {/* Kanan: TTD Guru */}
-                    <View style={styles.signatureSection}>
-                      <Text style={styles.signatureDate}>Tanggal</Text>
-                      <Text style={styles.signatureSubLabel}>
-                        Guru IT 7 SMP IDN
-                      </Text>
+                    {/* Bottom: Skala Nilai (kiri) + TTD Guru (kanan) */}
+                    <View style={styles.bottomSection}>
 
-                      {data.teacher?.ttdDataUrl ? (
-                        <Image
-                          src={data.teacher.ttdDataUrl}
-                          style={styles.signatureImage}
+                      {/* Kiri: Skala Nilai Rata-rata */}
+                      <View style={styles.scaleSection}>
+                        <Text style={styles.scaleTitle}>Skala Nilai Rata-rata :</Text>
+
+                        <SkalaRow
+                          range="0 - 2.4"
+                          label="Butuh Perbaikan"
+                          badgeColor="#dc2626"
+                          bgColor="#fee2e2"
+                          textStyle={styles.scaleLabelTextRed}
                         />
-                      ) : (
-                        <View style={styles.signaturePlaceholder}>
-                          <Text
-                            style={{ fontSize: 8, color: MUTED }}
-                          >
-                            TTD Guru
-                          </Text>
-                        </View>
-                      )}
+                        <SkalaRow
+                          range="2.5 - 3.5"
+                          label="Cukup"
+                          badgeColor="#ea580c"
+                          bgColor="#ffedd5"
+                          textStyle={styles.scaleLabelTextOrange}
+                        />
+                        <SkalaRow
+                          range="3.6 - 4.5"
+                          label="Sangat Baik"
+                          badgeColor="#2563eb"
+                          bgColor="#dbeafe"
+                          textStyle={styles.scaleLabelTextBlue}
+                        />
+                        <SkalaRow
+                          range="4.6 - 5"
+                          label="Sangat Memuaskan"
+                          badgeColor="#16a34a"
+                          bgColor="#dcfce7"
+                          textStyle={styles.scaleLabelTextGreen}
+                        />
+                      </View>
 
-                      <Text style={styles.signatureName}>
-                        {data.teacher?.nama || "Nama Guru IT"}
-                      </Text>
+                      {/* Kanan: TTD Guru */}
+                      <View style={styles.signatureSection}>
+                        <Text style={styles.signatureDate}>Tanggal</Text>
+                        <Text style={styles.signatureSubLabel}>
+                          {data.teacher?.jabatan || "Guru IT 7 SMP IDN"}
+                        </Text>
+
+                        {data.teacher?.ttdDataUrl ? (
+                          <Image
+                            src={data.teacher.ttdDataUrl}
+                            style={styles.signatureImage}
+                          />
+                        ) : (
+                          <View style={styles.signaturePlaceholder}>
+                            <Text style={{ fontSize: 8, color: MUTED }}>
+                              TTD Guru
+                            </Text>
+                          </View>
+                        )}
+
+                        <Text style={styles.signatureName}>
+                          {data.teacher?.nama || "Nama Guru IT"}
+                        </Text>
+                        {data.teacher?.jabatan && (
+                          <Text style={styles.signatureRole}>
+                            {data.teacher.jabatan}
+                          </Text>
+                        )}
+                      </View>
                     </View>
-                  </View>
-                </>
-              )}
+                  </>
+                )}
+              </View>
 
               <Text
                 style={styles.pageNumber}
