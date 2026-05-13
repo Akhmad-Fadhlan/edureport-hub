@@ -86,13 +86,15 @@ const styles = StyleSheet.create({
   },
 
   /* ==========================================================================
-   * BACKGROUNDS
+   * BACKGROUNDS - Improved z-index layering
    * ======================================================================== */
 
   coverBg: {
     position: "absolute",
     top: 0,
     left: 0,
+    right: 0,
+    bottom: 0,
     width: "100%",
     height: "100%",
     objectFit: "cover",
@@ -103,10 +105,24 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     left: 0,
+    right: 0,
+    bottom: 0,
     width: "100%",
     height: "100%",
     objectFit: "cover",
     zIndex: 0,
+  },
+
+  maskBg: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
+    zIndex: 1,
+    opacity: 0.1,
   },
 
   /* ==========================================================================
@@ -226,14 +242,11 @@ const styles = StyleSheet.create({
     color: "rgba(30,41,59,0.04)",
     transform: "rotate(-20deg)",
     fontFamily: "Helvetica-Bold",
-  },
-
-  hiddenOnTemplate: {
-    opacity: 0,
+    zIndex: 1,
   },
 
   /* ==========================================================================
-   * STUDENT CARD
+   * STUDENT CARD - Improved photo display
    * ======================================================================== */
 
   studentCard: {
@@ -241,6 +254,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 22,
+    zIndex: 3,
   },
 
   scLeft: {
@@ -547,6 +561,7 @@ const styles = StyleSheet.create({
     right: 22,
     fontSize: 9,
     color: "#64748b",
+    zIndex: 2,
   },
 });
 
@@ -764,7 +779,6 @@ export function StudentReportPdf({
       <Page size="A4" style={styles.page}>
         {data.coverBgDataUrl && (
           <Image
-            fixed
             src={data.coverBgDataUrl}
             style={styles.coverBg}
           />
@@ -813,7 +827,7 @@ export function StudentReportPdf({
             Alhamdulillahirabbil Alamin,
             segala puja dan puji syukur kami
             panjatkan kepada Allah subhanahu
-            wa ta’ala, tanpa karunia-Nya,
+            wa ta'ala, tanpa karunia-Nya,
             mustahil rasanya naskah laporan
             pencapaian belajar siswa ini
             terselesaikan tepat waktu.
@@ -890,32 +904,28 @@ export function StudentReportPdf({
               style={styles.page}
               wrap={false}
             >
+              {/* Background Image - Layer 0 (paling belakang) */}
               {bgUrl && (
                 <Image
-                  fixed
                   src={bgUrl}
                   style={styles.contentBg}
                 />
               )}
 
+              {/* Mask Background - Layer 1 */}
               {data.maskBgDataUrl && (
                 <Image
                   src={data.maskBgDataUrl}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    opacity: 0.1,
-                  }}
+                  style={styles.maskBg}
                 />
               )}
 
+              {/* Watermark - Layer 1 */}
               <Text style={styles.watermark}>
                 SMP JAGOAN IT
               </Text>
 
+              {/* Main Content - Layer 2 (paling depan) */}
               <View
                 style={[
                   styles.reportBody,
@@ -929,35 +939,22 @@ export function StudentReportPdf({
               >
 
                 {/* ==========================================================
-                 * STUDENT CARD
+                 * STUDENT CARD WITH PHOTO FROM API
                  * ======================================================== */}
 
                 {isFirstReportPage && (
                   <View style={styles.studentCard}>
                     <View style={styles.scLeft}>
                       <View style={styles.scPhotoWrap}>
-                        {data.student
-                          .photoDataUrl ? (
+                        {/* Display student photo from API data */}
+                        {data.student.photoDataUrl ? (
                           <Image
-                            src={
-                              data.student
-                                .photoDataUrl
-                            }
-                            style={
-                              styles.scPhoto
-                            }
+                            src={data.student.photoDataUrl}
+                            style={styles.scPhoto}
                           />
                         ) : (
-                          <View
-                            style={
-                              styles.avatarPlaceholder
-                            }
-                          >
-                            <Text
-                              style={
-                                styles.avatarInitials
-                              }
-                            >
+                          <View style={styles.avatarPlaceholder}>
+                            <Text style={styles.avatarInitials}>
                               {initials}
                             </Text>
                           </View>
@@ -969,33 +966,20 @@ export function StudentReportPdf({
                           {studentName}
                         </Text>
 
-                        <Text
-                          style={
-                            styles.detailText
-                          }
-                        >
-                          {studentEmail}
+                        <Text style={styles.detailText}>
+                          Email: {studentEmail}
                         </Text>
 
-                        {studentLinkedIn !==
-                          "-" && (
-                          <Text
-                            style={
-                              styles.detailText
-                            }
-                          >
-                            {studentLinkedIn}
+                        {studentLinkedIn !== "-" && (
+                          <Text style={styles.detailText}>
+                            LinkedIn: {studentLinkedIn}
                           </Text>
                         )}
                       </View>
                     </View>
 
                     <View style={styles.scRight}>
-                      <Text
-                        style={
-                          styles.scAvgValue
-                        }
-                      >
+                      <Text style={styles.scAvgValue}>
                         {overallAvg.toFixed(2)}
                       </Text>
 
@@ -1003,16 +987,11 @@ export function StudentReportPdf({
                         style={[
                           styles.scAvgBadge,
                           {
-                            backgroundColor:
-                              badgeColor,
+                            backgroundColor: badgeColor,
                           },
                         ]}
                       >
-                        <Text
-                          style={
-                            styles.scAvgBadgeText
-                          }
-                        >
+                        <Text style={styles.scAvgBadgeText}>
                           {badgeLabel}
                         </Text>
                       </View>
@@ -1024,113 +1003,50 @@ export function StudentReportPdf({
                  * MATERIALS
                  * ======================================================== */}
 
-                <View
-                  style={styles.twoMaterialsGrid}
-                >
-                  {pageMaterials.map(
-                    (material) => {
-                      const matAvg =
-                        calculateMaterialAverage(
-                          material
-                        );
+                <View style={styles.twoMaterialsGrid}>
+                  {pageMaterials.map((material) => {
+                    const matAvg = calculateMaterialAverage(material);
 
-                      return (
-                        <View
-                          key={material.id}
-                          style={
-                            styles.compSection
-                          }
-                          wrap={false}
-                        >
-                          <View
-                            style={
-                              styles.compHeader
-                            }
-                          >
-                            <Text
-                              style={
-                                styles.compTitleText
-                              }
-                            >
-                              {material.judul}
-                            </Text>
+                    return (
+                      <View
+                        key={material.id}
+                        style={styles.compSection}
+                        wrap={false}
+                      >
+                        <View style={styles.compHeader}>
+                          <Text style={styles.compTitleText}>
+                            {material.judul}
+                          </Text>
 
-                            <Text
-                              style={
-                                styles.compScoreText
-                              }
-                            >
-                              Rata-rata:{" "}
-                              {matAvg.toFixed(
-                                1
-                              )}
-                            </Text>
-                          </View>
-
-                          <View
-                            style={
-                              styles.compIndicators
-                            }
-                          >
-                            {material.indicators.map(
-                              (
-                                indicator
-                              ) => {
-                                const nilai =
-                                  indicator.nilai ??
-                                  0;
-
-                                const maxNilai =
-                                  indicator.nilai_max ||
-                                  5;
-
-                                const indNum =
-                                  indicatorCounter++;
-
-                                return (
-                                  <View
-                                    key={
-                                      indicator.id
-                                    }
-                                    style={
-                                      styles.indRow
-                                    }
-                                  >
-                                    <Text
-                                      style={
-                                        styles.indNum
-                                      }
-                                    >
-                                      {indNum}
-                                    </Text>
-
-                                    <Text
-                                      style={
-                                        styles.indText
-                                      }
-                                    >
-                                      {
-                                        indicator.deskripsi
-                                      }
-                                    </Text>
-
-                                    <ProgressBar
-                                      nilai={
-                                        nilai
-                                      }
-                                      max={
-                                        maxNilai
-                                      }
-                                    />
-                                  </View>
-                                );
-                              }
-                            )}
-                          </View>
+                          <Text style={styles.compScoreText}>
+                            Rata-rata: {matAvg.toFixed(1)}
+                          </Text>
                         </View>
-                      );
-                    }
-                  )}
+
+                        <View style={styles.compIndicators}>
+                          {material.indicators.map((indicator) => {
+                            const nilai = indicator.nilai ?? 0;
+                            const maxNilai = indicator.nilai_max || 5;
+                            const indNum = indicatorCounter++;
+
+                            return (
+                              <View key={indicator.id} style={styles.indRow}>
+                                <Text style={styles.indNum}>
+                                  {indNum}
+                                </Text>
+
+                                <Text style={styles.indText}>
+                                  {indicator.deskripsi}
+                                </Text>
+
+                                <ProgressBar nilai={nilai} max={maxNilai} />
+                              </View>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
 
                 {/* ==========================================================
@@ -1139,144 +1055,69 @@ export function StudentReportPdf({
 
                 {isLastReportPage && (
                   <>
-                    <View
-                      style={
-                        styles.nilaiExplanation
-                      }
-                    >
-                      <Text
-                        style={
-                          styles.nilaiExplanationTitle
-                        }
-                      >
+                    <View style={styles.nilaiExplanation}>
+                      <Text style={styles.nilaiExplanationTitle}>
                         Keterangan Nilai:
                       </Text>
 
-                      <Text
-                        style={
-                          styles.nilaiExplanationText
-                        }
-                      >
-                        4.6 - 5.0 :
-                        Sangat Memuaskan |
-                        3.6 - 4.5 :
-                        Sangat Baik | 2.5 -
-                        3.5 : Cukup |
-                        Kurang dari 2.5 :
-                        Butuh Perbaikan
+                      <Text style={styles.nilaiExplanationText}>
+                        4.6 - 5.0 : Sangat Memuaskan | 3.6 - 4.5 : Sangat Baik | 2.5 - 3.5 : Cukup | Kurang dari 2.5 : Butuh Perbaikan
                       </Text>
                     </View>
 
-                    <View
-                      style={styles.commentBox}
-                    >
-                      <Text
-                        style={
-                          styles.commentTitle
-                        }
-                      >
-                        Komentar Guru
-                        Pembimbing
+                    <View style={styles.commentBox}>
+                      <Text style={styles.commentTitle}>
+                        Komentar Guru Pembimbing
                       </Text>
 
-                      <Text
-                        style={
-                          styles.commentText
-                        }
-                      >
+                      <Text style={styles.commentText}>
                         {noteText}
                       </Text>
                     </View>
 
-                    <View
-                      style={styles.sigSection}
-                    >
-                      <View
-                        style={styles.sigBlock}
-                      >
-                        <Text
-                          style={
-                            styles.sigMeta
-                          }
-                        >
+                    <View style={styles.sigSection}>
+                      <View style={styles.sigBlock}>
+                        <Text style={styles.sigMeta}>
                           Multimedia
                         </Text>
 
-                        <View
-                          style={
-                            styles.sigBox
-                          }
-                        >
-                          {data.teacher
-                            ?.ttdDataUrl ? (
+                        <View style={styles.sigBox}>
+                          {data.teacher?.ttdDataUrl ? (
                             <Image
-                              src={
-                                data
-                                  .teacher
-                                  .ttdDataUrl
-                              }
+                              src={data.teacher.ttdDataUrl}
                               style={{
-                                width:
-                                  "100%",
-                                height:
-                                  "100%",
-                                objectFit:
-                                  "contain",
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "contain",
                               }}
                             />
                           ) : null}
                         </View>
 
-                        <Text
-                          style={
-                            styles.sigName
-                          }
-                        >
+                        <Text style={styles.sigName}>
                           {teacherName}
                         </Text>
                       </View>
 
-                      <View
-                        style={styles.sigBlock}
-                      >
-                        <Text
-                          style={
-                            styles.sigMeta
-                          }
-                        >
+                      <View style={styles.sigBlock}>
+                        <Text style={styles.sigMeta}>
                           Robotik
                         </Text>
 
-                        <View
-                          style={
-                            styles.sigBox
-                          }
-                        >
-                          {data.teacher
-                            ?.ttdDataUrl ? (
+                        <View style={styles.sigBox}>
+                          {data.teacher?.ttdDataUrl ? (
                             <Image
-                              src={
-                                data
-                                  .teacher
-                                  .ttdDataUrl
-                              }
+                              src={data.teacher.ttdDataUrl}
                               style={{
-                                width:
-                                  "100%",
-                                height:
-                                  "100%",
-                                objectFit:
-                                  "contain",
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "contain",
                               }}
                             />
                           ) : null}
                         </View>
 
-                        <Text
-                          style={
-                            styles.sigName
-                          }
-                        >
+                        <Text style={styles.sigName}>
                           {teacherName}
                         </Text>
                       </View>
@@ -1286,11 +1127,9 @@ export function StudentReportPdf({
               </View>
 
               <Text
-                fixed
                 style={styles.pageNumber}
-                render={({ pageNumber }) =>
-                  `${pageNumber}`
-                }
+                render={({ pageNumber }) => `${pageNumber}`}
+                fixed
               />
             </Page>
           );
