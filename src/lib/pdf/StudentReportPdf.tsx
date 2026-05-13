@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   /* School name - "JAGOAN IT" - large, bold, all caps */
   coverSchoolName: {
     position: "absolute",
-    top: 270,
+    top: 260,
     left: 55,
     fontSize: 65,
     lineHeight: 2,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   coverBottomInfo: {
     position: "absolute",
     bottom: 60,
-    left: 250,
+    left: 230,
     fontSize: 16,
     color: "#ffffff",
     fontFamily: "Helvetica",
@@ -269,8 +269,8 @@ const styles = StyleSheet.create({
 
   scRight: {
     alignItems: "flex-end",
-    paddingRight: 25,
-    paddingTop: 30,
+    paddingRight: 29,
+    paddingTop: 28,
   },
 
   /* Label "Nilai Rata-rata" above the score */
@@ -970,16 +970,6 @@ export function StudentReportPdf({
                           </Text>
                         </View>
                       )}
-
-                      {/* Score scale explanation */}
-                      <View style={styles.nilaiExplanation}>
-                        <Text style={styles.nilaiExplanationTitle}>
-                          Skala Nilai Rata-rata:
-                        </Text>
-                        <Text style={styles.nilaiExplanationText}>
-                          0 - 2.4 = Butuh Perbaikan | 2.5 - 3.5 = Cukup | 3.6 - 4.5 = Sangat Baik | 4.6 - 5.0 = Sangat Memuaskan
-                        </Text>
-                      </View>
 
                       {/* Teacher signature section */}
                       <View style={styles.signatureSection}>
