@@ -108,62 +108,72 @@ const styles = StyleSheet.create({
 
   coverTitle: {
     position: "absolute",
-    top: 180,
+    top: 178,
     left: 62,
 
-    fontSize: 28,
+    fontSize: 24,
+    lineHeight: 1.2,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
   },
 
   coverSchoolName: {
     position: "absolute",
-    top: 235,
+    top: 230,
     left: 62,
 
-    fontSize: 56,
-    lineHeight: 1.1,
+    fontSize: 52,
+    lineHeight: 1,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
   },
 
   coverSubtitle: {
     position: "absolute",
-    top: 385,
+    top: 345,
     left: 62,
 
-    width: 320,
+    width: 340,
 
-    fontSize: 18,
-    lineHeight: 1.4,
+    fontSize: 16,
+    lineHeight: 1.35,
     color: "#ffffff",
   },
 
   coverStudentName: {
     position: "absolute",
-    bottom: 135,
-    left: 62,
+    bottom: 108,
+    left: 0,
+    right: 0,
 
-    fontSize: 30,
+    textAlign: "center",
+
+    fontSize: 22,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
   },
 
   coverClassInfo: {
     position: "absolute",
-    bottom: 95,
-    left: 62,
+    bottom: 84,
+    left: 0,
+    right: 0,
 
-    fontSize: 18,
+    textAlign: "center",
+
+    fontSize: 14,
     color: "#ffffff",
   },
 
   coverSemester: {
     position: "absolute",
-    bottom: 70,
-    left: 62,
+    bottom: 62,
+    left: 0,
+    right: 0,
 
-    fontSize: 18,
+    textAlign: "center",
+
+    fontSize: 14,
     color: "#ffffff",
   },
 
@@ -211,7 +221,7 @@ const styles = StyleSheet.create({
   },
 
   reportBodyFirst: {
-    paddingTop: 150,
+    paddingTop: 92,
   },
 
   reportBodyLast: {
@@ -223,23 +233,34 @@ const styles = StyleSheet.create({
    * ======================================================================== */
 
   studentCard: {
+    position: "relative",
+
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 24,
+
+    marginBottom: 26,
+
+    paddingLeft: 10,
+    paddingRight: 10,
   },
 
   scLeft: {
     flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
 
   scPhotoWrap: {
-    width: 82,
-    height: 82,
-    borderRadius: 10,
+    width: 72,
+    height: 72,
+    borderRadius: 999,
+
     overflow: "hidden",
     backgroundColor: "#e2e8f0",
+
+    borderWidth: 3,
+    borderColor: "#ffffff",
   },
 
   scPhoto: {
@@ -257,51 +278,55 @@ const styles = StyleSheet.create({
   },
 
   avatarInitials: {
-    fontSize: 28,
+    fontSize: 24,
     color: "#ffffff",
     fontFamily: "Helvetica-Bold",
   },
 
   scInfo: {
     marginLeft: 14,
-    paddingTop: 10,
-    flex: 1,
+    justifyContent: "center",
+    paddingTop: 2,
   },
 
   scName: {
     fontSize: 18,
     fontFamily: "Helvetica-Bold",
-    color: NAVY,
-    marginBottom: 10,
+    color: "#ffffff",
+    marginBottom: 6,
   },
 
   detailText: {
-    fontSize: 10.5,
-    color: MUTED,
-    marginBottom: 5,
+    fontSize: 10,
+    color: "#e2e8f0",
+    marginBottom: 3,
   },
 
   scRight: {
-    alignItems: "flex-end",
+    alignItems: "center",
+    justifyContent: "center",
+
+    marginTop: -4,
+    minWidth: 90,
   },
 
   scAvgValue: {
-    fontSize: 42,
+    fontSize: 34,
     lineHeight: 1,
     fontFamily: "Helvetica-Bold",
-    color: NAVY,
-    marginBottom: 8,
+    color: "#ffffff",
+    marginBottom: 6,
   },
 
   scAvgBadge: {
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
 
   scAvgBadgeText: {
     color: "#ffffff",
-    fontSize: 10,
+    fontSize: 8,
     fontFamily: "Helvetica-Bold",
   },
 
@@ -426,54 +451,6 @@ const styles = StyleSheet.create({
     color: MUTED,
     marginTop: 3,
     textAlign: "right",
-  },
-
-  /* ==========================================================================
-   * LAST PAGE
-   * ======================================================================== */
-
-  nilaiExplanation: {
-    marginTop: 12,
-    padding: 10,
-    backgroundColor: SOFT,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-  },
-
-  nilaiExplanationTitle: {
-    fontSize: 9,
-    fontFamily: "Helvetica-Bold",
-    color: NAVY,
-    marginBottom: 4,
-  },
-
-  nilaiExplanationText: {
-    fontSize: 8,
-    color: MUTED,
-    lineHeight: 1.5,
-  },
-
-  commentBox: {
-    backgroundColor: "#fefce8",
-    borderLeftWidth: 4,
-    borderLeftColor: ORANGE,
-    borderRadius: 8,
-    padding: 14,
-    marginTop: 14,
-  },
-
-  commentTitle: {
-    fontSize: 11,
-    fontFamily: "Helvetica-Bold",
-    color: NAVY,
-    marginBottom: 6,
-  },
-
-  commentText: {
-    fontSize: 10,
-    color: "#475569",
-    lineHeight: 1.5,
   },
 
   pageNumber: {
@@ -643,7 +620,6 @@ export function StudentReportPdf({
 
   return (
     <Document>
-
       {/* ==========================================================================
        * COVER
        * ======================================================================== */}
@@ -746,7 +722,6 @@ export function StudentReportPdf({
                       : []),
                   ]}
                 >
-
                   {pageIndex === 0 && (
                     <View style={styles.studentCard}>
                       <View style={styles.scLeft}>
@@ -790,6 +765,14 @@ export function StudentReportPdf({
                           <Text style={styles.detailText}>
                             {data.student.email}
                           </Text>
+
+                          {data.student.linkedin && (
+                            <Text
+                              style={styles.detailText}
+                            >
+                              {data.student.linkedin}
+                            </Text>
+                          )}
                         </View>
                       </View>
 
