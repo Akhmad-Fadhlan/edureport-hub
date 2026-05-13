@@ -131,7 +131,7 @@ function ReportsPage() {
       // Fetch comment/note for this student + semester if available
       let comment: string | null = null;
       try {
-        const commentData = await apiGet<any>("/comments", {
+        const commentData = await apiGet<any>("/notes", {
           student_id: studentId,
           semester_id: semesterId,
         });
