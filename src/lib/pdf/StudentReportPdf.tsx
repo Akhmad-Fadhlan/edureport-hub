@@ -957,51 +957,6 @@ export function StudentReportPdf({
                       </View>
                     );
                   }
-                                                       {/* Only show on the last page */}
-                  {pageIndex === materialPages.length - 1 && (
-                    <>
-                      {/* Comment section from API */}
-                      {data.comment && (
-                        <View style={styles.commentBox}>
-                          <Text style={styles.commentTitle}>
-                            Komentar
-                          </Text>
-                          <Text style={styles.commentText}>
-                            {data.comment}
-                          </Text>
-                        </View>
-                      )}
-
-                      {/* Teacher signature section */}
-                      <View style={styles.signatureSection}>
-                        <View style={styles.signatureLeft}>
-                          <Text style={styles.signatureDate}>
-                            Tanggal: _________________
-                          </Text>
-                        </View>
-                        <View style={styles.signatureRight}>
-                          {data.teacher?.ttdDataUrl ? (
-                            <Image
-                              src={data.teacher.ttdDataUrl}
-                              style={styles.signaturePlaceholder}
-                            />
-                          ) : (
-                            <View style={styles.signaturePlaceholder}>
-                              <Text style={{ fontSize: 8, color: MUTED }}>
-                                TTD Guru
-                              </Text>
-                            </View>
-                          )}
-                          <Text style={styles.signatureName}>
-                            {data.teacher?.nama || "Nama Guru IT"}
-                          </Text>
-                          <Text style={styles.signatureRole}>
-                            Guru IT 7 SMP IDN
-                          </Text>
-                        </View>
-                      </View>
-                    </>
-                  )}
                   )}
                 </View>
 
