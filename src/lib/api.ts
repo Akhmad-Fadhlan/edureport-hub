@@ -31,6 +31,8 @@ export const tokenStorage = {
     if (typeof window === "undefined") return;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    // Clear photo cache juga saat logout
+    photoCache.clear();
   },
 };
 
@@ -94,14 +96,17 @@ export async function apiDelete<T>(path: string): Promise<T> {
   return res.data.data;
 }
 
-// Fungsi untuk mengambil photo dari endpoint custom dengan cache
-export async function getStudentPhotoBase64(filename: string): Promise<string | null> {
-  // Cek cache dulu
+// Fungsi utama untuk mengambil photo dari endpoint API (dengan cache)
+export async function getStudentPhoto(filename: string | null | undefined): Promise<string | null> {
+  if (!filename) return null;
+  
+  // Cek cache
   if (photoCache.has(filename)) {
     return photoCache.get(filename) || null;
   }
-
+  
   try {
+    // Panggil endpoint API yang benar
     const response = await apiPost<{ data: string }>('/get-student-photo', { filename });
     const photoData = response.data;
     
@@ -118,7 +123,9 @@ export async function getStudentPhotoBase64(filename: string): Promise<string | 
 }
 
 // Fungsi untuk mengambil multiple photos sekaligus
-export async function getStudentPhotosBase64(filenames: string[]): Promise<Record<string, string>> {
+export async function getStudentPhotos(filenames: string[]): Promise<Record<string, string>> {
+  if (!filenames.length) return {};
+  
   // Filter yang belum ada di cache
   const uncachedFilenames = filenames.filter(f => !photoCache.has(f));
   
@@ -133,6 +140,7 @@ export async function getStudentPhotosBase64(filenames: string[]): Promise<Recor
   }
   
   try {
+    // Panggil endpoint untuk multiple photos
     const response = await apiPost<Record<string, string>>('/get-student-photos', { filenames: uncachedFilenames });
     
     // Simpan ke cache
@@ -154,53 +162,25 @@ export async function getStudentPhotosBase64(filenames: string[]): Promise<Recor
   }
 }
 
-// Fungsi untuk mendapatkan URL photo - CEK APAKAH FILE EXISTS
-export async function studentPhotoUrlWithCheck(photo?: string | null): Promise<string | null> {
-  if (!photo) return null;
-  if (photo.startsWith("http")) return photo;
-  
-  const url = `${UPLOADS_BASE}/students/${photo}`;
-  
-  try {
-    // Cek apakah file exists dengan HEAD request
-    const response = await fetch(url, { method: 'HEAD' });
-    if (response.ok) {
-      return url;
-    } else {
-      console.warn(`Photo not found: ${url}`);
-      return null;
-    }
-  } catch (error) {
-    console.error(`Error checking photo: ${url}`, error);
-    return null;
-  }
-}
-
-// Fungsi untuk mendapatkan photo (prioritas base64 dari endpoint)
-export async function getStudentPhoto(photo?: string | null): Promise<string | null> {
-  if (!photo) return null;
-  
-  // Jika sudah URL lengkap, return langsung
-  if (photo.startsWith("http")) return photo;
-  
-  // Coba ambil sebagai base64 dari endpoint khusus
-  const base64Photo = await getStudentPhotoBase64(photo);
-  if (base64Photo) return base64Photo;
-  
-  // Jika base64 gagal, coba dengan URL
-  const url = `${UPLOADS_BASE}/students/${photo}`;
-  console.warn(`Using fallback URL for photo: ${url}`);
-  return url;
-}
-
-// Fungsi kompatibilitas untuk kode lama (tetap menggunakan URL)
+// DEPRECATED: Jangan gunakan fungsi ini lagi karena mengakses langsung ke folder uploads
+// yang menyebabkan 404. Gunakan getStudentPhoto() sebagai gantinya.
 export function studentPhotoUrl(photo?: string | null): string | null {
+  console.warn('studentPhotoUrl is deprecated. Use getStudentPhoto() instead.');
   if (!photo) return null;
   if (photo.startsWith("http")) return photo;
+  // Ini akan tetap 404 karena file tidak bisa diakses langsung
   return `${UPLOADS_BASE}/students/${photo}`;
 }
 
-// Clear photo cache (misalnya setelah logout)
+// Clear photo cache
 export function clearPhotoCache() {
   photoCache.clear();
+}
+
+// Preload multiple photos
+export async function preloadStudentPhotos(filenames: string[]) {
+  const validFilenames = filenames.filter(f => f && !photoCache.has(f));
+  if (validFilenames.length > 0) {
+    await getStudentPhotos(validFilenames);
+  }
 }
