@@ -79,6 +79,7 @@ const SOFT = "#f8fafc";
 
 const styles = StyleSheet.create({
   page: {
+    position: "relative",
     backgroundColor: "#ffffff",
     fontFamily: "Helvetica",
     color: TEXT,
@@ -132,6 +133,13 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
     marginBottom: 6,
+  },
+
+  coverSchoolName: {
+    fontSize: 30,
+    fontFamily: "Helvetica-Bold",
+    color: "#ffffff",
+    marginBottom: 8,
   },
 
   coverSubtitle: {
