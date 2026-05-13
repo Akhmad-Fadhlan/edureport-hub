@@ -48,6 +48,7 @@ export interface PdfReportData {
 
 // Color palette
 const NAVY = "#1e1b4b";
+const BLUE = "#2563eb";
 const ORANGE = "#f59e0b";
 const SOFT = "#f8fafc";
 const TEXT = "#1e293b";
@@ -61,16 +62,6 @@ const styles = StyleSheet.create({
   },
 
   // ─── Cover ───────────────────────────────────────────────────────────────
-  // Background image sudah mengandung:
-  //   - Logo IDN Boarding School (kiri atas)
-  //   - Garis kuning dekoratif
-  //   - Foto gedung (area bawah)
-  //   - Watermark teks IDN di seluruh halaman
-  // Yang ditambahkan via kode (semua absolute, di atas bg):
-  //   - Teks statis: label, judul program, tagline
-  //   - Teks dinamis: nama siswa, kelas
-  //   - Footer: grade & semester dari data API
-
   coverBg: {
     position: "absolute",
     top: 0,
@@ -78,70 +69,64 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-
-  // Blok teks statis — posisi di bawah logo & garis kuning yang sudah ada di bg
-  // Mengikuti layout referensi gambar: ~170px dari atas, margin kiri 36px
-  coverStaticBlock: {
+  // FIX #1: Remove zIndex entirely; render layers in DOM order instead.
+  // coverWatermark renders first (bottom layer), coverContent renders second (top layer).
+  coverWatermark: {
     position: "absolute",
-    top: 170,
-    left: 36,
-    right: 36,
+    top: 20,
+    left: 20,
+    right: 20,
+    color: "rgba(255,255,255,0.06)",
+    fontSize: 13,
+    fontFamily: "Helvetica-Bold",
   },
-  coverReportLabel: {
-    fontSize: 16,
+  coverContent: {
+    // NOT absolute — normal flow so it sits above watermark in paint order
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    paddingTop: 290,
+    paddingHorizontal: 80,
+    paddingBottom: 0,
+  },
+  coverTitle: {
+    fontSize: 36,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
-    marginBottom: 4,
+    marginBottom: 14,
+    textAlign: "center",
   },
-  coverProgramTitle: {
-    fontSize: 48,
-    fontFamily: "Helvetica-Bold",
-    color: "#ffffff",
-    marginBottom: 10,
-  },
-  coverTagline: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.90)",
-    lineHeight: 1.5,
-  },
-
-  // Nama siswa & kelas — area tengah-bawah cover
-  coverStudentBlock: {
-    position: "absolute",
-    top: 400,
-    left: 36,
-    right: 36,
-  },
-  coverStudentLabel: {
-    fontSize: 10,
-    color: "rgba(255,255,255,0.65)",
-    marginBottom: 4,
-    letterSpacing: 1,
+  coverSubtitle: {
+    fontSize: 20,
+    color: "rgba(255,255,255,0.9)",
+    marginBottom: 8,
+    textAlign: "center",
   },
   coverStudentName: {
-    fontSize: 22,
+    fontSize: 28,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
-    marginBottom: 6,
-  },
-  coverStudentClass: {
-    fontSize: 13,
-    color: "rgba(255,255,255,0.85)",
-  },
-
-  // Footer grade | semester — paling bawah center, sesuai referensi
-  coverFooterBlock: {
-    position: "absolute",
-    bottom: 32,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
-  coverFooterText: {
-    fontSize: 15,
-    fontFamily: "Helvetica-Bold",
-    color: "#ffffff",
+    marginTop: 40,
+    marginBottom: 12,
     textAlign: "center",
+  },
+  coverClassInfo: {
+    fontSize: 16,
+    color: "rgba(255,255,255,0.85)",
+    textAlign: "center",
+    marginBottom: 40,
+  },
+  coverFooter: {
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.28)",
+    paddingVertical: 18,
+    width: "100%",
+    textAlign: "center",
+    color: "#ffffff",
+    fontSize: 16,
+    fontFamily: "Helvetica-Bold",
+    marginTop: "auto",
   },
 
   // ─── Foreword ─────────────────────────────────────────────────────────────
@@ -155,6 +140,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 28,
   },
+  // FIX #2: lineHeight & textAlign on Text, not View wrapper
   forewordParagraph: {
     fontSize: 11.5,
     lineHeight: 1.85,
@@ -189,6 +175,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     flex: 1,
   },
+  // FIX #3: wrap Image in a clipping View with overflow hidden for borderRadius
   scPhotoWrap: {
     width: 82,
     height: 82,
@@ -350,6 +337,7 @@ const styles = StyleSheet.create({
   },
 
   // ─── Progress bar ─────────────────────────────────────────────────────────
+  // FIX #4: Use explicit pixel widths — no nested flex: 1 inside flex: 1
   progressWrapper: {
     flexShrink: 0,
     width: 160,
@@ -363,9 +351,11 @@ const styles = StyleSheet.create({
   progressSegmentsRow: {
     flexDirection: "row",
     gap: 3,
+    // Explicit width = total - value badge width - gap
     width: 112,
   },
   progressSegment: {
+    // Explicit width per segment: (112 - 4*3gap) / 5 = (112-12)/5 = 20
     width: 20,
     height: 9,
     borderRadius: 3,
@@ -413,6 +403,7 @@ const styles = StyleSheet.create({
   },
 
   // ─── Comment box ──────────────────────────────────────────────────────────
+  // FIX #5: Ensure comment box has explicit background and no hidden overflow
   commentBox: {
     backgroundColor: "#fefce8",
     borderLeftWidth: 4,
@@ -527,18 +518,11 @@ function formatDate(): string {
 
 function getGradeLabel(className: string): string {
   const match = className.match(/(\d+)/);
-  const num = match ? parseInt(match[1]) : 7;
-  const ordinals: Record<number, string> = {
-    7: "7th", 8: "8th", 9: "9th", 10: "10th", 11: "11th", 12: "12th",
-  };
-  return ordinals[num] ? `${ordinals[num]} Grade` : `${num}th Grade`;
+  return `Kelas ${match ? match[1] : "7"}`;
 }
 
-function getSemesterOrdinal(semesterNum: number): string {
-  const ordinals: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd" };
-  return ordinals[semesterNum]
-    ? `${ordinals[semesterNum]} Semester`
-    : `${semesterNum}th Semester`;
+function getSemesterLabel(semesterNum: number): string {
+  return `Semester ${semesterNum}`;
 }
 
 function chunkMaterials<T>(arr: T[], size: number): T[][] {
@@ -557,6 +541,7 @@ function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
   return (
     <View style={styles.progressWrapper}>
       <View style={styles.progressBarWrap}>
+        {/* FIX #4: explicit-width segments, no flex:1 nesting */}
         <View style={styles.progressSegmentsRow}>
           {Array.from({ length: totalSegs }).map((_, i) => (
             <View
@@ -591,12 +576,8 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   const studentClass = data.student.nama_kelas || "-";
   const noteText = data.note || "Belum ada catatan.";
   const initials = getInitials(studentName);
+  const schoolName = data.schoolName || "SMP - SMK IDN Boarding School";
   const semesterNum = data.semester.semester || 1;
-
-  // Cover footer: "7th Grade | 2nd Semester" — dari data API
-  const gradeLabel = getGradeLabel(studentClass);
-  const semesterLabel = getSemesterOrdinal(semesterNum);
-  const coverFooter = `${gradeLabel} | ${semesterLabel}`;
 
   const materials = data.materials;
   const materialPages = chunkMaterials(materials, 2);
@@ -605,39 +586,37 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   return (
     <Document>
 
-      {/* ── 1. COVER PAGE ─────────────────────────────────────────────────── */}
+      {/* ── COVER PAGE ──────────────────────────────────────────────────── */}
       <Page size="A4" style={styles.page}>
         {/* Layer 1: background image */}
         {data.coverBgDataUrl && (
           <Image src={data.coverBgDataUrl} style={styles.coverBg} />
         )}
-
-        {/* Layer 2: teks statis */}
-        <View style={styles.coverStaticBlock}>
-          <Text style={styles.coverReportLabel}>Competence Report of SMP</Text>
-          <Text style={styles.coverProgramTitle}>JAGOAN IT</Text>
-          <Text style={styles.coverTagline}>
-            Global Tech Starts with Global{"\n"}Communication
+        {/* Layer 2: subtle watermark text — rendered BEFORE content so it's behind */}
+        <View style={styles.coverWatermark}>
+          <Text>
+            LAPORAN PENCAPAIAN BELAJAR SISWA — LAPORAN PENCAPAIAN BELAJAR SISWA
           </Text>
         </View>
-
-        {/* Layer 3: nama siswa & kelas dari data API */}
-        <View style={styles.coverStudentBlock}>
-          <Text style={styles.coverStudentLabel}>Nama Siswa</Text>
+        {/* FIX #1: Layer 3: main content in normal flow (not absolute), painted last = on top */}
+        <View style={styles.coverContent}>
+          <Text style={styles.coverTitle}>LAPORAN PENCAPAIAN BELAJAR SISWA</Text>
+          <Text style={styles.coverSubtitle}>{schoolName}</Text>
           <Text style={styles.coverStudentName}>{studentName}</Text>
-          <Text style={styles.coverStudentClass}>{studentClass}</Text>
-        </View>
-
-        {/* Layer 4: footer grade | semester dari data API */}
-        <View style={styles.coverFooterBlock}>
-          <Text style={styles.coverFooterText}>{coverFooter}</Text>
+          <Text style={styles.coverClassInfo}>
+            {getGradeLabel(studentClass)} • {getSemesterLabel(semesterNum)} • {data.semester.tahun_ajaran}
+          </Text>
+          <View style={styles.coverFooter}>
+            <Text>Laporan Pencapaian Belajar Siswa Semester {semesterNum}</Text>
+          </View>
         </View>
       </Page>
 
-      {/* ── 2. KATA PENGANTAR ─────────────────────────────────────────────── */}
+      {/* ── FOREWORD PAGE ───────────────────────────────────────────────── */}
       <Page size="A4" style={styles.page}>
         <View style={styles.forewordPage}>
-          <Text style={styles.forewordTitle}>Kata Pengantar</Text>
+          <Text style={styles.forewordTitle}>Prakata </Text>
+          {/* FIX #2: Text directly with lineHeight + textAlign, no View wrapper needed */}
           <Text style={styles.forewordParagraph}>
             Puji syukur kita panjatkan kehadirat Allah SWT yang telah melimpahkan rahmat dan
             hidayah-Nya, sehingga laporan pencapaian belajar siswa semester ini dapat diselesaikan
@@ -669,18 +648,16 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
         </View>
       </Page>
 
-      {/* ── 3. HALAMAN STUDENT REPORT ─────────────────────────────────────── */}
+      {/* ── REPORT PAGES ────────────────────────────────────────────────── */}
       {materialPages.map((pageMaterials, pageIndex) => {
         const isFirstReportPage = pageIndex === 0;
         const isLastReportPage = pageIndex === totalReportPages - 1;
 
-        // reportFirstBgDataUrl → halaman pertama student report
-        // reportLastBgDataUrl  → halaman terakhir student report
         let bgUrl: string | null = null;
         if (isFirstReportPage && data.reportFirstBgDataUrl) bgUrl = data.reportFirstBgDataUrl;
         else if (isLastReportPage && data.reportLastBgDataUrl) bgUrl = data.reportLastBgDataUrl;
 
-        // Hitung nomor urut indikator kumulatif antar halaman
+        // Cumulative indicator counter
         let indicatorCounter = 1;
         for (let i = 0; i < pageIndex; i++)
           for (const mat of materialPages[i])
@@ -692,21 +669,17 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
             {data.maskBgDataUrl && (
               <Image
                 src={data.maskBgDataUrl}
-                style={{
-                  position: "absolute",
-                  top: 0, left: 0,
-                  width: "100%", height: "100%",
-                  opacity: 0.12,
-                }}
+                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0.12 }}
               />
             )}
 
             <View style={styles.reportBody}>
 
-              {/* Student card — hanya di halaman pertama student report */}
+              {/* Student card — first page only */}
               {isFirstReportPage && (
                 <View style={styles.studentCard}>
                   <View style={styles.scLeft}>
+                    {/* FIX #3: overflow:hidden on wrapper View clips the image to borderRadius */}
                     <View style={styles.scPhotoWrap}>
                       {data.student.photoDataUrl ? (
                         <Image src={data.student.photoDataUrl} style={styles.scPhoto} />
@@ -739,7 +712,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 </View>
               )}
 
-              {/* Grid material */}
+              {/* Materials grid */}
               <View style={styles.twoMaterialsGrid}>
                 {pageMaterials.map((material) => {
                   const matAvg = calculateMaterialAverage(material);
@@ -763,6 +736,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                             <View key={indicator.id} style={styles.indRow}>
                               <Text style={styles.indNum}>{indNum}</Text>
                               <Text style={styles.indText}>{indicator.deskripsi}</Text>
+                              {/* FIX #4: explicit-width progress bar */}
                               <ProgressBar nilai={nilai} max={maxNilai} />
                             </View>
                           );
@@ -773,7 +747,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 })}
               </View>
 
-              {/* Keterangan nilai — hanya di halaman terakhir */}
+              {/* Keterangan nilai — last page only */}
               {isLastReportPage && (
                 <View style={styles.nilaiExplanation}>
                   <Text style={styles.nilaiExplanationTitle}>Keterangan Nilai:</Text>
@@ -783,7 +757,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 </View>
               )}
 
-              {/* Komentar guru — hanya di halaman terakhir */}
+              {/* FIX #5: Comment box & signature — last page only, no wrapping View that could clip */}
               {isLastReportPage && (
                 <View style={styles.commentBox}>
                   <Text style={styles.commentTitle}>Komentar Guru Pembimbing</Text>
@@ -791,7 +765,6 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 </View>
               )}
 
-              {/* Tanda tangan — hanya di halaman terakhir */}
               {isLastReportPage && (
                 <View style={styles.sigSection}>
                   <View style={styles.sigBlock}>
