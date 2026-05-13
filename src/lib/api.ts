@@ -123,42 +123,42 @@ export async function getStudentPhoto(filename: string | null | undefined): Prom
 }
 
 // Fungsi untuk mengambil multiple photos sekaligus
-// Fungsi sederhana untuk mengambil photo dari endpoint API
-export async function getStudentPhoto(filename: string | null | undefined): Promise<string | null> {
-  if (!filename) {
-    console.log('getStudentPhoto: No filename provided');
-    return null;
+export async function getStudentPhotos(filenames: string[]): Promise<Record<string, string>> {
+  if (!filenames.length) return {};
+  
+  // Filter yang belum ada di cache
+  const uncachedFilenames = filenames.filter(f => !photoCache.has(f));
+  
+  if (uncachedFilenames.length === 0) {
+    // Semua sudah di cache
+    const result: Record<string, string> = {};
+    filenames.forEach(f => {
+      const cached = photoCache.get(f);
+      if (cached) result[f] = cached;
+    });
+    return result;
   }
   
-  console.log('getStudentPhoto: Fetching photo for:', filename);
-  
   try {
-    // Panggil API dengan axios
-    const response = await api.post('/get-student-photo', { filename });
-    console.log('getStudentPhoto: Full response:', response);
+    // Panggil endpoint untuk multiple photos
+    const response = await apiPost<Record<string, string>>('/get-student-photos', { filenames: uncachedFilenames });
     
-    // Cek struktur response
-    if (response.data && response.data.success === true) {
-      const photoData = response.data.data;
-      console.log('getStudentPhoto: Got photo data, length:', photoData?.length);
-      
-      if (photoData && typeof photoData === 'string' && photoData.startsWith('data:')) {
-        return photoData;
-      } else {
-        console.warn('getStudentPhoto: Invalid photo data format:', photoData);
-        return null;
-      }
-    } else {
-      console.warn('getStudentPhoto: API returned unsuccessful:', response.data);
-      return null;
-    }
-  } catch (error: any) {
-    console.error('getStudentPhoto: Error details:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
+    // Simpan ke cache
+    Object.entries(response.data).forEach(([key, value]) => {
+      photoCache.set(key, value);
     });
-    return null;
+    
+    // Return semua (termasuk dari cache)
+    const result: Record<string, string> = {};
+    filenames.forEach(f => {
+      const cached = photoCache.get(f);
+      if (cached) result[f] = cached;
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('Error fetching student photos:', error);
+    return {};
   }
 }
 
