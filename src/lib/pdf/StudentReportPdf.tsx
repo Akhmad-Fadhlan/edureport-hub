@@ -796,20 +796,33 @@ export function StudentReportPdf({
                     <View style={styles.studentCard}>
                       <View style={styles.scLeft}>
                         <View style={styles.scPhotoWrap}>
-                           {(() => {
-                          const src = getPhotoSrc(data.student.photoDataUrl);
-                          // Only use data URLs or local paths (avoid external http(s) that cause ERR_FAILED)
-                          const isValid = src && (src.startsWith('data:') || src.startsWith('/') || src.startsWith('./'));
-                          if (isValid) {
-                            return <Image src={src!} style={styles.scPhoto} />;
-                          } else {
-                            return (
-                              <View style={styles.avatarPlaceholder}>
-                                <Text style={styles.avatarInitials}>{getInitials(studentName)}</Text>
-                              </View>
-                            );
-                          }
-                        })()}
+                          {getPhotoSrc(
+                            data.student.photoDataUrl
+                          ) ? (
+                            <Image
+                              src={
+                                getPhotoSrc(
+                                  data.student
+                                    .photoDataUrl
+                                )!
+                              }
+                              style={styles.scPhoto}
+                            />
+                          ) : (
+                            <View
+                              style={
+                                styles.avatarPlaceholder
+                              }
+                            >
+                              <Text
+                                style={
+                                  styles.avatarInitials
+                                }
+                              >
+                                {getInitials(
+                                  studentName
+                                )}
+                              </Text>
                             </View>
                           )}
                         </View>
