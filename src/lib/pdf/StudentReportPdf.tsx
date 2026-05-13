@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   /* Title - "Competence Report of SMP" - centered, medium weight */
   coverTitle: {
     position: "absolute",
-    top: 100,
+    top: 200,
     left: 55,
     fontSize: 22,
     fontFamily: "Helvetica-Bold",
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   /* School name - "JAGOAN IT" - large, bold, all caps */
   coverSchoolName: {
     position: "absolute",
-    top: 145,
+    top: 225,
     left: 55,
     fontSize: 72,
     lineHeight: 1,
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   /* Subtitle/tagline */
   coverSubtitle: {
     position: "absolute",
-    top: 248,
+    top: 348,
     left: 55,
     fontSize: 14,
     lineHeight: 1.4,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   coverBottomInfo: {
     position: "absolute",
     bottom: 82,
-    left: 55,
+    left: 120,
     fontSize: 16,
     color: "#ffffff",
     fontFamily: "Helvetica",
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   },
 
   scAvgValue: {
-    fontSize: 42,
+    fontSize: 38,
     lineHeight: 1,
     fontFamily: "Helvetica-Bold",
     color: NAVY,
@@ -874,62 +874,6 @@ export function StudentReportPdf({
                     </View>
                   )}
 
-                  {/* Only show on the last page */}
-                  {pageIndex === materialPages.length - 1 && (
-                    <>
-                      {/* Comment section from API */}
-                      {data.comment && (
-                        <View style={styles.commentBox}>
-                          <Text style={styles.commentTitle}>
-                            Komentar
-                          </Text>
-                          <Text style={styles.commentText}>
-                            {data.comment}
-                          </Text>
-                        </View>
-                      )}
-
-                      {/* Score scale explanation */}
-                      <View style={styles.nilaiExplanation}>
-                        <Text style={styles.nilaiExplanationTitle}>
-                          Skala Nilai Rata-rata:
-                        </Text>
-                        <Text style={styles.nilaiExplanationText}>
-                          0 - 2.4 = Butuh Perbaikan | 2.5 - 3.5 = Cukup | 3.6 - 4.5 = Sangat Baik | 4.6 - 5.0 = Sangat Memuaskan
-                        </Text>
-                      </View>
-
-                      {/* Teacher signature section */}
-                      <View style={styles.signatureSection}>
-                        <View style={styles.signatureLeft}>
-                          <Text style={styles.signatureDate}>
-                            Tanggal: _________________
-                          </Text>
-                        </View>
-                        <View style={styles.signatureRight}>
-                          {data.teacher?.ttdDataUrl ? (
-                            <Image
-                              src={data.teacher.ttdDataUrl}
-                              style={styles.signaturePlaceholder}
-                            />
-                          ) : (
-                            <View style={styles.signaturePlaceholder}>
-                              <Text style={{ fontSize: 8, color: MUTED }}>
-                                TTD Guru
-                              </Text>
-                            </View>
-                          )}
-                          <Text style={styles.signatureName}>
-                            {data.teacher?.nama || "Nama Guru IT"}
-                          </Text>
-                          <Text style={styles.signatureRole}>
-                            Guru IT 7 SMP IDN
-                          </Text>
-                        </View>
-                      </View>
-                    </>
-                  )}
-
                   {pageMaterials.map((material) => {
                     const avg =
                       calculateMaterialAverage([
@@ -1012,6 +956,62 @@ export function StudentReportPdf({
                     );
                   })}
                 </View>
+
+                                 {/* Only show on the last page */}
+                  {pageIndex === materialPages.length - 1 && (
+                    <>
+                      {/* Comment section from API */}
+                      {data.comment && (
+                        <View style={styles.commentBox}>
+                          <Text style={styles.commentTitle}>
+                            Komentar
+                          </Text>
+                          <Text style={styles.commentText}>
+                            {data.comment}
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Score scale explanation */}
+                      <View style={styles.nilaiExplanation}>
+                        <Text style={styles.nilaiExplanationTitle}>
+                          Skala Nilai Rata-rata:
+                        </Text>
+                        <Text style={styles.nilaiExplanationText}>
+                          0 - 2.4 = Butuh Perbaikan | 2.5 - 3.5 = Cukup | 3.6 - 4.5 = Sangat Baik | 4.6 - 5.0 = Sangat Memuaskan
+                        </Text>
+                      </View>
+
+                      {/* Teacher signature section */}
+                      <View style={styles.signatureSection}>
+                        <View style={styles.signatureLeft}>
+                          <Text style={styles.signatureDate}>
+                            Tanggal: _________________
+                          </Text>
+                        </View>
+                        <View style={styles.signatureRight}>
+                          {data.teacher?.ttdDataUrl ? (
+                            <Image
+                              src={data.teacher.ttdDataUrl}
+                              style={styles.signaturePlaceholder}
+                            />
+                          ) : (
+                            <View style={styles.signaturePlaceholder}>
+                              <Text style={{ fontSize: 8, color: MUTED }}>
+                                TTD Guru
+                              </Text>
+                            </View>
+                          )}
+                          <Text style={styles.signatureName}>
+                            {data.teacher?.nama || "Nama Guru IT"}
+                          </Text>
+                          <Text style={styles.signatureRole}>
+                            Guru IT 7 SMP IDN
+                          </Text>
+                        </View>
+                      </View>
+                    </>
+                  )}
 
                 <Text
                   style={styles.pageNumber}
