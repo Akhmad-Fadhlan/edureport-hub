@@ -95,6 +95,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     objectFit: "cover",
+    zIndex: 0,
   },
 
   contentBg: {
@@ -104,6 +105,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     objectFit: "cover",
+    zIndex: 0,
   },
 
   /* ==========================================================================
@@ -111,42 +113,43 @@ const styles = StyleSheet.create({
    * ======================================================================== */
 
   coverContent: {
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 2,
     flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 60,
-    paddingVertical: 80,
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+    paddingTop: 185,
+    paddingLeft: 70,
+    paddingRight: 70,
   },
 
   coverTitle: {
-    fontSize: 30,
+    fontSize: 24,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
-    textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 6,
   },
 
   coverSubtitle: {
-    fontSize: 17,
-    color: "rgba(255,255,255,0.92)",
-    marginBottom: 30,
-    textAlign: "center",
+    fontSize: 14,
+    color: "#ffffff",
+    marginBottom: 48,
   },
 
   coverStudentName: {
-    fontSize: 34,
+    fontSize: 32,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
-    marginTop: 60,
-    marginBottom: 10,
-    textAlign: "center",
+    marginBottom: 8,
   },
 
   coverClassInfo: {
     fontSize: 16,
     color: "#ffffff",
-    textAlign: "center",
   },
 
   /* ==========================================================================
