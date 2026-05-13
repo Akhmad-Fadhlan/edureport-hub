@@ -888,6 +888,7 @@ export function StudentReportPdf({
               key={pageIndex}
               size="A4"
               style={styles.page}
+              wrap={false}
             >
               {bgUrl && (
                 <Image
