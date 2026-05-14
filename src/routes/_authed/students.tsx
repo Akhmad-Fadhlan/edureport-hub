@@ -140,11 +140,16 @@ function StudentsPage() {
             {!loading && (data?.items || []).map((s) => (
               <TableRow key={s.id}>
                 <TableCell>
-                  {s.photo ? (
-                    <img src={studentPhotoUrl(s.photo)!} alt={s.nama} className="h-10 w-10 rounded-full object-cover" />
-                  ) : (
-                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">{s.nama?.[0]?.toUpperCase()}</div>
-                  )}
+                  <StudentPhoto
+                    filename={s.photo}
+                    alt={s.nama}
+                    className="h-10 w-10 rounded-full object-cover"
+                    fallback={
+                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                        {s.nama?.[0]?.toUpperCase()}
+                      </div>
+                    }
+                  />
                 </TableCell>
                 <TableCell className="font-medium capitalize">{s.nama}</TableCell>
                 <TableCell className="text-sm">{s.email}</TableCell>
