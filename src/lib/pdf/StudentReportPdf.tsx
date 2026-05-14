@@ -49,6 +49,8 @@ export interface PdfReportData {
     ttdDataUrl?: string | null;
   };
 
+  generatedDate?: string;
+
   materials: PdfMaterial[];
 
   note?: string | null;
@@ -160,6 +162,18 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica",
     letterSpacing: 0.5,
     textAlign: "center",
+  },
+
+  coverSemesterLine: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "flex-start",
+  },
+
+  coverSemesterSuffix: {
+    fontSize: 8,
+    lineHeight: 1,
+    marginTop: -2,
   },
 
   /* ==========================================================================
