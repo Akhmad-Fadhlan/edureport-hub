@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     lineHeight: 1.45,
     color: "#334155",
     marginLeft: 8,
-    marginRight: 10,
+    marginRight: 24,
   },
 
   /* ==========================================================================
