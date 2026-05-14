@@ -215,7 +215,9 @@ function ReportsPage() {
         }));
 
       // ── 4. Resolve foto siswa via API endpoint /get-student-photo ─────────
-      const photoDataUrl = await getStudentPhoto(studentDetail?.photo);
+      const photoDataUrl = await ensurePdfImageDataUrl(
+        await getStudentPhoto(studentDetail?.photo),
+      );
 
       // ── 5. Resolve data guru dari user yang sedang login ───────────────────
       const storedUser = userStorage.get<AuthUser>();
