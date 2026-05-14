@@ -55,6 +55,28 @@ async function urlToDataUrl(url: string | null | undefined): Promise<string | nu
   }
 }
 
+async function ensurePdfImageDataUrl(src: string | null): Promise<string | null> {
+  if (!src) return null;
+  if (!src.startsWith("data:image/webp")) return src;
+
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = src;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    canvas.getContext("2d")?.drawImage(img, 0, 0);
+    return canvas.toDataURL("image/png");
+  } catch (err) {
+    console.error("ensurePdfImageDataUrl error:", err);
+    return src;
+  }
+}
+
 /**
  * Normalisasi URL foto / TTD:
  * - Jika sudah absolute (http/https) → pakai langsung
@@ -82,8 +104,8 @@ function pickField(source: any, keys: string[]): string | null {
 async function resolveSignatureDataUrl(raw: string | null | undefined) {
   const media = resolveMediaUrl(raw);
   if (!media) return null;
-  if (media.startsWith("data:image/")) return media;
-  return urlToDataUrl(media);
+  if (media.startsWith("data:image/")) return ensurePdfImageDataUrl(media);
+  return ensurePdfImageDataUrl(await urlToDataUrl(media));
 }
 
 function formatPdfDate(date = new Date()) {
