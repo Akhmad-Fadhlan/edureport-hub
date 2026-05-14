@@ -715,7 +715,7 @@ function SkalaRow({
   label: string;
   badgeColor: string;
   bgColor: string;
-  textStyle: object;
+  textStyle: any;
 }) {
   return (
     <View style={styles.scaleRow}>
