@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useApiData } from "@/hooks/use-api-data";
-import { apiGet, studentPhotoUrl } from "@/lib/api";
+import { apiGet, getStudentPhoto } from "@/lib/api";
 import { Loader2, Download, FileText } from "lucide-react";
 import {
   StudentReportPdf,
