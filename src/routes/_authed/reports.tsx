@@ -205,20 +205,33 @@ function ReportsPage() {
       // ── 4. Resolve foto siswa via API endpoint /get-student-photo ─────────
       const photoDataUrl = await getStudentPhoto(studentDetail?.photo);
 
-      // ── 5. Resolve data guru (user yang sedang login) ──────────────────────
-      const teacher = currentUser.data;
+      // ── 5. Resolve data guru dari user yang sedang login ───────────────────
+      const storedUser = userStorage.get<AuthUser>();
+      const currentTeacher = currentUser.data;
+      let teacher = currentTeacher;
 
-      // Field nama: bisa "nama" atau "name" tergantung backend
+      if (storedUser?.id) {
+        try {
+          const teacherRows = await apiGet<any[]>("/teachers");
+          teacher =
+            teacherRows.find((t: any) => Number(t.user_id) === Number(storedUser.id)) ??
+            currentTeacher ??
+            storedUser;
+        } catch {
+          teacher = currentTeacher ?? storedUser;
+        }
+      }
+
       const teacherNama: string =
-        teacher?.nama ?? teacher?.name ?? "Nama Guru IT";
+        pickField(teacher, ["nama", "name"]) ?? storedUser?.name ?? "Nama Guru IT";
 
-      // Field jabatan: bisa "jabatan" atau "role_label"
       const teacherJabatan: string =
-        teacher?.jabatan ?? teacher?.role_label ?? "Guru IT";
+        pickField(teacher, ["jabatan", "role_label", "mata_pelajaran", "role"]) ??
+        "Guru IT";
 
-      // Field TTD: bisa "ttd" (path relatif atau URL absolut)
-      const ttdRawUrl = resolveMediaUrl(teacher?.ttd);
-      const ttdDataUrl = await urlToDataUrl(ttdRawUrl);
+      const ttdDataUrl = await resolveSignatureDataUrl(
+        pickField(teacher, ["ttd", "tanda_tangan", "signature", "signature_url"]),
+      );
 
       // ── 6. Fetch catatan / comment ─────────────────────────────────────────
       // Backend: GET /notes?student_id=X&semester_id=Y
@@ -280,6 +293,7 @@ function ReportsPage() {
           jabatan: teacherJabatan,
           ttdDataUrl: ttdDataUrl ?? null,
         },
+        generatedDate: formatPdfDate(),
         materials: pdfMaterials,
         comment,
         schoolName: "SMP IDN Boarding School",
