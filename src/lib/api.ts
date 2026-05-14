@@ -154,7 +154,7 @@ export async function getStudentPhotos(filenames: string[]): Promise<Record<stri
     const response = await apiPost<Record<string, string>>('/get-student-photos', { filenames: uncachedFilenames });
     
     // Simpan ke cache
-    Object.entries(response.data).forEach(([key, value]) => {
+    Object.entries(response).forEach(([key, value]) => {
       const normalized = normalizeApiImage(value);
       if (normalized) photoCache.set(key, normalized);
     });
