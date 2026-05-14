@@ -138,14 +138,28 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
+  coverStudentName: {
+    position: "absolute",
+    bottom: 78,
+    left: 0,
+    right: 0,
+    fontSize: 18,
+    color: "#ffffff",
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 0.5,
+    textAlign: "center",
+  },
+
   coverBottomInfo: {
     position: "absolute",
     bottom: 50,
-    left: 225,
-    fontSize: 16,
+    left: 0,
+    right: 0,
+    fontSize: 14,
     color: "#ffffff",
     fontFamily: "Helvetica",
     letterSpacing: 0.5,
+    textAlign: "center",
   },
 
   /* ==========================================================================
