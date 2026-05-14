@@ -96,6 +96,16 @@ export async function apiDelete<T>(path: string): Promise<T> {
   return res.data.data;
 }
 
+function normalizeApiImage(raw: unknown): string | null {
+  if (!raw) return null;
+  if (typeof raw === "string") return raw.replace("data:image\\/", "data:image/");
+  if (typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    return normalizeApiImage(obj.data ?? obj.photo ?? obj.url ?? obj.image ?? obj.base64);
+  }
+  return null;
+}
+
 // Fungsi utama untuk mengambil photo dari endpoint API (dengan cache)
 export async function getStudentPhoto(filename: string | null | undefined): Promise<string | null> {
   if (!filename) return null;
@@ -107,8 +117,8 @@ export async function getStudentPhoto(filename: string | null | undefined): Prom
   
   try {
     // Panggil endpoint API yang benar
-    const response = await apiPost<{ data: string }>('/get-student-photo', { filename });
-    const photoData = response.data;
+    const response = await apiPost<string | { data?: string }>('/get-student-photo', { filename });
+    const photoData = normalizeApiImage(response);
     
     // Simpan ke cache
     if (photoData) {
@@ -145,7 +155,8 @@ export async function getStudentPhotos(filenames: string[]): Promise<Record<stri
     
     // Simpan ke cache
     Object.entries(response.data).forEach(([key, value]) => {
-      photoCache.set(key, value);
+      const normalized = normalizeApiImage(value);
+      if (normalized) photoCache.set(key, normalized);
     });
     
     // Return semua (termasuk dari cache)
