@@ -53,10 +53,16 @@ function StudentsPage() {
     setPhotoFile(null); setPhotoPreview(null);
     setOpen(true);
   }
-  function openEdit(s: Student) {
+  async function openEdit(s: Student) {
     setEditing(s);
     setForm({ nama: s.nama, email: s.email, linkedin: s.linkedin || "", class_id: String(s.class_id) });
-    setPhotoFile(null); setPhotoPreview(studentPhotoUrl(s.photo));
+    setPhotoFile(null);
+    if (s.photo) {
+      const d = await getStudentPhoto(s.photo);
+      setPhotoPreview(d);
+    } else {
+      setPhotoPreview(null);
+    }
     setOpen(true);
   }
   function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
