@@ -65,7 +65,7 @@ function resolveMediaUrl(raw: string | null | undefined): string | null {
   if (!raw) return null;
   if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
   // pakai helper yang sama dengan halaman students
-  return studentPhotoUrl(raw) ?? null;
+  return raw;
 }
 
 /* ============================================================================
