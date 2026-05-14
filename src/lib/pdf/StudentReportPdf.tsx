@@ -698,6 +698,12 @@ function chunkMaterials<T>(arr: T[], size: number): T[][] {
   return result;
 }
 
+function splitSemesterLabel(label: string) {
+  if (label === "1st semester") return { number: "1", suffix: "st", rest: " semester" };
+  if (label === "2nd semester") return { number: "2", suffix: "nd", rest: " semester" };
+  return null;
+}
+
 /* ============================================================================
  * PROGRESS BAR
  * ========================================================================== */
@@ -778,6 +784,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
     semesterLabel = "2nd semester";
   }
   const materialPages = chunkMaterials(data.materials, 2);
+  const semesterParts = splitSemesterLabel(semesterLabel);
 
   return (
     <Document>
@@ -796,9 +803,18 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
               Global Tech Starts with Global Communication
             </Text>
             <Text style={styles.coverStudentName}>{studentName}</Text>
-            <Text style={styles.coverBottomInfo}>
-              {studentClass} | {semesterLabel}
-            </Text>
+            <View style={[styles.coverBottomInfo, styles.coverSemesterLine]}>
+              <Text>{studentClass} | </Text>
+              {semesterParts ? (
+                <>
+                  <Text>{semesterParts.number}</Text>
+                  <Text style={styles.coverSemesterSuffix}>{semesterParts.suffix}</Text>
+                  <Text>{semesterParts.rest}</Text>
+                </>
+              ) : (
+                <Text>{semesterLabel}</Text>
+              )}
+            </View>
           </View>
         </View>
       </Page>
@@ -993,7 +1009,9 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
                       {/* Kanan: TTD Guru */}
                       <View style={styles.signatureSection}>
-                        <Text style={styles.signatureDate}>Tanggal</Text>
+                        <Text style={styles.signatureDate}>
+                          {data.generatedDate || "Tanggal"}
+                        </Text>
                         <Text style={styles.signatureSubLabel}>
                           {data.teacher?.jabatan || "Guru IT 7 SMP IDN"}
                         </Text>
