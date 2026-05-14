@@ -8,9 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useApiData } from "@/hooks/use-api-data";
-import { api, apiPost, apiPut, apiDelete, studentPhotoUrl } from "@/lib/api";
+import { api, apiDelete, getStudentPhoto } from "@/lib/api";
 import { toast } from "sonner";
-import { Pencil, Plus, Search, Trash2, Upload, Linkedin, Mail } from "lucide-react";
+import { Pencil, Plus, Search, Trash2, Upload, Linkedin } from "lucide-react";
+import { StudentPhoto } from "@/components/StudentPhoto";
 
 export const Route = createFileRoute("/_authed/students")({
   component: StudentsPage,
@@ -52,10 +53,16 @@ function StudentsPage() {
     setPhotoFile(null); setPhotoPreview(null);
     setOpen(true);
   }
-  function openEdit(s: Student) {
+  async function openEdit(s: Student) {
     setEditing(s);
     setForm({ nama: s.nama, email: s.email, linkedin: s.linkedin || "", class_id: String(s.class_id) });
-    setPhotoFile(null); setPhotoPreview(studentPhotoUrl(s.photo));
+    setPhotoFile(null);
+    if (s.photo) {
+      const d = await getStudentPhoto(s.photo);
+      setPhotoPreview(d);
+    } else {
+      setPhotoPreview(null);
+    }
     setOpen(true);
   }
   function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -133,11 +140,16 @@ function StudentsPage() {
             {!loading && (data?.items || []).map((s) => (
               <TableRow key={s.id}>
                 <TableCell>
-                  {s.photo ? (
-                    <img src={studentPhotoUrl(s.photo)!} alt={s.nama} className="h-10 w-10 rounded-full object-cover" />
-                  ) : (
-                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">{s.nama?.[0]?.toUpperCase()}</div>
-                  )}
+                  <StudentPhoto
+                    filename={s.photo}
+                    alt={s.nama}
+                    className="h-10 w-10 rounded-full object-cover"
+                    fallback={
+                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                        {s.nama?.[0]?.toUpperCase()}
+                      </div>
+                    }
+                  />
                 </TableCell>
                 <TableCell className="font-medium capitalize">{s.nama}</TableCell>
                 <TableCell className="text-sm">{s.email}</TableCell>

@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useApiData } from "@/hooks/use-api-data";
-import { apiGet, studentPhotoUrl } from "@/lib/api";
+import { apiGet, getStudentPhoto } from "@/lib/api";
 import { Loader2, Download, FileText } from "lucide-react";
 import {
   StudentReportPdf,
@@ -65,7 +65,7 @@ function resolveMediaUrl(raw: string | null | undefined): string | null {
   if (!raw) return null;
   if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
   // pakai helper yang sama dengan halaman students
-  return studentPhotoUrl(raw) ?? null;
+  return raw;
 }
 
 /* ============================================================================
@@ -175,13 +175,9 @@ function ReportsPage() {
             })),
         }));
 
-      // ── 4. Resolve foto siswa ──────────────────────────────────────────────
-      // Gunakan pola yang sama dengan halaman students.tsx → studentPhotoUrl()
-     const photoUrl = studentPhotoUrl(studentDetail?.photo);
-      const photoDataUrl = studentPhotoUrl(studentDetail?.photo) ?? null;
-      console.log("PHOTO:", studentDetail?.photo);
-console.log("PHOTO URL:", photoUrl);
-console.log("PHOTO DATA:", photoDataUrl);
+      // ── 4. Resolve foto siswa via API endpoint /get-student-photo ─────────
+      const photoDataUrl = await getStudentPhoto(studentDetail?.photo);
+
       // ── 5. Resolve data guru (user yang sedang login) ──────────────────────
       const teacher = currentUser.data;
 

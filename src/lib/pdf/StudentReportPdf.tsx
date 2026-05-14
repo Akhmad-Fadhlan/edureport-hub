@@ -138,14 +138,28 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
+  coverStudentName: {
+    position: "absolute",
+    bottom: 78,
+    left: 0,
+    right: 0,
+    fontSize: 18,
+    color: "#ffffff",
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 0.5,
+    textAlign: "center",
+  },
+
   coverBottomInfo: {
     position: "absolute",
     bottom: 50,
-    left: 225,
-    fontSize: 16,
+    left: 0,
+    right: 0,
+    fontSize: 14,
     color: "#ffffff",
     fontFamily: "Helvetica",
     letterSpacing: 0.5,
+    textAlign: "center",
   },
 
   /* ==========================================================================
@@ -373,7 +387,7 @@ const styles = StyleSheet.create({
     lineHeight: 1.45,
     color: "#334155",
     marginLeft: 8,
-    marginRight: 10,
+    marginRight: 24,
   },
 
   /* ==========================================================================
@@ -715,7 +729,7 @@ function SkalaRow({
   label: string;
   badgeColor: string;
   bgColor: string;
-  textStyle: object;
+  textStyle: any;
 }) {
   return (
     <View style={styles.scaleRow}>
@@ -739,7 +753,16 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   const badgeLabel = getBadgeLabel(overallAvg);
   const studentName = data.student.nama || "-";
   const studentClass = data.student.nama_kelas || "-";
-  const semesterLabel = `${data.semester.nama_semester}`;
+  // Semester label: derive from data.semester.semester (1 → "1st semester", 2 → "2nd semester")
+  // Fallback: parse nama_semester for "ganjil" / "genap" / "gasal".
+  let semesterLabel = data.semester.nama_semester || "";
+  const semNum = data.semester.semester;
+  const lower = (data.semester.nama_semester || "").toLowerCase();
+  if (semNum === 1 || lower.includes("ganjil")) {
+    semesterLabel = "1st semester";
+  } else if (semNum === 2 || lower.includes("genap") || lower.includes("gasal")) {
+    semesterLabel = "2nd semester";
+  }
   const materialPages = chunkMaterials(data.materials, 2);
 
   return (
@@ -758,6 +781,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
             <Text style={styles.coverSubtitle}>
               Global Tech Starts with Global Communication
             </Text>
+            <Text style={styles.coverStudentName}>{studentName}</Text>
             <Text style={styles.coverBottomInfo}>
               {studentClass} | {semesterLabel}
             </Text>
@@ -827,14 +851,10 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                     <View style={styles.scLeft}>
                       <View style={styles.scPhotoWrap}>
                         {getPhotoSrc(data.student.photoDataUrl) ? (
-                        <Image
-                          src={{
-                            uri: getPhotoSrc(data.student.photoDataUrl)!,
-                            method: "GET",
-                            headers: {},
-                          }}
-                          style={styles.scPhoto}
-                        />
+                          <Image
+                            src={getPhotoSrc(data.student.photoDataUrl)!}
+                            style={styles.scPhoto}
+                          />
                         ) : (
                           <View style={styles.avatarPlaceholder}>
                             <Text style={styles.avatarInitials}>
