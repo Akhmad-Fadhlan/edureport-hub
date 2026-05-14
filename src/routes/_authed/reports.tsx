@@ -175,13 +175,9 @@ function ReportsPage() {
             })),
         }));
 
-      // ── 4. Resolve foto siswa ──────────────────────────────────────────────
-      // Gunakan pola yang sama dengan halaman students.tsx → studentPhotoUrl()
-     const photoUrl = studentPhotoUrl(studentDetail?.photo);
-      const photoDataUrl = studentPhotoUrl(studentDetail?.photo) ?? null;
-      console.log("PHOTO:", studentDetail?.photo);
-console.log("PHOTO URL:", photoUrl);
-console.log("PHOTO DATA:", photoDataUrl);
+      // ── 4. Resolve foto siswa via API endpoint /get-student-photo ─────────
+      const photoDataUrl = await getStudentPhoto(studentDetail?.photo);
+
       // ── 5. Resolve data guru (user yang sedang login) ──────────────────────
       const teacher = currentUser.data;
 
