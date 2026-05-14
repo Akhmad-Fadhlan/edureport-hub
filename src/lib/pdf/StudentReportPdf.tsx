@@ -1,11 +1,4 @@
-import {
-  Document,
-  Page,
-  Text,
-  View,
-  Image,
-  StyleSheet,
-} from "@react-pdf/renderer";
+import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
 
 /* ============================================================================
  * TYPES
@@ -732,10 +725,7 @@ function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
           {Array.from({ length: totalSegs }).map((_, i) => (
             <View
               key={i}
-              style={[
-                styles.progressSegment,
-                { backgroundColor: i < filled ? NAVY : "#dbe4f0" },
-              ]}
+              style={[styles.progressSegment, { backgroundColor: i < filled ? NAVY : "#dbe4f0" }]}
             />
           ))}
         </View>
@@ -805,16 +795,12 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
        * COVER
        * ================================================================== */}
       <Page size="A4" style={styles.page}>
-        {data.coverBgDataUrl && (
-          <Image src={data.coverBgDataUrl} style={styles.absoluteBg} fixed />
-        )}
+        {data.coverBgDataUrl && <Image src={data.coverBgDataUrl} style={styles.absoluteBg} fixed />}
         <View style={styles.pageContent}>
           <View style={styles.coverContent}>
             <Text style={styles.coverTitle}>Competence Report of SMP</Text>
             <Text style={styles.coverSchoolName}>JAGOAN IT</Text>
-            <Text style={styles.coverSubtitle}>
-              Global Tech Starts with Global Communication
-            </Text>
+            <Text style={styles.coverSubtitle}>Global Tech Starts with Global Communication</Text>
             <Text style={styles.coverStudentName}>{studentName}</Text>
             <View style={styles.coverSemesterLine}>
               <Text style={styles.coverSemesterText}>{studentClass} | </Text>
@@ -842,23 +828,37 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
           <Text style={styles.forewordSubheading}>Prakata</Text>
 
           <Text style={styles.forewordParagraph}>
-            Alhamdulillahirabbil Alamin, segala puja dan puji syukur kami panjatkan kepada Allah subhanahu wa ta'ala, tanpa karunia-Nya, mustahil rasanya naskah laporan pencapaian belajar siswa ini terselesaikan tepat waktu mengingat tugas dan kewajiban lain yang bersamaan hadir.
+            Alhamdulillahirabbil Alamin, segala puja dan puji syukur kami panjatkan kepada Allah
+            subhanahu wa ta'ala, tanpa karunia-Nya, mustahil rasanya naskah laporan pencapaian
+            belajar siswa ini terselesaikan tepat waktu mengingat tugas dan kewajiban lain yang
+            bersamaan hadir.
           </Text>
 
           <Text style={styles.forewordParagraphNoIndent}>
-            Kami benar-benar merasa tertantang untuk untuk mewujudkan naskah laporan ini sebagai bagian dari bentuk kewajiban kami sebagai guru untuk melaporkan pencapaian yang telah siswa dapatkan selama satu semester.
+            Kami benar-benar merasa tertantang untuk untuk mewujudkan naskah laporan ini sebagai
+            bagian dari bentuk kewajiban kami sebagai guru untuk melaporkan pencapaian yang telah
+            siswa dapatkan selama satu semester.
           </Text>
 
           <Text style={styles.forewordParagraphNoIndent}>
-            Berdasarkan pembelajaran selama satu semester siswa mengalami berbagai perkembangan yang wajib kami laporkan kepada wali siswa gunanya sebagai motivasi bagi seluruh elemen baik guru, siswa, wali siswa untuk mewujudkan tujuan kita bersama yang sesuai dengan slogan SMP - SMK IDN Boarding School yaitu "Expert Factory".
+            Berdasarkan pembelajaran selama satu semester siswa mengalami berbagai perkembangan yang
+            wajib kami laporkan kepada wali siswa gunanya sebagai motivasi bagi seluruh elemen baik
+            guru, siswa, wali siswa untuk mewujudkan tujuan kita bersama yang sesuai dengan slogan
+            SMP - SMK IDN Boarding School yaitu "Expert Factory".
           </Text>
 
           <Text style={styles.forewordParagraphNoIndent}>
-            Kami juga menyampaikan ucapan terima kasih kepada seluruh elemen terkait yang telah memberikan sumbangsih terwujudnya laporan pencapaian siswa pada semester ini, kami menyadari bahwa masih banyak kekurangan dalam penyajian laporan ini, karena itu, kami berharap agar pembaca berkenan menyampaikan masukan yang membangun.
+            Kami juga menyampaikan ucapan terima kasih kepada seluruh elemen terkait yang telah
+            memberikan sumbangsih terwujudnya laporan pencapaian siswa pada semester ini, kami
+            menyadari bahwa masih banyak kekurangan dalam penyajian laporan ini, karena itu, kami
+            berharap agar pembaca berkenan menyampaikan masukan yang membangun.
           </Text>
 
           <Text style={styles.forewordParagraphNoIndent}>
-            Akhir kata, kami berharap agar laporan ini dapat membawa manfaat kepada pembaca. Secara khusus, kami berharap semoga laporan ini dapat menginspirasi siswa agar menjadi generasi yang siap menghadapi perubahan teknologi kedepannya yang disertai dengan akhlak yang baik.
+            Akhir kata, kami berharap agar laporan ini dapat membawa manfaat kepada pembaca. Secara
+            khusus, kami berharap semoga laporan ini dapat menginspirasi siswa agar menjadi generasi
+            yang siap menghadapi perubahan teknologi kedepannya yang disertai dengan akhlak yang
+            baik.
           </Text>
         </View>
       </Page>
@@ -876,9 +876,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
         return (
           <Page key={pageIndex} size="A4" style={styles.page} wrap={false}>
-            {bgUrl && (
-              <Image src={bgUrl} style={[styles.absoluteBg]} fixed />
-            )}
+            {bgUrl && <Image src={bgUrl} style={[styles.absoluteBg]} fixed />}
 
             <View style={styles.pageContent}>
               <View
@@ -900,34 +898,21 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                           />
                         ) : (
                           <View style={styles.avatarPlaceholder}>
-                            <Text style={styles.avatarInitials}>
-                              {getInitials(studentName)}
-                            </Text>
+                            <Text style={styles.avatarInitials}>{getInitials(studentName)}</Text>
                           </View>
                         )}
                       </View>
                       <View style={styles.scInfo}>
                         <Text style={styles.scName}>{studentName}</Text>
-                        <Text style={styles.detailText}>
-                          {data.student.email}
-                        </Text>
+                        <Text style={styles.detailText}>{data.student.email}</Text>
                         {data.student.linkedin && (
-                          <Text style={styles.detailText}>
-                            {data.student.linkedin}
-                          </Text>
+                          <Text style={styles.detailText}>{data.student.linkedin}</Text>
                         )}
                       </View>
                     </View>
                     <View style={styles.scRight}>
-                      <Text style={styles.scAvgValue}>
-                        {overallAvg.toFixed(2)}
-                      </Text>
-                      <View
-                        style={[
-                          styles.scAvgBadge,
-                          { backgroundColor: badgeColor },
-                        ]}
-                      >
+                      <Text style={styles.scAvgValue}>{overallAvg.toFixed(2)}</Text>
+                      <View style={[styles.scAvgBadge, { backgroundColor: badgeColor }]}>
                         <Text style={styles.scAvgBadgeText}>{badgeLabel}</Text>
                       </View>
                     </View>
@@ -940,24 +925,15 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                   return (
                     <View key={material.id} style={styles.compSection}>
                       <View style={styles.compHeader}>
-                        <Text style={styles.compTitleText}>
-                          {material.judul}
-                        </Text>
-                        <Text style={styles.compScoreText}>
-                          {avg.toFixed(1)}
-                        </Text>
+                        <Text style={styles.compTitleText}>{material.judul}</Text>
+                        <Text style={styles.compScoreText}>{avg.toFixed(1)}</Text>
                       </View>
                       <View style={styles.compIndicators}>
                         {material.indicators.map((indicator, index) => (
                           <View key={indicator.id} style={styles.indRow}>
                             <Text style={styles.indNum}>{index + 1}</Text>
-                            <Text style={styles.indText}>
-                              {indicator.deskripsi}
-                            </Text>
-                            <ProgressBar
-                              nilai={indicator.nilai || 0}
-                              max={indicator.nilai_max}
-                            />
+                            <Text style={styles.indText}>{indicator.deskripsi}</Text>
+                            <ProgressBar nilai={indicator.nilai || 0} max={indicator.nilai_max} />
                           </View>
                         ))}
                       </View>
@@ -985,7 +961,6 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
                     {/* Bottom: Skala Nilai (kiri) + TTD Guru (kanan) */}
                     <View style={styles.bottomSection}>
-
                       {/* Kiri: Skala Nilai Rata-rata */}
                       <View style={styles.scaleSection}>
                         <Text style={styles.scaleTitle}>Skala Nilai Rata-rata :</Text>
@@ -1022,23 +997,16 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
                       {/* Kanan: TTD Guru */}
                       <View style={styles.signatureSection}>
-                        <Text style={styles.signatureDate}>
-                          {data.generatedDate || "Tanggal"}
-                        </Text>
+                        <Text style={styles.signatureDate}>{data.generatedDate || "Tanggal"}</Text>
                         <Text style={styles.signatureSubLabel}>
                           {data.teacher?.jabatan || "Guru IT 7 SMP IDN"}
                         </Text>
 
                         {data.teacher?.ttdDataUrl ? (
-                          <Image
-                            src={data.teacher.ttdDataUrl}
-                            style={styles.signatureImage}
-                          />
+                          <Image src={data.teacher.ttdDataUrl} style={styles.signatureImage} />
                         ) : (
                           <View style={styles.signaturePlaceholder}>
-                            <Text style={{ fontSize: 8, color: MUTED }}>
-                              TTD Guru
-                            </Text>
+                            <Text style={{ fontSize: 8, color: MUTED }}>TTD Guru</Text>
                           </View>
                         )}
 
@@ -1046,9 +1014,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                           {data.teacher?.nama || "Nama Guru IT"}
                         </Text>
                         {data.teacher?.jabatan && (
-                          <Text style={styles.signatureRole}>
-                            {data.teacher.jabatan}
-                          </Text>
+                          <Text style={styles.signatureRole}>{data.teacher.jabatan}</Text>
                         )}
                       </View>
                     </View>
@@ -1056,11 +1022,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 )}
               </View>
 
-              <Text
-                style={styles.pageNumber}
-                render={({ pageNumber }) => `${pageNumber}`}
-                fixed
-              />
+              <Text style={styles.pageNumber} render={({ pageNumber }) => `${pageNumber}`} fixed />
             </View>
           </Page>
         );

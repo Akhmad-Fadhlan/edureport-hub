@@ -14,10 +14,7 @@ import { useApiData } from "@/hooks/use-api-data";
 import { apiGet, getStudentPhoto, userStorage } from "@/lib/api";
 import type { AuthUser } from "@/stores/auth-store";
 import { Loader2, Download, FileText } from "lucide-react";
-import {
-  StudentReportPdf,
-  type PdfReportData,
-} from "@/lib/pdf/StudentReportPdf";
+import { StudentReportPdf, type PdfReportData } from "@/lib/pdf/StudentReportPdf";
 import coverBgUrl from "@/assets/cover-bg.png";
 import reportFirstBgUrl from "@/assets/report-first.png";
 import reportLastBgUrl from "@/assets/report-last.png";
@@ -120,10 +117,10 @@ function ReportsPage() {
     }
   }, [semesters.data, semesterId]);
 
-  const students = useApiData<{ items: any[] }>(
-    classId ? "/students" : null,
-    { class_id: classId, per_page: 200 },
-  );
+  const students = useApiData<{ items: any[] }>(classId ? "/students" : null, {
+    class_id: classId,
+    per_page: 200,
+  });
 
   const [building, setBuilding] = useState(false);
   const [pdfData, setPdfData] = useState<PdfReportData | null>(null);
@@ -154,10 +151,7 @@ function ReportsPage() {
       const [studentDetail, materials, indicators, grades] = await Promise.all([
         // Coba endpoint individual; fallback ke list yang sudah ada di state
         apiGet<any>(`/students/${studentId}`).catch(
-          () =>
-            (students.data?.items ?? []).find(
-              (s: any) => s.id === parseInt(studentId),
-            ) ?? null,
+          () => (students.data?.items ?? []).find((s: any) => s.id === parseInt(studentId)) ?? null,
         ),
         apiGet<any[]>("/materials", { semester_id: semesterId }),
         apiGet<any[]>("/indicators"),
@@ -168,20 +162,14 @@ function ReportsPage() {
       ]);
 
       // ── 2. Semester info ───────────────────────────────────────────────────
-      const semester = (semesters.data ?? []).find(
-        (s: any) => s.id === parseInt(semesterId),
-      );
+      const semester = (semesters.data ?? []).find((s: any) => s.id === parseInt(semesterId));
 
       // ── 3. Susun materials + indicators + nilai ────────────────────────────
       const matIds = new Set((materials ?? []).map((m: any) => m.id));
-      const visIndicators = (indicators ?? []).filter((i: any) =>
-        matIds.has(i.material_id),
-      );
+      const visIndicators = (indicators ?? []).filter((i: any) => matIds.has(i.material_id));
 
       const gradeMap = new Map<string, number>();
-      (grades ?? []).forEach((g: any) =>
-        gradeMap.set(g.indicator_kode, parseFloat(g.nilai)),
-      );
+      (grades ?? []).forEach((g: any) => gradeMap.set(g.indicator_kode, parseFloat(g.nilai)));
 
       const pdfMaterials = (materials ?? [])
         .sort((a: any, b: any) => (a.urutan ?? 0) - (b.urutan ?? 0))
@@ -226,8 +214,7 @@ function ReportsPage() {
         pickField(teacher, ["nama", "name"]) ?? storedUser?.name ?? "Nama Guru IT";
 
       const teacherJabatan: string =
-        pickField(teacher, ["jabatan", "role_label", "mata_pelajaran", "role"]) ??
-        "Guru IT";
+        pickField(teacher, ["jabatan", "role_label", "mata_pelajaran", "role"]) ?? "Guru IT";
 
       const ttdDataUrl = await resolveSignatureDataUrl(
         pickField(teacher, ["ttd", "tanda_tangan", "signature", "signature_url"]),
@@ -250,23 +237,18 @@ function ReportsPage() {
           // Kalau response array, ambil item pertama
           const noteItem = Array.isArray(noteRes) ? noteRes[0] : noteRes;
           // Normalise field: comment atau catatan
-          comment =
-            noteItem?.comment ??
-            noteItem?.catatan ??
-            noteItem?.note ??
-            null;
+          comment = noteItem?.comment ?? noteItem?.catatan ?? noteItem?.note ?? null;
         }
       } catch {
         // Endpoint notes tidak tersedia atau belum ada data → biarkan null
       }
 
       // ── 7. Convert asset backgrounds ──────────────────────────────────────
-      const [coverBgDataUrl, reportFirstBgDataUrl, reportLastBgDataUrl] =
-        await Promise.all([
-          urlToDataUrl(coverBgUrl),
-          urlToDataUrl(reportFirstBgUrl),
-          urlToDataUrl(reportLastBgUrl),
-        ]);
+      const [coverBgDataUrl, reportFirstBgDataUrl, reportLastBgDataUrl] = await Promise.all([
+        urlToDataUrl(coverBgUrl),
+        urlToDataUrl(reportFirstBgUrl),
+        urlToDataUrl(reportLastBgUrl),
+      ]);
 
       // ── 8. Set state ───────────────────────────────────────────────────────
       setPdfData({
@@ -278,9 +260,8 @@ function ReportsPage() {
           photoDataUrl: photoDataUrl ?? null,
           nama_kelas:
             studentDetail?.nama_kelas ??
-            (students.data?.items ?? []).find(
-              (s: any) => s.id === parseInt(studentId),
-            )?.nama_kelas ??
+            (students.data?.items ?? []).find((s: any) => s.id === parseInt(studentId))
+              ?.nama_kelas ??
             undefined,
         },
         semester: {
@@ -313,16 +294,14 @@ function ReportsPage() {
    * ------------------------------------------------------------------------ */
   const studentName = useMemo(() => {
     return (
-      (students.data?.items ?? []).find(
-        (s: any) => s.id === parseInt(studentId),
-      )?.nama ?? "siswa"
+      (students.data?.items ?? []).find((s: any) => s.id === parseInt(studentId))?.nama ?? "siswa"
     );
   }, [students.data, studentId]);
 
   const activeSemesterLabel = useMemo(() => {
     return (
-      (semesters.data ?? []).find((s: any) => s.id === parseInt(semesterId))
-        ?.nama_semester ?? "rapor"
+      (semesters.data ?? []).find((s: any) => s.id === parseInt(semesterId))?.nama_semester ??
+      "rapor"
     );
   }, [semesters.data, semesterId]);
 
@@ -417,10 +396,7 @@ function ReportsPage() {
       {/* Download button */}
       {pdfData && PDFDownloadLink && (
         <div className="flex justify-end">
-          <PDFDownloadLink
-            document={<StudentReportPdf data={pdfData} />}
-            fileName={fileName}
-          >
+          <PDFDownloadLink document={<StudentReportPdf data={pdfData} />} fileName={fileName}>
             {({ loading }: { loading: boolean }) => (
               <Button variant="default">
                 <Download className="h-4 w-4 mr-2" />
@@ -434,10 +410,7 @@ function ReportsPage() {
       {/* PDF Preview */}
       {pdfData && PDFViewer ? (
         <Card className="overflow-hidden p-0 h-[80vh]">
-          <PDFViewer
-            style={{ width: "100%", height: "100%", border: 0 }}
-            showToolbar
-          >
+          <PDFViewer style={{ width: "100%", height: "100%", border: 0 }} showToolbar>
             <StudentReportPdf data={pdfData} />
           </PDFViewer>
         </Card>
