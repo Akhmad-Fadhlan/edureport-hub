@@ -753,7 +753,16 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   const badgeLabel = getBadgeLabel(overallAvg);
   const studentName = data.student.nama || "-";
   const studentClass = data.student.nama_kelas || "-";
-  const semesterLabel = `${data.semester.nama_semester}`;
+  // Semester label: derive from data.semester.semester (1 → "1st semester", 2 → "2nd semester")
+  // Fallback: parse nama_semester for "ganjil" / "genap" / "gasal".
+  let semesterLabel = data.semester.nama_semester || "";
+  const semNum = data.semester.semester;
+  const lower = (data.semester.nama_semester || "").toLowerCase();
+  if (semNum === 1 || lower.includes("ganjil")) {
+    semesterLabel = "1st semester";
+  } else if (semNum === 2 || lower.includes("genap") || lower.includes("gasal")) {
+    semesterLabel = "2nd semester";
+  }
   const materialPages = chunkMaterials(data.materials, 2);
 
   return (
@@ -772,6 +781,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
             <Text style={styles.coverSubtitle}>
               Global Tech Starts with Global Communication
             </Text>
+            <Text style={styles.coverStudentName}>{studentName}</Text>
             <Text style={styles.coverBottomInfo}>
               {studentClass} | {semesterLabel}
             </Text>
