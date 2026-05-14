@@ -816,16 +816,16 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
               Global Tech Starts with Global Communication
             </Text>
             <Text style={styles.coverStudentName}>{studentName}</Text>
-            <View style={[styles.coverBottomInfo, styles.coverSemesterLine]}>
-              <Text>{studentClass} | </Text>
+            <View style={styles.coverSemesterLine}>
+              <Text style={styles.coverSemesterText}>{studentClass} | </Text>
               {semesterParts ? (
                 <>
-                  <Text>{semesterParts.number}</Text>
+                  <Text style={styles.coverSemesterText}>{semesterParts.number}</Text>
                   <Text style={styles.coverSemesterSuffix}>{semesterParts.suffix}</Text>
-                  <Text>{semesterParts.rest}</Text>
+                  <Text style={styles.coverSemesterText}>{semesterParts.rest}</Text>
                 </>
               ) : (
-                <Text>{semesterLabel}</Text>
+                <Text style={styles.coverSemesterText}>{semesterLabel}</Text>
               )}
             </View>
           </View>
