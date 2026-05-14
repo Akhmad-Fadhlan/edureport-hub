@@ -8,9 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useApiData } from "@/hooks/use-api-data";
-import { api, apiPost, apiPut, apiDelete, studentPhotoUrl } from "@/lib/api";
+import { api, apiDelete, getStudentPhoto } from "@/lib/api";
 import { toast } from "sonner";
-import { Pencil, Plus, Search, Trash2, Upload, Linkedin, Mail } from "lucide-react";
+import { Pencil, Plus, Search, Trash2, Upload, Linkedin } from "lucide-react";
+import { StudentPhoto } from "@/components/StudentPhoto";
 
 export const Route = createFileRoute("/_authed/students")({
   component: StudentsPage,
