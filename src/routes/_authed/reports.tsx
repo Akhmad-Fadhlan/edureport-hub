@@ -11,12 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useApiData } from "@/hooks/use-api-data";
-import { apiGet, getStudentPhoto } from "@/lib/api";
+import { API_BASE_URL, api, apiGet, getStudentPhoto, userStorage } from "@/lib/api";
+import type { AuthUser } from "@/stores/auth-store";
 import { Loader2, Download, FileText } from "lucide-react";
-import {
-  StudentReportPdf,
-  type PdfReportData,
-} from "@/lib/pdf/StudentReportPdf";
+import { StudentReportPdf, type PdfReportData } from "@/lib/pdf/StudentReportPdf";
 import coverBgUrl from "@/assets/cover-bg.png";
 import reportFirstBgUrl from "@/assets/report-first.png";
 import reportLastBgUrl from "@/assets/report-last.png";
@@ -32,6 +30,18 @@ export const Route = createFileRoute("/_authed/reports")({
 async function urlToDataUrl(url: string | null | undefined): Promise<string | null> {
   if (!url) return null;
 
+  if (url.startsWith("data:image/")) return url;
+
+  const blobToDataUrl = (blob: Blob) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+
+      reader.readAsDataURL(blob);
+    });
+
   try {
     const res = await fetch(url, {
       mode: "cors",
@@ -40,18 +50,37 @@ async function urlToDataUrl(url: string | null | undefined): Promise<string | nu
     if (!res.ok) return null;
 
     const blob = await res.blob();
-
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-
-      reader.readAsDataURL(blob);
-    });
+    return await blobToDataUrl(blob);
   } catch (err) {
-    console.error("urlToDataUrl error:", err);
-    return null;
+    try {
+      const res = await api.get<Blob>(url, { responseType: "blob" });
+      return await blobToDataUrl(res.data);
+    } catch (authErr) {
+      console.error("urlToDataUrl error:", err, authErr);
+      return null;
+    }
+  }
+}
+
+async function ensurePdfImageDataUrl(src: string | null): Promise<string | null> {
+  if (!src) return null;
+  if (!src.startsWith("data:image/webp")) return src;
+
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = src;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    canvas.getContext("2d")?.drawImage(img, 0, 0);
+    return canvas.toDataURL("image/png");
+  } catch (err) {
+    console.error("ensurePdfImageDataUrl error:", err);
+    return src;
   }
 }
 
@@ -63,9 +92,35 @@ async function urlToDataUrl(url: string | null | undefined): Promise<string | nu
  */
 function resolveMediaUrl(raw: string | null | undefined): string | null {
   if (!raw) return null;
+  if (raw.startsWith("data:image/")) return raw;
   if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-  // pakai helper yang sama dengan halaman students
-  return raw;
+  const apiOrigin = new URL(API_BASE_URL).origin;
+  if (raw.startsWith("/")) return `${apiOrigin}${raw}`;
+  if (raw.startsWith("upload/")) return `${apiOrigin}/${raw}`;
+  return `${apiOrigin}/upload/teachers/${raw}`;
+}
+
+function pickField(source: any, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = source?.[key];
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return null;
+}
+
+async function resolveSignatureDataUrl(raw: string | null | undefined) {
+  const media = resolveMediaUrl(raw);
+  if (!media) return null;
+  if (media.startsWith("data:image/")) return ensurePdfImageDataUrl(media);
+  return ensurePdfImageDataUrl(await urlToDataUrl(media));
+}
+
+function formatPdfDate(date = new Date()) {
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
 }
 
 /* ============================================================================
@@ -93,10 +148,10 @@ function ReportsPage() {
     }
   }, [semesters.data, semesterId]);
 
-  const students = useApiData<{ items: any[] }>(
-    classId ? "/students" : null,
-    { class_id: classId, per_page: 200 },
-  );
+  const students = useApiData<{ items: any[] }>(classId ? "/students" : null, {
+    class_id: classId,
+    per_page: 200,
+  });
 
   const [building, setBuilding] = useState(false);
   const [pdfData, setPdfData] = useState<PdfReportData | null>(null);
@@ -127,10 +182,7 @@ function ReportsPage() {
       const [studentDetail, materials, indicators, grades] = await Promise.all([
         // Coba endpoint individual; fallback ke list yang sudah ada di state
         apiGet<any>(`/students/${studentId}`).catch(
-          () =>
-            (students.data?.items ?? []).find(
-              (s: any) => s.id === parseInt(studentId),
-            ) ?? null,
+          () => (students.data?.items ?? []).find((s: any) => s.id === parseInt(studentId)) ?? null,
         ),
         apiGet<any[]>("/materials", { semester_id: semesterId }),
         apiGet<any[]>("/indicators"),
@@ -141,20 +193,14 @@ function ReportsPage() {
       ]);
 
       // ── 2. Semester info ───────────────────────────────────────────────────
-      const semester = (semesters.data ?? []).find(
-        (s: any) => s.id === parseInt(semesterId),
-      );
+      const semester = (semesters.data ?? []).find((s: any) => s.id === parseInt(semesterId));
 
       // ── 3. Susun materials + indicators + nilai ────────────────────────────
       const matIds = new Set((materials ?? []).map((m: any) => m.id));
-      const visIndicators = (indicators ?? []).filter((i: any) =>
-        matIds.has(i.material_id),
-      );
+      const visIndicators = (indicators ?? []).filter((i: any) => matIds.has(i.material_id));
 
       const gradeMap = new Map<string, number>();
-      (grades ?? []).forEach((g: any) =>
-        gradeMap.set(g.indicator_kode, parseFloat(g.nilai)),
-      );
+      (grades ?? []).forEach((g: any) => gradeMap.set(g.indicator_kode, parseFloat(g.nilai)));
 
       const pdfMaterials = (materials ?? [])
         .sort((a: any, b: any) => (a.urutan ?? 0) - (b.urutan ?? 0))
@@ -176,22 +222,40 @@ function ReportsPage() {
         }));
 
       // ── 4. Resolve foto siswa via API endpoint /get-student-photo ─────────
-      const photoDataUrl = await getStudentPhoto(studentDetail?.photo);
+      const photoDataUrl = await ensurePdfImageDataUrl(await getStudentPhoto(studentDetail?.photo));
 
-      // ── 5. Resolve data guru (user yang sedang login) ──────────────────────
-      const teacher = currentUser.data;
+      // ── 5. Resolve data guru dari user yang sedang login ───────────────────
+      const storedUser = userStorage.get<AuthUser>();
+      const currentTeacher = currentUser.data;
+      let teacher = currentTeacher;
 
-      // Field nama: bisa "nama" atau "name" tergantung backend
+      if (storedUser?.id) {
+        try {
+          const teacherByUser = await apiGet<any[] | { items?: any[] }>("/teachers", {
+            user_id: storedUser.id,
+          });
+          const teacherRows = Array.isArray(teacherByUser)
+            ? teacherByUser
+            : (teacherByUser.items ?? []);
+          teacher =
+            teacherRows.find((t: any) => Number(t.user_id) === Number(storedUser.id)) ??
+            teacherRows[0] ??
+            currentTeacher ??
+            storedUser;
+        } catch {
+          teacher = currentTeacher ?? storedUser;
+        }
+      }
+
       const teacherNama: string =
-        teacher?.nama ?? teacher?.name ?? "Nama Guru IT";
+        pickField(teacher, ["nama", "name"]) ?? storedUser?.name ?? "Nama Guru IT";
 
-      // Field jabatan: bisa "jabatan" atau "role_label"
       const teacherJabatan: string =
-        teacher?.jabatan ?? teacher?.role_label ?? "Guru IT";
+        pickField(teacher, ["jabatan", "role_label", "mata_pelajaran", "role"]) ?? "Guru IT";
 
-      // Field TTD: bisa "ttd" (path relatif atau URL absolut)
-      const ttdRawUrl = resolveMediaUrl(teacher?.ttd);
-      const ttdDataUrl = await urlToDataUrl(ttdRawUrl);
+      const ttdDataUrl = await resolveSignatureDataUrl(
+        pickField(teacher, ["ttd", "tanda_tangan", "signature", "signature_url"]),
+      );
 
       // ── 6. Fetch catatan / comment ─────────────────────────────────────────
       // Backend: GET /notes?student_id=X&semester_id=Y
@@ -210,23 +274,18 @@ function ReportsPage() {
           // Kalau response array, ambil item pertama
           const noteItem = Array.isArray(noteRes) ? noteRes[0] : noteRes;
           // Normalise field: comment atau catatan
-          comment =
-            noteItem?.comment ??
-            noteItem?.catatan ??
-            noteItem?.note ??
-            null;
+          comment = noteItem?.comment ?? noteItem?.catatan ?? noteItem?.note ?? null;
         }
       } catch {
         // Endpoint notes tidak tersedia atau belum ada data → biarkan null
       }
 
       // ── 7. Convert asset backgrounds ──────────────────────────────────────
-      const [coverBgDataUrl, reportFirstBgDataUrl, reportLastBgDataUrl] =
-        await Promise.all([
-          urlToDataUrl(coverBgUrl),
-          urlToDataUrl(reportFirstBgUrl),
-          urlToDataUrl(reportLastBgUrl),
-        ]);
+      const [coverBgDataUrl, reportFirstBgDataUrl, reportLastBgDataUrl] = await Promise.all([
+        urlToDataUrl(coverBgUrl),
+        urlToDataUrl(reportFirstBgUrl),
+        urlToDataUrl(reportLastBgUrl),
+      ]);
 
       // ── 8. Set state ───────────────────────────────────────────────────────
       setPdfData({
@@ -238,9 +297,8 @@ function ReportsPage() {
           photoDataUrl: photoDataUrl ?? null,
           nama_kelas:
             studentDetail?.nama_kelas ??
-            (students.data?.items ?? []).find(
-              (s: any) => s.id === parseInt(studentId),
-            )?.nama_kelas ??
+            (students.data?.items ?? []).find((s: any) => s.id === parseInt(studentId))
+              ?.nama_kelas ??
             undefined,
         },
         semester: {
@@ -253,6 +311,7 @@ function ReportsPage() {
           jabatan: teacherJabatan,
           ttdDataUrl: ttdDataUrl ?? null,
         },
+        generatedDate: formatPdfDate(),
         materials: pdfMaterials,
         comment,
         schoolName: "SMP IDN Boarding School",
@@ -272,16 +331,14 @@ function ReportsPage() {
    * ------------------------------------------------------------------------ */
   const studentName = useMemo(() => {
     return (
-      (students.data?.items ?? []).find(
-        (s: any) => s.id === parseInt(studentId),
-      )?.nama ?? "siswa"
+      (students.data?.items ?? []).find((s: any) => s.id === parseInt(studentId))?.nama ?? "siswa"
     );
   }, [students.data, studentId]);
 
   const activeSemesterLabel = useMemo(() => {
     return (
-      (semesters.data ?? []).find((s: any) => s.id === parseInt(semesterId))
-        ?.nama_semester ?? "rapor"
+      (semesters.data ?? []).find((s: any) => s.id === parseInt(semesterId))?.nama_semester ??
+      "rapor"
     );
   }, [semesters.data, semesterId]);
 
@@ -376,10 +433,7 @@ function ReportsPage() {
       {/* Download button */}
       {pdfData && PDFDownloadLink && (
         <div className="flex justify-end">
-          <PDFDownloadLink
-            document={<StudentReportPdf data={pdfData} />}
-            fileName={fileName}
-          >
+          <PDFDownloadLink document={<StudentReportPdf data={pdfData} />} fileName={fileName}>
             {({ loading }: { loading: boolean }) => (
               <Button variant="default">
                 <Download className="h-4 w-4 mr-2" />
@@ -393,10 +447,7 @@ function ReportsPage() {
       {/* PDF Preview */}
       {pdfData && PDFViewer ? (
         <Card className="overflow-hidden p-0 h-[80vh]">
-          <PDFViewer
-            style={{ width: "100%", height: "100%", border: 0 }}
-            showToolbar
-          >
+          <PDFViewer style={{ width: "100%", height: "100%", border: 0 }} showToolbar>
             <StudentReportPdf data={pdfData} />
           </PDFViewer>
         </Card>
