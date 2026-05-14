@@ -224,9 +224,15 @@ function ReportsPage() {
 
       if (storedUser?.id) {
         try {
-          const teacherRows = await apiGet<any[]>("/teachers");
+          const teacherByUser = await apiGet<any[] | { items?: any[] }>("/teachers", {
+            user_id: storedUser.id,
+          });
+          const teacherRows = Array.isArray(teacherByUser)
+            ? teacherByUser
+            : (teacherByUser.items ?? []);
           teacher =
             teacherRows.find((t: any) => Number(t.user_id) === Number(storedUser.id)) ??
+            teacherRows[0] ??
             currentTeacher ??
             storedUser;
         } catch {
