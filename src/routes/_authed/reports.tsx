@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useApiData } from "@/hooks/use-api-data";
-import { API_BASE_URL, apiGet, getStudentPhoto, userStorage } from "@/lib/api";
+import { API_BASE_URL, api, apiGet, getStudentPhoto, userStorage } from "@/lib/api";
 import type { AuthUser } from "@/stores/auth-store";
 import { Loader2, Download, FileText } from "lucide-react";
 import { StudentReportPdf, type PdfReportData } from "@/lib/pdf/StudentReportPdf";
@@ -32,6 +32,16 @@ async function urlToDataUrl(url: string | null | undefined): Promise<string | nu
 
   if (url.startsWith("data:image/")) return url;
 
+  const blobToDataUrl = (blob: Blob) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+
+      reader.readAsDataURL(blob);
+    });
+
   try {
     const res = await fetch(url, {
       mode: "cors",
@@ -40,18 +50,15 @@ async function urlToDataUrl(url: string | null | undefined): Promise<string | nu
     if (!res.ok) return null;
 
     const blob = await res.blob();
-
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-
-      reader.readAsDataURL(blob);
-    });
+    return await blobToDataUrl(blob);
   } catch (err) {
-    console.error("urlToDataUrl error:", err);
-    return null;
+    try {
+      const res = await api.get<Blob>(url, { responseType: "blob" });
+      return await blobToDataUrl(res.data);
+    } catch (authErr) {
+      console.error("urlToDataUrl error:", err, authErr);
+      return null;
+    }
   }
 }
 
