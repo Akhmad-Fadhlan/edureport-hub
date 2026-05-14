@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useApiData } from "@/hooks/use-api-data";
-import { apiGet, getStudentPhoto, userStorage } from "@/lib/api";
+import { API_BASE_URL, apiGet, getStudentPhoto, userStorage } from "@/lib/api";
 import type { AuthUser } from "@/stores/auth-store";
 import { Loader2, Download, FileText } from "lucide-react";
 import { StudentReportPdf, type PdfReportData } from "@/lib/pdf/StudentReportPdf";
@@ -65,8 +65,10 @@ function resolveMediaUrl(raw: string | null | undefined): string | null {
   if (!raw) return null;
   if (raw.startsWith("data:image/")) return raw;
   if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-  // pakai helper yang sama dengan halaman students
-  return raw;
+  const apiOrigin = new URL(API_BASE_URL).origin;
+  if (raw.startsWith("/")) return `${apiOrigin}${raw}`;
+  if (raw.startsWith("upload/")) return `${apiOrigin}/${raw}`;
+  return `${apiOrigin}/upload/teachers/${raw}`;
 }
 
 function pickField(source: any, keys: string[]): string | null {
