@@ -928,7 +928,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                         <Text style={styles.scName}>{studentName}</Text>
                         <Text style={styles.detailText}>{data.student.email}</Text>
                         {data.student.linkedin && (
-                          <Text style={styles.detailText}>{data.student.linkedin}</Text>
+                          <Text style={styles.detailText}>{shortenLinkedin(data.student.linkedin)}</Text>
                         )}
                       </View>
                     </View>
