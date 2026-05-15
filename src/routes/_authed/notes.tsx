@@ -66,23 +66,32 @@ function NotesPage() {
   const [semesterId, setSemesterId] = useState<string>("all");
   const [classId, setClassId] = useState<string>("all");
 
-  const params: any = {};
-  if (semesterId !== "all") params.semester_id = semesterId;
-  const { data, loading, reload } = useApiData<Note[]>("/notes", params);
+  // Gunakan query params yang benar untuk filtering
+  const queryParams: any = {};
+  if (semesterId !== "all") queryParams.semester_id = semesterId;
+  if (classId !== "all") queryParams.class_id = classId;
+  
+  const { data, loading, reload } = useApiData<Note[]>("/notes", queryParams);
 
   const [teacherId, setTeacherId] = useState<number | null>(null);
+  
   useEffect(() => {
     (async () => {
       if (!user) return;
       try {
-        const res = await apiGet<any[] | { items?: any[] }>("/teachers", {
-          user_id: user.id,
-        });
+        // Ambil teacher berdasarkan user_id dari endpoint teachers
+        const res = await apiGet<any[] | { items?: any[] }>("/teachers");
         const rows = Array.isArray(res) ? res : (res.items ?? []);
-        const t = rows.find((r: any) => Number(r.user_id) === Number(user.id)) ?? rows[0];
-        if (t?.id) setTeacherId(Number(t.id));
-      } catch {
-        /* ignore */
+        // Cari teacher yang sesuai dengan user yang login
+        const teacher = rows.find((t: any) => Number(t.user_id) === Number(user.id));
+        if (teacher?.id) {
+          setTeacherId(Number(teacher.id));
+        } else if (rows.length > 0) {
+          // Fallback ke teacher pertama jika tidak ditemukan
+          setTeacherId(Number(rows[0].id));
+        }
+      } catch (error) {
+        console.error("Failed to fetch teacher:", error);
       }
     })();
   }, [user]);
@@ -93,6 +102,7 @@ function NotesPage() {
     return m;
   }, [studentsData.data]);
 
+  // Filtering berdasarkan class dilakukan di frontend karena API mungkin tidak support
   const filtered = useMemo(() => {
     let rows = data || [];
     if (classId !== "all") {
@@ -117,6 +127,7 @@ function NotesPage() {
     });
     setOpen(true);
   }
+  
   function openEdit(n: Note) {
     setEditing(n);
     setForm({
@@ -128,14 +139,17 @@ function NotesPage() {
   }
 
   async function save() {
+    // Validasi input
     if (!form.student_id || !form.semester_id || !form.catatan.trim()) {
       toast.error("Lengkapi siswa, semester, dan catatan");
       return;
     }
+    
     if (!teacherId) {
       toast.error("Data guru tidak ditemukan untuk akun ini");
       return;
     }
+    
     try {
       const payload = {
         student_id: parseInt(form.student_id),
@@ -143,24 +157,37 @@ function NotesPage() {
         teacher_id: teacherId,
         catatan: form.catatan.trim(),
       };
-      if (editing) await apiPut(`/notes/${editing.id}`, payload);
-      else await apiPost("/notes", payload);
-      toast.success("Tersimpan");
+      
+      if (editing) {
+        // PUT update - hanya kirim field yang diupdate
+        await apiPut(`/notes/${editing.id}`, { catatan: payload.catatan });
+        toast.success("Catatan berhasil diupdate");
+      } else {
+        // POST create
+        await apiPost("/notes", payload);
+        toast.success("Catatan berhasil ditambahkan");
+      }
+      
       setOpen(false);
-      reload();
+      reload(); // Reload data setelah save
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Gagal menyimpan");
+      const errorMsg = e?.response?.data?.message || e?.message || "Gagal menyimpan catatan";
+      toast.error(errorMsg);
+      console.error("Save error:", e);
     }
   }
 
   async function del(id: number) {
-    if (!confirm("Hapus catatan?")) return;
+    if (!confirm("Apakah Anda yakin ingin menghapus catatan ini?")) return;
+    
     try {
       await apiDelete(`/notes/${id}`);
-      toast.success("Dihapus");
+      toast.success("Catatan berhasil dihapus");
       reload();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Gagal menghapus");
+      const errorMsg = e?.response?.data?.message || e?.message || "Gagal menghapus catatan";
+      toast.error(errorMsg);
+      console.error("Delete error:", e);
     }
   }
 
@@ -176,7 +203,7 @@ function NotesPage() {
         <div>
           <h1 className="text-2xl font-bold">Catatan Siswa</h1>
           <p className="text-sm text-muted-foreground">
-            Kelola catatan siswa per semester dan kelas.
+            Kelola catatan perkembangan siswa per semester
           </p>
         </div>
         <Button onClick={openNew}>
@@ -188,20 +215,21 @@ function NotesPage() {
       <Card className="p-4 flex flex-wrap gap-3">
         <Select value={semesterId} onValueChange={setSemesterId}>
           <SelectTrigger className="w-[260px]">
-            <SelectValue placeholder="Semester" />
+            <SelectValue placeholder="Pilih Semester" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Semester</SelectItem>
             {(semesters.data || []).map((s) => (
               <SelectItem key={s.id} value={String(s.id)}>
-                {s.nama_semester}
+                {s.nama_semester || `${s.tahun_ajaran} - Semester ${s.semester}`}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        
         <Select value={classId} onValueChange={setClassId}>
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Kelas" />
+            <SelectValue placeholder="Pilih Kelas" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Kelas</SelectItem>
@@ -230,58 +258,73 @@ function NotesPage() {
             {loading && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                  Memuat...
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    Memuat data...
+                  </div>
                 </TableCell>
               </TableRow>
             )}
-            {!loading &&
-              filtered.map((n) => {
-                const s = studentMap.get(n.student_id);
-                return (
-                  <TableRow key={n.id}>
-                    <TableCell className="font-medium capitalize">
-                      {n.student_name || s?.nama || `#${n.student_id}`}
-                    </TableCell>
-                    <TableCell>{s?.nama_kelas || "-"}</TableCell>
-                    <TableCell>
-                      {n.tahun_ajaran
-                        ? `${n.tahun_ajaran} - Sem ${n.semester_number}`
-                        : `#${n.semester_id}`}
-                    </TableCell>
-                    <TableCell className="max-w-md whitespace-pre-wrap">
-                      {n.catatan}
-                    </TableCell>
-                    <TableCell className="capitalize">{n.teacher_name || "-"}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(n)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => del(n.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+            
             {!loading && filtered.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  Belum ada catatan
+                  Belum ada catatan untuk filter yang dipilih
                 </TableCell>
               </TableRow>
             )}
+            
+            {!loading && filtered.map((n) => {
+              const student = studentMap.get(n.student_id);
+              return (
+                <TableRow key={n.id}>
+                  <TableCell className="font-medium capitalize">
+                    {n.student_name || student?.nama || `ID: ${n.student_id}`}
+                  </TableCell>
+                  <TableCell>{student?.nama_kelas || "-"}</TableCell>
+                  <TableCell>
+                    {n.tahun_ajaran && n.semester_number
+                      ? `${n.tahun_ajaran} - Semester ${n.semester_number}`
+                      : `Semester ID: ${n.semester_id}`}
+                  </TableCell>
+                  <TableCell className="max-w-md whitespace-pre-wrap break-words">
+                    {n.catatan}
+                  </TableCell>
+                  <TableCell className="capitalize">{n.teacher_name || `Guru ID: ${n.teacher_id}`}</TableCell>
+                  <TableCell className="text-right space-x-2 whitespace-nowrap">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => openEdit(n)}
+                      title="Edit catatan"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => del(n.id)}
+                      title="Hapus catatan"
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editing ? "Edit Catatan" : "Tambah Catatan"}</DialogTitle>
+            <DialogTitle>{editing ? "Edit Catatan" : "Tambah Catatan Baru"}</DialogTitle>
           </DialogHeader>
+          
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Siswa</Label>
+              <Label>Siswa *</Label>
               <Select
                 value={form.student_id}
                 onValueChange={(v) => setForm({ ...form, student_id: v })}
@@ -293,14 +336,15 @@ function NotesPage() {
                 <SelectContent>
                   {filteredStudentsForForm.map((s) => (
                     <SelectItem key={s.id} value={String(s.id)}>
-                      {s.nama} {s.nama_kelas ? `— ${s.nama_kelas}` : ""}
+                      {s.nama} {s.nama_kelas ? `(${s.nama_kelas})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+            
             <div className="space-y-2">
-              <Label>Semester</Label>
+              <Label>Semester *</Label>
               <Select
                 value={form.semester_id}
                 onValueChange={(v) => setForm({ ...form, semester_id: v })}
@@ -312,27 +356,35 @@ function NotesPage() {
                 <SelectContent>
                   {(semesters.data || []).map((s) => (
                     <SelectItem key={s.id} value={String(s.id)}>
-                      {s.nama_semester}
+                      {s.nama_semester || `${s.tahun_ajaran} - Semester ${s.semester}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+            
             <div className="space-y-2">
-              <Label>Catatan</Label>
+              <Label>Catatan *</Label>
               <Textarea
-                rows={5}
+                rows={6}
                 value={form.catatan}
                 onChange={(e) => setForm({ ...form, catatan: e.target.value })}
                 placeholder="Tulis catatan untuk siswa..."
+                className="resize-none"
               />
+              <p className="text-xs text-muted-foreground">
+                {form.catatan.length} karakter
+              </p>
             </div>
           </div>
+          
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
               Batal
             </Button>
-            <Button onClick={save}>Simpan</Button>
+            <Button onClick={save} disabled={!form.student_id || !form.semester_id || !form.catatan.trim()}>
+              Simpan
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
