@@ -62,9 +62,8 @@ function NotesPage() {
   const [semesterId, setSemesterId] = useState<string>("all");
   const [classId, setClassId] = useState<string>("all");
   const [teacherId, setTeacherId] = useState<number | null>(null);
-  const [apiError, setApiError] = useState<string | null>(null);
-
-  // Load data dengan error handling
+  
+  // Load data
   const semesters = useApiData<any[]>("/semesters");
   const classes = useApiData<any[]>("/classes");
   const studentsData = useApiData<Student[]>("/students", { limit: 1000 });
@@ -72,17 +71,21 @@ function NotesPage() {
   const queryParams: any = {};
   if (semesterId !== "all") queryParams.semester_id = semesterId;
   
-  const { data: notesData, loading: notesLoading, reload, error: notesError } = useApiData<Note[]>("/notes", queryParams);
-
-  // Handle error dari API notes
-  useEffect(() => {
-    if (notesError) {
-      console.error("Notes API Error:", notesError);
-      setApiError(notesError.message || "Gagal memuat data catatan");
-    } else {
-      setApiError(null);
+  const { data: rawNotesData, loading: notesLoading, reload, error: notesError } = useApiData<any>("/notes", queryParams);
+  
+  // PERBAIKAN: Pastikan notesData selalu array
+  const notesData = useMemo(() => {
+    if (!rawNotesData) return [];
+    if (Array.isArray(rawNotesData)) return rawNotesData;
+    // Jika response adalah object dengan property data yang berisi array
+    if (rawNotesData.data && Array.isArray(rawNotesData.data)) return rawNotesData.data;
+    // Jika response adalah object biasa, coba konversi
+    if (typeof rawNotesData === 'object') {
+      console.warn("Notes data is not an array:", rawNotesData);
+      return [];
     }
-  }, [notesError]);
+    return [];
+  }, [rawNotesData]);
 
   // Load teacher ID
   useEffect(() => {
@@ -105,12 +108,14 @@ function NotesPage() {
 
   const studentMap = useMemo(() => {
     const m = new Map<number, Student>();
-    (studentsData.data || []).forEach((s) => m.set(s.id, s));
+    const students = Array.isArray(studentsData.data) ? studentsData.data : [];
+    students.forEach((s) => m.set(s.id, s));
     return m;
   }, [studentsData.data]);
 
   const filtered = useMemo(() => {
-    let rows = notesData || [];
+    let rows = notesData;
+    if (!Array.isArray(rows)) return [];
     if (classId !== "all") {
       rows = rows.filter((n) => {
         const s = studentMap.get(n.student_id);
@@ -197,7 +202,7 @@ function NotesPage() {
   }
 
   const filteredStudentsForForm = useMemo(() => {
-    const list = studentsData.data || [];
+    const list = Array.isArray(studentsData.data) ? studentsData.data : [];
     if (classId === "all") return list;
     return list.filter((s) => String(s.class_id) === classId);
   }, [studentsData.data, classId]);
@@ -215,7 +220,7 @@ function NotesPage() {
   }
 
   // Error state
-  if (apiError) {
+  if (notesError) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -231,14 +236,14 @@ function NotesPage() {
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Gagal Memuat Data</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            {apiError || "Terjadi kesalahan saat menghubungi server"}
+            {notesError.message || "Terjadi kesalahan saat menghubungi server"}
           </p>
           <div className="space-x-2">
             <Button onClick={() => window.location.reload()} variant="outline">
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh Halaman
             </Button>
-            <Button onClick={() => setApiError(null)}>
+            <Button onClick={() => reload()}>
               Coba Lagi
             </Button>
           </div>
@@ -269,7 +274,7 @@ function NotesPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Semester</SelectItem>
-            {(semesters.data || []).map((s) => (
+            {(Array.isArray(semesters.data) ? semesters.data : []).map((s) => (
               <SelectItem key={s.id} value={String(s.id)}>
                 {s.nama_semester || `${s.tahun_ajaran} - Semester ${s.semester}`}
               </SelectItem>
@@ -283,7 +288,7 @@ function NotesPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Kelas</SelectItem>
-            {(classes.data || []).map((k) => (
+            {(Array.isArray(classes.data) ? classes.data : []).map((k) => (
               <SelectItem key={k.id} value={String(k.id)}>
                 {k.nama_kelas}
               </SelectItem>
@@ -394,7 +399,7 @@ function NotesPage() {
                   <SelectValue placeholder="Pilih semester" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(semesters.data || []).map((s) => (
+                  {(Array.isArray(semesters.data) ? semesters.data : []).map((s) => (
                     <SelectItem key={s.id} value={String(s.id)}>
                       {s.nama_semester || `${s.tahun_ajaran} - Semester ${s.semester}`}
                     </SelectItem>
