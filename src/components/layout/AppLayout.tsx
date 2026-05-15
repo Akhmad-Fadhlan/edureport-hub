@@ -11,6 +11,7 @@ import {
   ListChecks,
   ClipboardEdit,
   FileText,
+  StickyNote,
   LogOut,
   Menu,
 } from "lucide-react";
