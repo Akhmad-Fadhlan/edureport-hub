@@ -30,7 +30,7 @@ import { useApiData } from "@/hooks/use-api-data";
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
 import { useAuth } from "@/stores/auth-store";
 import { toast } from "sonner";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2, AlertCircle, RefreshCw } from "lucide-react";
 
 export const Route = createFileRoute("/_authed/notes")({
   component: NotesPage,
@@ -59,35 +59,42 @@ interface Student {
 
 function NotesPage() {
   const { user } = useAuth();
+  const [semesterId, setSemesterId] = useState<string>("all");
+  const [classId, setClassId] = useState<string>("all");
+  const [teacherId, setTeacherId] = useState<number | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  // Load data dengan error handling
   const semesters = useApiData<any[]>("/semesters");
   const classes = useApiData<any[]>("/classes");
   const studentsData = useApiData<Student[]>("/students", { limit: 1000 });
-
-  const [semesterId, setSemesterId] = useState<string>("all");
-  const [classId, setClassId] = useState<string>("all");
-
-  // Gunakan query params yang benar untuk filtering
+  
   const queryParams: any = {};
   if (semesterId !== "all") queryParams.semester_id = semesterId;
-  if (classId !== "all") queryParams.class_id = classId;
   
-  const { data, loading, reload } = useApiData<Note[]>("/notes", queryParams);
+  const { data: notesData, loading: notesLoading, reload, error: notesError } = useApiData<Note[]>("/notes", queryParams);
 
-  const [teacherId, setTeacherId] = useState<number | null>(null);
-  
+  // Handle error dari API notes
+  useEffect(() => {
+    if (notesError) {
+      console.error("Notes API Error:", notesError);
+      setApiError(notesError.message || "Gagal memuat data catatan");
+    } else {
+      setApiError(null);
+    }
+  }, [notesError]);
+
+  // Load teacher ID
   useEffect(() => {
     (async () => {
       if (!user) return;
       try {
-        // Ambil teacher berdasarkan user_id dari endpoint teachers
-        const res = await apiGet<any[] | { items?: any[] }>("/teachers");
-        const rows = Array.isArray(res) ? res : (res.items ?? []);
-        // Cari teacher yang sesuai dengan user yang login
+        const res = await apiGet<any[]>("/teachers");
+        const rows = Array.isArray(res) ? res : [];
         const teacher = rows.find((t: any) => Number(t.user_id) === Number(user.id));
         if (teacher?.id) {
           setTeacherId(Number(teacher.id));
         } else if (rows.length > 0) {
-          // Fallback ke teacher pertama jika tidak ditemukan
           setTeacherId(Number(rows[0].id));
         }
       } catch (error) {
@@ -102,9 +109,8 @@ function NotesPage() {
     return m;
   }, [studentsData.data]);
 
-  // Filtering berdasarkan class dilakukan di frontend karena API mungkin tidak support
   const filtered = useMemo(() => {
-    let rows = data || [];
+    let rows = notesData || [];
     if (classId !== "all") {
       rows = rows.filter((n) => {
         const s = studentMap.get(n.student_id);
@@ -112,11 +118,12 @@ function NotesPage() {
       });
     }
     return rows;
-  }, [data, classId, studentMap]);
+  }, [notesData, classId, studentMap]);
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Note | null>(null);
   const [form, setForm] = useState({ student_id: "", semester_id: "", catatan: "" });
+  const [saving, setSaving] = useState(false);
 
   function openNew() {
     setEditing(null);
@@ -139,7 +146,6 @@ function NotesPage() {
   }
 
   async function save() {
-    // Validasi input
     if (!form.student_id || !form.semester_id || !form.catatan.trim()) {
       toast.error("Lengkapi siswa, semester, dan catatan");
       return;
@@ -150,6 +156,7 @@ function NotesPage() {
       return;
     }
     
+    setSaving(true);
     try {
       const payload = {
         student_id: parseInt(form.student_id),
@@ -159,21 +166,20 @@ function NotesPage() {
       };
       
       if (editing) {
-        // PUT update - hanya kirim field yang diupdate
         await apiPut(`/notes/${editing.id}`, { catatan: payload.catatan });
         toast.success("Catatan berhasil diupdate");
       } else {
-        // POST create
         await apiPost("/notes", payload);
         toast.success("Catatan berhasil ditambahkan");
       }
       
       setOpen(false);
-      reload(); // Reload data setelah save
+      reload();
     } catch (e: any) {
       const errorMsg = e?.response?.data?.message || e?.message || "Gagal menyimpan catatan";
       toast.error(errorMsg);
-      console.error("Save error:", e);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -187,7 +193,6 @@ function NotesPage() {
     } catch (e: any) {
       const errorMsg = e?.response?.data?.message || e?.message || "Gagal menghapus catatan";
       toast.error(errorMsg);
-      console.error("Delete error:", e);
     }
   }
 
@@ -196,6 +201,51 @@ function NotesPage() {
     if (classId === "all") return list;
     return list.filter((s) => String(s.class_id) === classId);
   }, [studentsData.data, classId]);
+
+  // Loading state
+  if (semesters.loading || classes.loading || studentsData.loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Memuat data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (apiError) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Catatan Siswa</h1>
+            <p className="text-sm text-muted-foreground">
+              Kelola catatan perkembangan siswa per semester
+            </p>
+          </div>
+        </div>
+        
+        <Card className="p-8 text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Gagal Memuat Data</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            {apiError || "Terjadi kesalahan saat menghubungi server"}
+          </p>
+          <div className="space-x-2">
+            <Button onClick={() => window.location.reload()} variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh Halaman
+            </Button>
+            <Button onClick={() => setApiError(null)}>
+              Coba Lagi
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -255,18 +305,18 @@ function NotesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading && (
+            {notesLoading && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-6">
                   <div className="flex items-center justify-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                    Memuat data...
+                    <span className="text-muted-foreground">Memuat catatan...</span>
                   </div>
                 </TableCell>
               </TableRow>
             )}
             
-            {!loading && filtered.length === 0 && (
+            {!notesLoading && filtered.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Belum ada catatan untuk filter yang dipilih
@@ -274,7 +324,7 @@ function NotesPage() {
               </TableRow>
             )}
             
-            {!loading && filtered.map((n) => {
+            {!notesLoading && filtered.map((n) => {
               const student = studentMap.get(n.student_id);
               return (
                 <TableRow key={n.id}>
@@ -292,20 +342,10 @@ function NotesPage() {
                   </TableCell>
                   <TableCell className="capitalize">{n.teacher_name || `Guru ID: ${n.teacher_id}`}</TableCell>
                   <TableCell className="text-right space-x-2 whitespace-nowrap">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => openEdit(n)}
-                      title="Edit catatan"
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(n)} title="Edit catatan">
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => del(n.id)}
-                      title="Hapus catatan"
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => del(n.id)} title="Hapus catatan">
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </TableCell>
@@ -379,11 +419,11 @@ function NotesPage() {
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
               Batal
             </Button>
-            <Button onClick={save} disabled={!form.student_id || !form.semester_id || !form.catatan.trim()}>
-              Simpan
+            <Button onClick={save} disabled={!form.student_id || !form.semester_id || !form.catatan.trim() || saving}>
+              {saving ? "Menyimpan..." : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>
