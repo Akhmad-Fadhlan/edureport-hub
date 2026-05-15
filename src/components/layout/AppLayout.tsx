@@ -40,6 +40,7 @@ const NAV: NavItem[] = [
   { to: "/materials", label: "Materi", icon: <Layers className="h-4 w-4" />, roles: ADMIN },
   { to: "/indicators", label: "Indikator", icon: <ListChecks className="h-4 w-4" />, roles: ADMIN },
   { to: "/grades", label: "Input Nilai", icon: <ClipboardEdit className="h-4 w-4" />, roles: ALL },
+  { to: "/notes", label: "Catatan Siswa", icon: <StickyNote className="h-4 w-4" />, roles: ALL },
   { to: "/reports", label: "Rapor PDF", icon: <FileText className="h-4 w-4" />, roles: ALL },
 ];
 
