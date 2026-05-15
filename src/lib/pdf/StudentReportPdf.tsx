@@ -704,6 +704,27 @@ function chunkMaterials<T>(arr: T[], size: number): T[][] {
   return result;
 }
 
+function shortenLinkedin(url: string) {
+  if (!url) return url;
+  try {
+    const u = new URL(url.startsWith("http") ? url : `https://${url}`);
+    const path = u.pathname.replace(/\/$/, "");
+    const match = path.match(/\/in\/([^/]+)/i);
+    if (match) return `linkedin.com/in/${match[1]}`;
+    const seg = path.split("/").filter(Boolean).pop();
+    return seg ? `linkedin.com/${seg}` : `linkedin.com`;
+  } catch {
+    return url.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, "");
+  }
+}
+
+function getScaleColor(nilai: number) {
+  if (nilai >= 4.6) return "#16a34a";
+  if (nilai >= 3.6) return "#2563eb";
+  if (nilai >= 2.5) return "#ea580c";
+  return "#dc2626";
+}
+
 function splitSemesterLabel(label: string) {
   if (label === "1st semester") return { number: "1", suffix: "st", rest: " semester" };
   if (label === "2nd semester") return { number: "2", suffix: "nd", rest: " semester" };
