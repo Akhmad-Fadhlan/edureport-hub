@@ -738,6 +738,7 @@ function splitSemesterLabel(label: string) {
 function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
   const totalSegs = 5;
   const filled = Math.min(Math.round((nilai / max) * totalSegs), totalSegs);
+  const color = getScaleColor(nilai);
 
   return (
     <View style={styles.progressWrapper}>
@@ -746,11 +747,11 @@ function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
           {Array.from({ length: totalSegs }).map((_, i) => (
             <View
               key={i}
-              style={[styles.progressSegment, { backgroundColor: i < filled ? NAVY : "#dbe4f0" }]}
+              style={[styles.progressSegment, { backgroundColor: i < filled ? color : "#dbe4f0" }]}
             />
           ))}
         </View>
-        <View style={styles.progressValue}>
+        <View style={[styles.progressValue, { backgroundColor: color }]}>
           <Text style={styles.progressValueText}>{nilai.toFixed(1)}</Text>
         </View>
       </View>
