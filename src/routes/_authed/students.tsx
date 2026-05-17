@@ -81,9 +81,11 @@ function StudentsPage() {
   function openEdit(s: Student) {
     setEditing(s);
     setForm({ nama: s.nama, email: s.email, linkedin: s.linkedin || "", class_id: String(s.class_id) });
-    setPhotoFile(null); setPhotoPreview(studentPhotoUrl(s.photo));
-    setOpen(true);
-  }
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    if (s.photo) getStudentPhoto(s.photo).then(setPhotoPreview);
+        setOpen(true);
+      }
   function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]; if (!f) return;
     if (f.size > 2 * 1024 * 1024) { toast.error("Maksimal 2MB"); return; }
