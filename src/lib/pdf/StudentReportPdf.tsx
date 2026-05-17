@@ -262,8 +262,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: "hidden",
     backgroundColor: "#e2e8f0",
-    marginTop: 16,    // ← foto turun 16pt
-    marginLeft: 10, 
+    marginTop: 14,    // ← foto turun 16pt
+    marginLeft: 5, 
   },
 
   scPhoto: {
