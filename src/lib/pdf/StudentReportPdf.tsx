@@ -272,7 +272,6 @@ const styles = StyleSheet.create({
         width: 82,
     height: 82,
        borderRadius: 10,
-    objectFit: "cover",
   },
 
   avatarPlaceholder: {
