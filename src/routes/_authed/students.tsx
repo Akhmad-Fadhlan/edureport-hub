@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useApiData } from "@/hooks/use-api-data";
-import { api, apiPost, apiPut, apiDelete, getStudentPhoto } from "@/lib/api";
+import { api, apiDelete, getStudentPhoto } from "@/lib/api";
 import { useAuth } from "@/stores/auth-store";
 import { toast } from "sonner";
-import { Pencil, Plus, Search, Trash2, Upload, Linkedin, Mail } from "lucide-react";
+import { Pencil, Plus, Search, Trash2, Upload, Linkedin } from "lucide-react";
 
 export const Route = createFileRoute("/_authed/students")({
   component: StudentsPage,
@@ -28,21 +28,30 @@ interface Student {
 }
 interface Klass { id: number; nama_kelas: string }
 
+// ── Komponen avatar async: load foto via API (dengan token) ──────────────────
 function StudentAvatar({ photo, nama }: { photo?: string; nama: string }) {
   const [src, setSrc] = useState<string | null>(null);
+
   useEffect(() => {
-    if (photo) getStudentPhoto(photo).then(setSrc);
+    if (!photo) { setSrc(null); return; }
+    let cancelled = false;
+    getStudentPhoto(photo).then((url) => {
+      if (!cancelled) setSrc(url);
+    });
+    return () => { cancelled = true; };
   }, [photo]);
 
-  return src ? (
-    <img src={src} alt={nama} className="h-10 w-10 rounded-full object-cover" />
-  ) : (
+  if (src) {
+    return <img src={src} alt={nama} className="h-10 w-10 rounded-full object-cover" />;
+  }
+  return (
     <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
       {nama?.[0]?.toUpperCase()}
     </div>
   );
 }
 
+// ── Halaman Utama ────────────────────────────────────────────────────────────
 function StudentsPage() {
   const { isGuru, getCabangId } = useAuth();
   const guruMode = isGuru();
@@ -55,12 +64,10 @@ function StudentsPage() {
   const params: any = { page, per_page: 20 };
   if (search) params.search = search;
   if (classFilter !== "all") params.class_id = classFilter;
-  // Guru hanya melihat siswa di cabangnya
   if (guruMode && cabangId) params.cabang_id = cabangId;
 
   const { data, loading, reload } = useApiData<{ items: Student[]; pagination?: any }>("/students", params);
 
-  // Guru hanya melihat kelas di cabangnya
   const classParams: any = {};
   if (guruMode && cabangId) classParams.cabang_id = cabangId;
   const classes = useApiData<Klass[]>("/classes", classParams);
@@ -75,23 +82,32 @@ function StudentsPage() {
   function openNew() {
     setEditing(null);
     setForm({ nama: "", email: "", linkedin: "", class_id: classes.data?.[0]?.id?.toString() || "" });
-    setPhotoFile(null); setPhotoPreview(null);
+    setPhotoFile(null);
+    setPhotoPreview(null);
     setOpen(true);
   }
+
   function openEdit(s: Student) {
     setEditing(s);
     setForm({ nama: s.nama, email: s.email, linkedin: s.linkedin || "", class_id: String(s.class_id) });
     setPhotoFile(null);
     setPhotoPreview(null);
-    if (s.photo) getStudentPhoto(s.photo).then(setPhotoPreview);
-        setOpen(true);
-      }
+    // Load foto existing via API (authenticated)
+    if (s.photo) {
+      getStudentPhoto(s.photo).then(setPhotoPreview);
+    }
+    setOpen(true);
+  }
+
   function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0]; if (!f) return;
+    const f = e.target.files?.[0];
+    if (!f) return;
     if (f.size > 2 * 1024 * 1024) { toast.error("Maksimal 2MB"); return; }
     if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) { toast.error("Hanya JPG/PNG/WEBP"); return; }
-    setPhotoFile(f); setPhotoPreview(URL.createObjectURL(f));
+    setPhotoFile(f);
+    setPhotoPreview(URL.createObjectURL(f));
   }
+
   async function save() {
     if (saving) return;
     setSaving(true);
@@ -101,7 +117,6 @@ function StudentsPage() {
       fd.append("email", form.email);
       fd.append("linkedin", form.linkedin);
       fd.append("class_id", form.class_id);
-      // Guru: paksa cabang_id sesuai cabang yang dimiliki
       if (guruMode && cabangId) fd.append("cabang_id", String(cabangId));
       if (photoFile) fd.append("photo", photoFile);
       if (editing) {
@@ -109,15 +124,25 @@ function StudentsPage() {
       } else {
         await api.post(`/students`, fd);
       }
-      toast.success("Tersimpan"); setOpen(false); reload();
+      toast.success("Tersimpan");
+      setOpen(false);
+      reload();
     } catch (e: any) {
       toast.error(e?.response?.data?.message || "Gagal menyimpan");
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }
+
   async function del(id: number) {
     if (!confirm("Hapus siswa ini?")) return;
-    try { await apiDelete(`/students/${id}`); toast.success("Dihapus"); reload(); }
-    catch (e: any) { toast.error(e?.response?.data?.message || "Gagal"); }
+    try {
+      await apiDelete(`/students/${id}`);
+      toast.success("Dihapus");
+      reload();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Gagal");
+    }
   }
 
   return (
@@ -133,13 +158,20 @@ function StudentsPage() {
       <Card className="p-4 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cari nama / email..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="pl-9" />
+          <Input
+            placeholder="Cari nama / email..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            className="pl-9"
+          />
         </div>
         <Select value={classFilter} onValueChange={(v) => { setClassFilter(v); setPage(1); }}>
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="Filter Kelas" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Kelas</SelectItem>
-            {(classes.data || []).map((k) => <SelectItem key={k.id} value={String(k.id)}>{k.nama_kelas}</SelectItem>)}
+            {(classes.data || []).map((k) => (
+              <SelectItem key={k.id} value={String(k.id)}>{k.nama_kelas}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Card>
@@ -158,7 +190,9 @@ function StudentsPage() {
           </TableHeader>
           <TableBody>
             {loading && Array.from({ length: 4 }).map((_, i) => (
-              <TableRow key={i}><TableCell colSpan={6}><div className="h-8 bg-muted animate-pulse rounded" /></TableCell></TableRow>
+              <TableRow key={i}>
+                <TableCell colSpan={6}><div className="h-8 bg-muted animate-pulse rounded" /></TableCell>
+              </TableRow>
             ))}
             {!loading && (data?.items || []).map((s) => (
               <TableRow key={s.id}>
@@ -169,7 +203,9 @@ function StudentsPage() {
                 <TableCell className="text-sm">{s.email}</TableCell>
                 <TableCell>{s.nama_kelas || s.class_id}</TableCell>
                 <TableCell className="text-sm">
-                  {s.linkedin ? <a href={s.linkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline"><Linkedin className="h-3 w-3" />Profile</a> : "—"}
+                  {s.linkedin
+                    ? <a href={s.linkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline"><Linkedin className="h-3 w-3" />Profile</a>
+                    : "—"}
                 </TableCell>
                 <TableCell className="text-right space-x-2">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(s)}><Pencil className="h-4 w-4" /></Button>
@@ -178,13 +214,17 @@ function StudentsPage() {
               </TableRow>
             ))}
             {!loading && (!data?.items || data.items.length === 0) && (
-              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Tidak ada data</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Tidak ada data</TableCell>
+              </TableRow>
             )}
           </TableBody>
         </Table>
         {data?.pagination && data.pagination.last_page > 1 && (
           <div className="flex items-center justify-between p-3 border-t text-sm">
-            <div className="text-muted-foreground">Halaman {data.pagination.current_page} dari {data.pagination.last_page} • Total {data.pagination.total}</div>
+            <div className="text-muted-foreground">
+              Halaman {data.pagination.current_page} dari {data.pagination.last_page} • Total {data.pagination.total}
+            </div>
             <div className="space-x-2">
               <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Sebelumnya</Button>
               <Button variant="outline" size="sm" disabled={page >= data.pagination.last_page} onClick={() => setPage(page + 1)}>Berikutnya</Button>
@@ -199,7 +239,9 @@ function StudentsPage() {
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="h-20 w-20 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-                {photoPreview ? <img src={photoPreview} alt="" className="h-full w-full object-cover" /> : <Upload className="h-6 w-6 text-muted-foreground" />}
+                {photoPreview
+                  ? <img src={photoPreview} alt="" className="h-full w-full object-cover" />
+                  : <Upload className="h-6 w-6 text-muted-foreground" />}
               </div>
               <div>
                 <Label className="cursor-pointer inline-flex items-center gap-2 text-sm font-medium">
@@ -217,7 +259,9 @@ function StudentsPage() {
               <Select value={form.class_id} onValueChange={(v) => setForm({ ...form, class_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Pilih kelas" /></SelectTrigger>
                 <SelectContent>
-                  {(classes.data || []).map((k) => <SelectItem key={k.id} value={String(k.id)}>{k.nama_kelas}</SelectItem>)}
+                  {(classes.data || []).map((k) => (
+                    <SelectItem key={k.id} value={String(k.id)}>{k.nama_kelas}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
