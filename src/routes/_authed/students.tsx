@@ -8,13 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useApiData } from "@/hooks/use-api-data";
-import { api, apiDelete, getStudentPhoto } from "@/lib/api";
-import { toast } from "sonner";
-import { Pencil, Plus, Search, Trash2, Upload, Linkedin } from "lucide-react";
-import { StudentPhoto } from "@/components/StudentPhoto";
-import { CabangBadge } from "@/components/CabangBadge";
-import { CABANG_LIST, CABANG_LABEL, type Cabang } from "@/lib/cabang";
+import { api, apiPost, apiPut, apiDelete, studentPhotoUrl } from "@/lib/api";
 import { useAuth } from "@/stores/auth-store";
+import { toast } from "sonner";
+import { Pencil, Plus, Search, Trash2, Upload, Linkedin, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/_authed/students")({
   component: StudentsPage,
@@ -28,70 +25,48 @@ interface Student {
   photo?: string;
   class_id: number;
   nama_kelas?: string;
-  cabang?: Cabang | null;
 }
-interface Klass { id: number; nama_kelas: string; cabang?: Cabang | null }
+interface Klass { id: number; nama_kelas: string }
 
 function StudentsPage() {
-  const { user, isGuru } = useAuth();
-  const guru = isGuru();
-  const guruCabang = (user?.cabang ?? null) as Cabang | null;
+  const { isGuru, getCabangId } = useAuth();
+  const guruMode = isGuru();
+  const cabangId = getCabangId();
 
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
-  const [cabangFilter, setCabangFilter] = useState<string>(guru && guruCabang ? guruCabang : "all");
   const [page, setPage] = useState(1);
-
-  const effectiveCabang: Cabang | "all" =
-    guru && guruCabang ? guruCabang : (cabangFilter as Cabang | "all");
 
   const params: any = { page, per_page: 20 };
   if (search) params.search = search;
   if (classFilter !== "all") params.class_id = classFilter;
-  if (effectiveCabang !== "all") params.cabang = effectiveCabang;
+  // Guru hanya melihat siswa di cabangnya
+  if (guruMode && cabangId) params.cabang_id = cabangId;
 
   const { data, loading, reload } = useApiData<{ items: Student[]; pagination?: any }>("/students", params);
+
+  // Guru hanya melihat kelas di cabangnya
   const classParams: any = {};
-  if (effectiveCabang !== "all") classParams.cabang = effectiveCabang;
+  if (guruMode && cabangId) classParams.cabang_id = cabangId;
   const classes = useApiData<Klass[]>("/classes", classParams);
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Student | null>(null);
-  const [form, setForm] = useState<{ nama: string; email: string; linkedin: string; class_id: string; cabang: string }>({
-    nama: "", email: "", linkedin: "", class_id: "", cabang: guru && guruCabang ? guruCabang : "",
-  });
+  const [form, setForm] = useState({ nama: "", email: "", linkedin: "", class_id: "" });
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   function openNew() {
     setEditing(null);
-    setForm({
-      nama: "", email: "", linkedin: "",
-      class_id: classes.data?.[0]?.id?.toString() || "",
-      cabang: guru && guruCabang ? guruCabang : "",
-    });
+    setForm({ nama: "", email: "", linkedin: "", class_id: classes.data?.[0]?.id?.toString() || "" });
     setPhotoFile(null); setPhotoPreview(null);
     setOpen(true);
   }
-  async function openEdit(s: Student) {
-    if (guru && guruCabang && s.cabang && s.cabang !== guruCabang) {
-      toast.error("Anda tidak punya akses ke siswa cabang lain");
-      return;
-    }
+  function openEdit(s: Student) {
     setEditing(s);
-    setForm({
-      nama: s.nama, email: s.email, linkedin: s.linkedin || "",
-      class_id: String(s.class_id),
-      cabang: s.cabang || (guru && guruCabang ? guruCabang : ""),
-    });
-    setPhotoFile(null);
-    if (s.photo) {
-      const d = await getStudentPhoto(s.photo);
-      setPhotoPreview(d);
-    } else {
-      setPhotoPreview(null);
-    }
+    setForm({ nama: s.nama, email: s.email, linkedin: s.linkedin || "", class_id: String(s.class_id) });
+    setPhotoFile(null); setPhotoPreview(studentPhotoUrl(s.photo));
     setOpen(true);
   }
   function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -109,7 +84,8 @@ function StudentsPage() {
       fd.append("email", form.email);
       fd.append("linkedin", form.linkedin);
       fd.append("class_id", form.class_id);
-      if (form.cabang) fd.append("cabang", form.cabang);
+      // Guru: paksa cabang_id sesuai cabang yang dimiliki
+      if (guruMode && cabangId) fd.append("cabang_id", String(cabangId));
       if (photoFile) fd.append("photo", photoFile);
       if (editing) {
         await api.post(`/students/${editing.id}?_method=PUT`, fd);
@@ -142,15 +118,6 @@ function StudentsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Cari nama / email..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="pl-9" />
         </div>
-        {!guru && (
-          <Select value={cabangFilter} onValueChange={(v) => { setCabangFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Filter Cabang" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Cabang</SelectItem>
-              {CABANG_LIST.map((c) => <SelectItem key={c} value={c}>{CABANG_LABEL[c]}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        )}
         <Select value={classFilter} onValueChange={(v) => { setClassFilter(v); setPage(1); }}>
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="Filter Kelas" /></SelectTrigger>
           <SelectContent>
@@ -168,33 +135,26 @@ function StudentsPage() {
               <TableHead>Nama</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Kelas</TableHead>
-              <TableHead>Cabang</TableHead>
               <TableHead>LinkedIn</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading && Array.from({ length: 4 }).map((_, i) => (
-              <TableRow key={i}><TableCell colSpan={7}><div className="h-8 bg-muted animate-pulse rounded" /></TableCell></TableRow>
+              <TableRow key={i}><TableCell colSpan={6}><div className="h-8 bg-muted animate-pulse rounded" /></TableCell></TableRow>
             ))}
             {!loading && (data?.items || []).map((s) => (
               <TableRow key={s.id}>
                 <TableCell>
-                  <StudentPhoto
-                    filename={s.photo}
-                    alt={s.nama}
-                    className="h-10 w-10 rounded-full object-cover"
-                    fallback={
-                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
-                        {s.nama?.[0]?.toUpperCase()}
-                      </div>
-                    }
-                  />
+                  {s.photo ? (
+                    <img src={studentPhotoUrl(s.photo)!} alt={s.nama} className="h-10 w-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">{s.nama?.[0]?.toUpperCase()}</div>
+                  )}
                 </TableCell>
                 <TableCell className="font-medium capitalize">{s.nama}</TableCell>
                 <TableCell className="text-sm">{s.email}</TableCell>
                 <TableCell>{s.nama_kelas || s.class_id}</TableCell>
-                <TableCell><CabangBadge cabang={s.cabang} /></TableCell>
                 <TableCell className="text-sm">
                   {s.linkedin ? <a href={s.linkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline"><Linkedin className="h-3 w-3" />Profile</a> : "—"}
                 </TableCell>
@@ -205,7 +165,7 @@ function StudentsPage() {
               </TableRow>
             ))}
             {!loading && (!data?.items || data.items.length === 0) && (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Tidak ada data</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Tidak ada data</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
@@ -248,22 +208,6 @@ function StudentsPage() {
                 </SelectContent>
               </Select>
             </div>
-            {!guru && (
-              <div className="space-y-2">
-                <Label>Cabang</Label>
-                <Select value={form.cabang} onValueChange={(v) => setForm({ ...form, cabang: v })}>
-                  <SelectTrigger><SelectValue placeholder="Pilih cabang" /></SelectTrigger>
-                  <SelectContent>
-                    {CABANG_LIST.map((c) => <SelectItem key={c} value={c}>{CABANG_LABEL[c]}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            {guru && guruCabang && (
-              <div className="text-xs text-muted-foreground">
-                Cabang otomatis: <CabangBadge cabang={guruCabang} />
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
