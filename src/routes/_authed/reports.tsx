@@ -63,8 +63,6 @@ function ReportsPage() {
   if (guruMode && cabangId) classParams.cabang_id = cabangId;
   const classes = useApiData<any[]>("/classes", classParams);
 
-  const currentUser = useApiData<any>("/auth/me");
-
   const [semesterId, setSemesterId] = useState<string>("");
   const [classId, setClassId] = useState<string>("");
   const [studentId, setStudentId] = useState<string>("");
@@ -106,7 +104,7 @@ function ReportsPage() {
     setBuilding(true);
     try {
       // ── 1. Fetch semua data paralel ────────────────────────────────────────
-      const [studentDetail, materials, indicators, grades] = await Promise.all([
+      const [studentDetail, materials, indicators, grades, teacher] = await Promise.all([
         apiGet<any>(`/students/${studentId}`).catch(
           () =>
             (students.data?.items ?? []).find(
@@ -119,6 +117,8 @@ function ReportsPage() {
           semester_id: semesterId,
           student_id: studentId,
         }),
+        // FIX: fetch /auth/me langsung di sini agar data guru selalu fresh
+        apiGet<any>("/auth/me").catch(() => null),
       ]);
 
       // ── 2. Semester info ───────────────────────────────────────────────────
@@ -162,10 +162,9 @@ function ReportsPage() {
         : null;
 
       // ── 5. Resolve data guru (user yang sedang login) ──────────────────────
-      const teacher = currentUser.data;
-
+      // FIX: gunakan data teacher yang di-fetch langsung (bukan dari hook state)
       const teacherNama: string =
-        teacher?.nama ?? teacher?.name ?? "Nama Guru IT";
+        teacher?.nama ?? teacher?.name ?? teacher?.full_name ?? "Nama Guru IT";
 
       const teacherJabatan: string =
         teacher?.jabatan ?? teacher?.role_label ?? "Guru IT";
@@ -205,6 +204,13 @@ function ReportsPage() {
           urlToDataUrl(reportLastBgUrl),
         ]);
 
+      // FIX: generate tanggal saat rapor di-build
+      const generatedDate = new Date().toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+
       // ── 8. Set state ───────────────────────────────────────────────────────
       setPdfData({
         student: {
@@ -229,6 +235,7 @@ function ReportsPage() {
           jabatan: teacherJabatan,
           ttdDataUrl: ttdDataUrl ?? null,
         },
+        generatedDate,
         materials: pdfMaterials,
         comment,
         schoolName: "SMP IDN Boarding School",
