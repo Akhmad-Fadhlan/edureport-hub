@@ -59,18 +59,22 @@ interface Student {
 
 function NotesPage() {
   const { user } = useAuth();
+  const isGuru = user?.role === "guru";
+  const guruCabang = isGuru ? (user?.cabang ?? null) : null;
+  const baseParams: any = guruCabang ? { cabang: guruCabang } : {};
+
   const [semesterId, setSemesterId] = useState<string>("all");
   const [classId, setClassId] = useState<string>("all");
   const [teacherId, setTeacherId] = useState<number | null>(null);
-  
+
   // Load data
   const semesters = useApiData<any[]>("/semesters");
-  const classes = useApiData<any[]>("/classes");
-  const studentsData = useApiData<Student[]>("/students", { limit: 1000 });
-  
-  const queryParams: any = {};
+  const classes = useApiData<any[]>("/classes", baseParams);
+  const studentsData = useApiData<Student[]>("/students", { limit: 1000, ...baseParams });
+
+  const queryParams: any = { ...baseParams };
   if (semesterId !== "all") queryParams.semester_id = semesterId;
-  
+
   const { data: rawNotesData, loading: notesLoading, reload, error: notesError } = useApiData<any>("/notes", queryParams);
   
   // PERBAIKAN: Pastikan notesData selalu array
@@ -236,7 +240,7 @@ function NotesPage() {
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Gagal Memuat Data</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            {notesError.message || "Terjadi kesalahan saat menghubungi server"}
+            {(typeof notesError === "string" ? notesError : (notesError as any)?.message) || "Terjadi kesalahan saat menghubungi server"}
           </p>
           <div className="space-x-2">
             <Button onClick={() => window.location.reload()} variant="outline">
@@ -329,7 +333,7 @@ function NotesPage() {
               </TableRow>
             )}
             
-            {!notesLoading && filtered.map((n) => {
+            {!notesLoading && filtered.map((n: Note) => {
               const student = studentMap.get(n.student_id);
               return (
                 <TableRow key={n.id}>
