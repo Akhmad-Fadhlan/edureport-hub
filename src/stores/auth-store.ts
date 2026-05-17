@@ -8,7 +8,6 @@ export interface AuthUser {
   name: string;
   email: string;
   role: Role;
-  cabang_id?: number | null; // ID cabang yang dimiliki guru (null = semua cabang)
 }
 
 interface AuthState {
@@ -19,13 +18,6 @@ interface AuthState {
   login: (email: string, password: string, remember: boolean) => Promise<void>;
   logout: () => void;
   isAdmin: () => boolean;
-  isGuru: () => boolean;
-  /**
-   * Mengembalikan cabang_id dari user yang login.
-   * - Jika role guru: mengembalikan cabang_id guru tersebut
-   * - Jika admin/superadmin: null (tidak dibatasi cabang)
-   */
-  getCabangId: () => number | null;
 }
 
 export const useAuth = create<AuthState>((set, get) => ({
@@ -52,14 +44,5 @@ export const useAuth = create<AuthState>((set, get) => ({
   isAdmin: () => {
     const r = get().user?.role;
     return r === "admin" || r === "superadmin";
-  },
-  isGuru: () => {
-    return get().user?.role === "guru";
-  },
-  getCabangId: () => {
-    const u = get().user;
-    if (!u) return null;
-    if (u.role === "guru") return u.cabang_id ?? null;
-    return null;
   },
 }));
