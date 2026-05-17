@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useApiData } from "@/hooks/use-api-data";
-import { apiGet, studentPhotoUrl } from "@/lib/api";
+import { apiGet, getStudentPhoto } from "@/lib/api";
 import { useAuth } from "@/stores/auth-store";
 import { Loader2, Download, FileText } from "lucide-react";
 import {
@@ -32,42 +32,20 @@ export const Route = createFileRoute("/_authed/reports")({
 
 async function urlToDataUrl(url: string | null | undefined): Promise<string | null> {
   if (!url) return null;
-
   try {
-    const res = await fetch(url, {
-      mode: "cors",
-      credentials: "include",
-    });
-
+    const res = await fetch(url, { mode: "cors", credentials: "include" });
     if (!res.ok) return null;
-
     const blob = await res.blob();
-
     return await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
-
       reader.onloadend = () => resolve(reader.result as string);
       reader.onerror = reject;
-
       reader.readAsDataURL(blob);
     });
   } catch (err) {
     console.error("urlToDataUrl error:", err);
     return null;
   }
-}
-
-/**
- * Normalisasi URL foto / TTD:
- * - Jika sudah absolute (http/https) → pakai langsung
- * - Jika relative path  → delegasikan ke studentPhotoUrl()
- * - Null / undefined    → null
- */
-function resolveMediaUrl(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-  // pakai helper yang sama dengan halaman students
-  return studentPhotoUrl(raw) ?? null;
 }
 
 /* ============================================================================
@@ -80,14 +58,11 @@ function ReportsPage() {
   const cabangId = getCabangId();
 
   const semesters = useApiData<any[]>("/semesters");
-  // Guru hanya melihat kelas di cabangnya
+
   const classParams: any = {};
   if (guruMode && cabangId) classParams.cabang_id = cabangId;
   const classes = useApiData<any[]>("/classes", classParams);
 
-  // ── ambil data user yang sedang login ──────────────────────────────────────
-  // Endpoint /auth/me harus ada di backend; kalau belum, tambahkan route-nya.
-  // Field yang mungkin dikembalikan: id, nama, name, jabatan, role_label, ttd
   const currentUser = useApiData<any>("/auth/me");
 
   const [semesterId, setSemesterId] = useState<string>("");
@@ -120,9 +95,7 @@ function ReportsPage() {
       setPDFViewer(() => mod.PDFViewer);
       setPDFDownloadLink(() => mod.PDFDownloadLink);
     });
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
   /* --------------------------------------------------------------------------
@@ -134,7 +107,6 @@ function ReportsPage() {
     try {
       // ── 1. Fetch semua data paralel ────────────────────────────────────────
       const [studentDetail, materials, indicators, grades] = await Promise.all([
-        // Coba endpoint individual; fallback ke list yang sudah ada di state
         apiGet<any>(`/students/${studentId}`).catch(
           () =>
             (students.data?.items ?? []).find(
@@ -184,45 +156,37 @@ function ReportsPage() {
             })),
         }));
 
-      // ── 4. Resolve foto siswa ──────────────────────────────────────────────
-      // Gunakan pola yang sama dengan halaman students.tsx → studentPhotoUrl()
-     const photoUrl = studentPhotoUrl(studentDetail?.photo);
-      const photoDataUrl = studentPhotoUrl(studentDetail?.photo) ?? null;
-      console.log("PHOTO:", studentDetail?.photo);
-console.log("PHOTO URL:", photoUrl);
-console.log("PHOTO DATA:", photoDataUrl);
+      // ── 4. Resolve foto siswa via API (authenticated, bukan URL langsung) ──
+      const photoDataUrl = studentDetail?.photo
+        ? await getStudentPhoto(studentDetail.photo)
+        : null;
+
       // ── 5. Resolve data guru (user yang sedang login) ──────────────────────
       const teacher = currentUser.data;
 
-      // Field nama: bisa "nama" atau "name" tergantung backend
       const teacherNama: string =
         teacher?.nama ?? teacher?.name ?? "Nama Guru IT";
 
-      // Field jabatan: bisa "jabatan" atau "role_label"
       const teacherJabatan: string =
         teacher?.jabatan ?? teacher?.role_label ?? "Guru IT";
 
-      // Field TTD: bisa "ttd" (path relatif atau URL absolut)
-      const ttdRawUrl = resolveMediaUrl(teacher?.ttd);
+      // TTD guru: fetch via URL (bisa diakses publik atau pakai credentials)
+      const ttdRawUrl = teacher?.ttd
+        ? teacher.ttd.startsWith("http")
+          ? teacher.ttd
+          : null
+        : null;
       const ttdDataUrl = await urlToDataUrl(ttdRawUrl);
 
       // ── 6. Fetch catatan / comment ─────────────────────────────────────────
-      // Backend: GET /notes?student_id=X&semester_id=Y
-      // Response yang mungkin:
-      //   { success: true, data: { comment: "...", catatan: "..." } }
-      //   { success: true, data: [{ comment: "...", catatan: "..." }] }
-      //   { success: true, data: null }
       let comment: string | null = null;
       try {
         const noteRes = await apiGet<any>("/notes", {
           student_id: studentId,
           semester_id: semesterId,
         });
-
         if (noteRes) {
-          // Kalau response array, ambil item pertama
           const noteItem = Array.isArray(noteRes) ? noteRes[0] : noteRes;
-          // Normalise field: comment atau catatan
           comment =
             noteItem?.comment ??
             noteItem?.catatan ??
@@ -230,7 +194,7 @@ console.log("PHOTO DATA:", photoDataUrl);
             null;
         }
       } catch {
-        // Endpoint notes tidak tersedia atau belum ada data → biarkan null
+        // Belum ada data catatan → biarkan null
       }
 
       // ── 7. Convert asset backgrounds ──────────────────────────────────────
@@ -247,7 +211,6 @@ console.log("PHOTO DATA:", photoDataUrl);
           nama: studentDetail?.nama ?? "",
           email: studentDetail?.email ?? "",
           linkedin: studentDetail?.linkedin ?? undefined,
-          // photoDataUrl sudah base64 data URL atau null
           photoDataUrl: photoDataUrl ?? null,
           nama_kelas:
             studentDetail?.nama_kelas ??
