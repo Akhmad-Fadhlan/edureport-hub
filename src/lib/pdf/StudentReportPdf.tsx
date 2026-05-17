@@ -258,12 +258,12 @@ const styles = StyleSheet.create({
 
   scPhotoWrap: {
     width: 82,
-    height: 82,
+    height: 85,
     borderRadius: 10,
     overflow: "hidden",
     backgroundColor: "#e2e8f0",
     marginTop: 16,    // ← foto turun 16pt
-    marginLeft: 20, 
+    marginLeft: 10, 
   },
 
   scPhoto: {
