@@ -19,6 +19,7 @@ import { useAuth, type Role } from "@/stores/auth-store";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { CabangBadge } from "@/components/CabangBadge";
 
 interface NavItem {
   to: string;
@@ -125,7 +126,10 @@ export function AppLayout() {
             </Button>
             <div>
               <div className="text-sm font-medium">Selamat datang, {user.name}</div>
-              <div className="text-xs text-muted-foreground capitalize">{role}</div>
+              <div className="text-xs text-muted-foreground capitalize flex items-center gap-2">
+                <span>{role}</span>
+                {user.cabang && <CabangBadge cabang={user.cabang} />}
+              </div>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={logout}>
