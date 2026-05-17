@@ -822,9 +822,6 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
         {data.coverBgDataUrl && <Image src={data.coverBgDataUrl} style={styles.absoluteBg} fixed />}
         <View style={styles.pageContent}>
           <View style={styles.coverContent}>
-            <Text style={styles.coverTitle}>Competence Report of SMP</Text>
-            <Text style={styles.coverSchoolName}>JAGOAN IT</Text>
-            <Text style={styles.coverSubtitle}>Global Tech Starts with Global Communication</Text>
             <Text style={styles.coverStudentName}>{studentName}</Text>
             <View style={styles.coverSemesterLine}>
               <Text style={styles.coverSemesterText}>{studentClass} | </Text>
