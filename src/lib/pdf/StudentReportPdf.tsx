@@ -257,6 +257,8 @@ const styles = StyleSheet.create({
   },
 
   scPhotoWrap: {
+    paddingLeft:10,
+    paddingTop:35,
     width: 82,
     height: 82,
     borderRadius: 10,
