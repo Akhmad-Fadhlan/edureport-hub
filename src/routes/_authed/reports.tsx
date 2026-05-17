@@ -18,6 +18,8 @@ import {
   StudentReportPdf,
   type PdfReportData,
 } from "@/lib/pdf/StudentReportPdf";
+import coverBgUrlikhwan from "@/assets/cover-bg1.png";
+import coverBgUrlakhwat from "@/assets/cover-bg2.png";
 import coverBgUrl from "@/assets/cover-bg.png";
 import reportFirstBgUrl from "@/assets/report-first.png";
 import reportLastBgUrl from "@/assets/report-last.png";
@@ -203,12 +205,18 @@ function ReportsPage() {
       }
 
       // ── 7. Convert asset backgrounds ──────────────────────────────────────
-      const [coverBgDataUrl, reportFirstBgDataUrl, reportLastBgDataUrl] =
-        await Promise.all([
-          urlToDataUrl(coverBgUrl),
-          urlToDataUrl(reportFirstBgUrl),
-          urlToDataUrl(reportLastBgUrl),
-        ]);
+const selectedClass = (classes.data ?? []).find(
+  (k: any) => k.id === parseInt(classId),
+);
+const isAkhwat = selectedClass?.cabang?.toLowerCase() === "akhwat";
+const activeCoverBgUrl = isAkhwat ? coverBgUrlakhwat : coverBgUrlikhwan;
+
+const [coverBgDataUrl, reportFirstBgDataUrl, reportLastBgDataUrl] =
+  await Promise.all([
+    urlToDataUrl(activeCoverBgUrl),
+    urlToDataUrl(reportFirstBgUrl),
+    urlToDataUrl(reportLastBgUrl),
+  ]);
 const generatedDate = new Date().toLocaleDateString("id-ID", {
   day: "numeric", month: "long", year: "numeric",
 });
