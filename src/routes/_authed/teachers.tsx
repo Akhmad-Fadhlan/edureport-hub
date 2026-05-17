@@ -5,11 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useApiData } from "@/hooks/use-api-data";
 import { apiPost, apiPut } from "@/lib/api";
 import { toast } from "sonner";
 import { Pencil, Plus } from "lucide-react";
+import { CabangBadge } from "@/components/CabangBadge";
+import { CABANG_LIST, CABANG_LABEL, type Cabang } from "@/lib/cabang";
 
 export const Route = createFileRoute("/_authed/teachers")({
   component: TeachersPage,
@@ -21,29 +24,35 @@ interface Teacher {
   nama: string;
   email: string;
   mata_pelajaran: string;
+  cabang?: Cabang | null;
   tanda_tangan: string;
 }
 
 function TeachersPage() {
-  const { data, loading, reload } = useApiData<Teacher[]>("/teachers");
+  const [cabangFilter, setCabangFilter] = useState<string>("all");
+  const params: any = {};
+  if (cabangFilter !== "all") params.cabang = cabangFilter;
+  const { data, loading, reload } = useApiData<Teacher[]>("/teachers", params);
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Teacher | null>(null);
-  const [form, setForm] = useState({ user_id: "", nama: "", email: "", mata_pelajaran: "multimedia", tanda_tangan: "" });
+  const [form, setForm] = useState({ user_id: "", nama: "", email: "", mata_pelajaran: "multimedia", cabang: "", tanda_tangan: "" });
 
   function openNew() {
     setEditing(null);
-    setForm({ user_id: "", nama: "", email: "", mata_pelajaran: "multimedia", tanda_tangan: "" });
+    setForm({ user_id: "", nama: "", email: "", mata_pelajaran: "multimedia", cabang: "", tanda_tangan: "" });
     setOpen(true);
   }
   function openEdit(t: Teacher) {
     setEditing(t);
-    setForm({ user_id: String(t.user_id), nama: t.nama, email: t.email, mata_pelajaran: t.mata_pelajaran, tanda_tangan: t.tanda_tangan || "" });
+    setForm({ user_id: String(t.user_id), nama: t.nama, email: t.email, mata_pelajaran: t.mata_pelajaran, cabang: t.cabang || "", tanda_tangan: t.tanda_tangan || "" });
     setOpen(true);
   }
   async function save() {
     try {
       const payload: any = { ...form };
       if (form.user_id) payload.user_id = parseInt(form.user_id);
+      if (!form.cabang) delete payload.cabang;
       if (editing) await apiPut(`/teachers/${editing.id}`, payload);
       else await apiPost("/teachers", payload);
       toast.success("Tersimpan"); setOpen(false); reload();
