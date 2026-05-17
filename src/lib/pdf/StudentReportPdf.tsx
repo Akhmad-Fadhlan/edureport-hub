@@ -257,21 +257,19 @@ const styles = StyleSheet.create({
   },
 
   scPhotoWrap: {
-
     width: 82,
     height: 82,
     borderRadius: 10,
     overflow: "hidden",
     backgroundColor: "#e2e8f0",
+    marginTop: 16,    // ← foto turun 16pt
+    marginLeft: 20, 
   },
 
   scPhoto: {
-    paddingLeft:10,
-    paddingTop:35,
-    overflow: "hidden",
-        width: 82,
-    height: 82,
-       borderRadius: 10,
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
   },
 
   avatarPlaceholder: {
@@ -916,7 +914,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 {isFirst && (
                   <View style={styles.studentCard}>
                     <View style={styles.scLeft}>
-                      <View style={styles.scPhoto}>
+                      <View style={styles.scPhotoWrap}>
                         {getPhotoSrc(data.student.photoDataUrl) ? (
                           <Image
                             src={getPhotoSrc(data.student.photoDataUrl)!}
