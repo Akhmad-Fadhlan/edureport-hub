@@ -109,6 +109,7 @@ function StudentsPage() {
       fd.append("email", form.email);
       fd.append("linkedin", form.linkedin);
       fd.append("class_id", form.class_id);
+      if (form.cabang) fd.append("cabang", form.cabang);
       if (photoFile) fd.append("photo", photoFile);
       if (editing) {
         await api.post(`/students/${editing.id}?_method=PUT`, fd);
@@ -141,6 +142,15 @@ function StudentsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Cari nama / email..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="pl-9" />
         </div>
+        {!guru && (
+          <Select value={cabangFilter} onValueChange={(v) => { setCabangFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Filter Cabang" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Cabang</SelectItem>
+              {CABANG_LIST.map((c) => <SelectItem key={c} value={c}>{CABANG_LABEL[c]}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
         <Select value={classFilter} onValueChange={(v) => { setClassFilter(v); setPage(1); }}>
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="Filter Kelas" /></SelectTrigger>
           <SelectContent>
@@ -158,13 +168,14 @@ function StudentsPage() {
               <TableHead>Nama</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Kelas</TableHead>
+              <TableHead>Cabang</TableHead>
               <TableHead>LinkedIn</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading && Array.from({ length: 4 }).map((_, i) => (
-              <TableRow key={i}><TableCell colSpan={6}><div className="h-8 bg-muted animate-pulse rounded" /></TableCell></TableRow>
+              <TableRow key={i}><TableCell colSpan={7}><div className="h-8 bg-muted animate-pulse rounded" /></TableCell></TableRow>
             ))}
             {!loading && (data?.items || []).map((s) => (
               <TableRow key={s.id}>
@@ -183,6 +194,7 @@ function StudentsPage() {
                 <TableCell className="font-medium capitalize">{s.nama}</TableCell>
                 <TableCell className="text-sm">{s.email}</TableCell>
                 <TableCell>{s.nama_kelas || s.class_id}</TableCell>
+                <TableCell><CabangBadge cabang={s.cabang} /></TableCell>
                 <TableCell className="text-sm">
                   {s.linkedin ? <a href={s.linkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline"><Linkedin className="h-3 w-3" />Profile</a> : "—"}
                 </TableCell>
@@ -193,7 +205,7 @@ function StudentsPage() {
               </TableRow>
             ))}
             {!loading && (!data?.items || data.items.length === 0) && (
-              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Tidak ada data</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Tidak ada data</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
