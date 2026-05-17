@@ -128,12 +128,14 @@ function formatPdfDate(date = new Date()) {
  * ========================================================================== */
 
 function ReportsPage() {
+  const user = userStorage.get<AuthUser>();
+  const guruCabang = user?.role === "guru" ? (user?.cabang ?? null) : null;
+  const baseParams: any = guruCabang ? { cabang: guruCabang } : {};
+
   const semesters = useApiData<any[]>("/semesters");
-  const classes = useApiData<any[]>("/classes");
+  const classes = useApiData<any[]>("/classes", baseParams);
 
   // ── ambil data user yang sedang login ──────────────────────────────────────
-  // Endpoint /auth/me harus ada di backend; kalau belum, tambahkan route-nya.
-  // Field yang mungkin dikembalikan: id, nama, name, jabatan, role_label, ttd
   const currentUser = useApiData<any>("/auth/me");
 
   const [semesterId, setSemesterId] = useState<string>("");
@@ -151,6 +153,7 @@ function ReportsPage() {
   const students = useApiData<{ items: any[] }>(classId ? "/students" : null, {
     class_id: classId,
     per_page: 200,
+    ...baseParams,
   });
 
   const [building, setBuilding] = useState(false);
