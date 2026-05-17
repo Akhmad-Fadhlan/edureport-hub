@@ -12,6 +12,9 @@ import { api, apiDelete, getStudentPhoto } from "@/lib/api";
 import { toast } from "sonner";
 import { Pencil, Plus, Search, Trash2, Upload, Linkedin } from "lucide-react";
 import { StudentPhoto } from "@/components/StudentPhoto";
+import { CabangBadge } from "@/components/CabangBadge";
+import { CABANG_LIST, CABANG_LABEL, type Cabang } from "@/lib/cabang";
+import { useAuth } from "@/stores/auth-store";
 
 export const Route = createFileRoute("/_authed/students")({
   component: StudentsPage,
@@ -25,8 +28,9 @@ interface Student {
   photo?: string;
   class_id: number;
   nama_kelas?: string;
+  cabang?: Cabang | null;
 }
-interface Klass { id: number; nama_kelas: string }
+interface Klass { id: number; nama_kelas: string; cabang?: Cabang | null }
 
 function StudentsPage() {
   const [search, setSearch] = useState("");
