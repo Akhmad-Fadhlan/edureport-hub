@@ -209,7 +209,9 @@ function ReportsPage() {
           urlToDataUrl(reportFirstBgUrl),
           urlToDataUrl(reportLastBgUrl),
         ]);
-
+const generatedDate = new Date().toLocaleDateString("id-ID", {
+  day: "numeric", month: "long", year: "numeric",
+});
       // ── 8. Set state ───────────────────────────────────────────────────────
       setPdfData({
         student: {
@@ -229,6 +231,7 @@ function ReportsPage() {
           tahun_ajaran: semester?.tahun_ajaran ?? "",
           semester: semester?.semester ?? undefined,
         },
+        generatedDate,
         teacher: {
           nama: teacherNama,
           jabatan: teacherJabatan,
