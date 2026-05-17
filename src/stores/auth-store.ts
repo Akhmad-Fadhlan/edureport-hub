@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { tokenStorage, userStorage, api } from "@/lib/api";
-import type { Cabang } from "@/lib/cabang";
 
 export type Role = "superadmin" | "admin" | "guru";
 
@@ -9,7 +8,7 @@ export interface AuthUser {
   name: string;
   email: string;
   role: Role;
-  cabang?: Cabang | null;
+  cabang_id?: number | null; // ID cabang yang dimiliki guru (null = semua cabang)
 }
 
 interface AuthState {
@@ -21,7 +20,12 @@ interface AuthState {
   logout: () => void;
   isAdmin: () => boolean;
   isGuru: () => boolean;
-  canAccessCabang: (cabang?: string | null) => boolean;
+  /**
+   * Mengembalikan cabang_id dari user yang login.
+   * - Jika role guru: mengembalikan cabang_id guru tersebut
+   * - Jika admin/superadmin: null (tidak dibatasi cabang)
+   */
+  getCabangId: () => number | null;
 }
 
 export const useAuth = create<AuthState>((set, get) => ({
@@ -49,12 +53,13 @@ export const useAuth = create<AuthState>((set, get) => ({
     const r = get().user?.role;
     return r === "admin" || r === "superadmin";
   },
-  isGuru: () => get().user?.role === "guru",
-  canAccessCabang: (cabang) => {
+  isGuru: () => {
+    return get().user?.role === "guru";
+  },
+  getCabangId: () => {
     const u = get().user;
-    if (!u) return false;
-    if (u.role === "admin" || u.role === "superadmin") return true;
-    if (!cabang) return false;
-    return u.cabang === cabang;
+    if (!u) return null;
+    if (u.role === "guru") return u.cabang_id ?? null;
+    return null;
   },
 }));
