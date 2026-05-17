@@ -10,6 +10,7 @@ import { useApiData } from "@/hooks/use-api-data";
 import { apiPost } from "@/lib/api";
 import { toast } from "sonner";
 import { Loader2, Save } from "lucide-react";
+import { useAuth } from "@/stores/auth-store";
 
 export const Route = createFileRoute("/_authed/grades")({
   component: GradesPage,
