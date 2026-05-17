@@ -22,8 +22,12 @@ interface Grade {
 }
 
 function GradesPage() {
+  const { user, isGuru } = useAuth();
+  const guruCabang = isGuru() ? (user?.cabang ?? null) : null;
+  const baseParams: any = guruCabang ? { cabang: guruCabang } : {};
+
   const semesters = useApiData<any[]>("/semesters");
-  const classes = useApiData<any[]>("/classes");
+  const classes = useApiData<any[]>("/classes", baseParams);
   const [semesterId, setSemesterId] = useState<string>("");
   const [classId, setClassId] = useState<string>("");
   const [studentId, setStudentId] = useState<string>("");
@@ -36,7 +40,7 @@ function GradesPage() {
     }
   }, [semesters.data, semesterId]);
 
-  const studentParams: any = { per_page: 200 };
+  const studentParams: any = { per_page: 200, ...baseParams };
   if (classId) studentParams.class_id = classId;
   const students = useApiData<{ items: any[] }>(classId ? "/students" : null, studentParams);
 
