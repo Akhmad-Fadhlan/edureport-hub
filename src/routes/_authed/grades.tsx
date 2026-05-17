@@ -8,9 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useApiData } from "@/hooks/use-api-data";
 import { apiPost } from "@/lib/api";
+import { useAuth } from "@/stores/auth-store";
 import { toast } from "sonner";
 import { Loader2, Save } from "lucide-react";
-import { useAuth } from "@/stores/auth-store";
 
 export const Route = createFileRoute("/_authed/grades")({
   component: GradesPage,
@@ -23,12 +23,16 @@ interface Grade {
 }
 
 function GradesPage() {
-  const { user, isGuru } = useAuth();
-  const guruCabang = isGuru() ? (user?.cabang ?? null) : null;
-  const baseParams: any = guruCabang ? { cabang: guruCabang } : {};
+  const { isGuru, getCabangId } = useAuth();
+  const guruMode = isGuru();
+  const cabangId = getCabangId();
 
   const semesters = useApiData<any[]>("/semesters");
-  const classes = useApiData<any[]>("/classes", baseParams);
+  // Guru hanya melihat kelas di cabangnya
+  const classParams: any = {};
+  if (guruMode && cabangId) classParams.cabang_id = cabangId;
+  const classes = useApiData<any[]>("/classes", classParams);
+
   const [semesterId, setSemesterId] = useState<string>("");
   const [classId, setClassId] = useState<string>("");
   const [studentId, setStudentId] = useState<string>("");
@@ -41,8 +45,10 @@ function GradesPage() {
     }
   }, [semesters.data, semesterId]);
 
-  const studentParams: any = { per_page: 200, ...baseParams };
+  const studentParams: any = { per_page: 200 };
   if (classId) studentParams.class_id = classId;
+  // Guru hanya melihat siswa di cabangnya
+  if (guruMode && cabangId) studentParams.cabang_id = cabangId;
   const students = useApiData<{ items: any[] }>(classId ? "/students" : null, studentParams);
 
   const materials = useApiData<any[]>(semesterId ? "/materials" : null, { semester_id: semesterId });
