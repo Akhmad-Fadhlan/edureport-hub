@@ -236,7 +236,7 @@ function NotesPage() {
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Gagal Memuat Data</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            {notesError.message || "Terjadi kesalahan saat menghubungi server"}
+            {(typeof notesError === "string" ? notesError : (notesError as any)?.message) || "Terjadi kesalahan saat menghubungi server"}
           </p>
           <div className="space-x-2">
             <Button onClick={() => window.location.reload()} variant="outline">
@@ -329,7 +329,7 @@ function NotesPage() {
               </TableRow>
             )}
             
-            {!notesLoading && filtered.map((n) => {
+            {!notesLoading && filtered.map((n: Note) => {
               const student = studentMap.get(n.student_id);
               return (
                 <TableRow key={n.id}>
