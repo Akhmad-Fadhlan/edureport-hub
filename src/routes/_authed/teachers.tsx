@@ -68,23 +68,35 @@ function TeachersPage() {
         </div>
         <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Tambah</Button>
       </div>
+      <Card className="p-4 flex flex-wrap gap-3">
+        <Select value={cabangFilter} onValueChange={setCabangFilter}>
+          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Filter Cabang" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Cabang</SelectItem>
+            {CABANG_LIST.map((c) => <SelectItem key={c} value={c}>{CABANG_LABEL[c]}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Card>
+
       <Card className="p-0 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Nama</TableHead><TableHead>Email</TableHead>
               <TableHead>Mata Pelajaran</TableHead>
+              <TableHead>Cabang</TableHead>
               <TableHead>Tanda Tangan</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading && <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">Memuat...</TableCell></TableRow>}
+            {loading && <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">Memuat...</TableCell></TableRow>}
             {!loading && (data || []).map((t) => (
               <TableRow key={t.id}>
                 <TableCell className="font-medium">{t.nama}</TableCell>
                 <TableCell>{t.email}</TableCell>
                 <TableCell className="capitalize">{t.mata_pelajaran}</TableCell>
+                <TableCell><CabangBadge cabang={t.cabang} /></TableCell>
                 <TableCell>
                   {t.tanda_tangan ? (
                     <img src={t.tanda_tangan} alt="ttd" className="h-10 max-w-[100px] object-contain" />
@@ -107,6 +119,15 @@ function TeachersPage() {
             <div className="space-y-2"><Label>Nama</Label><Input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} /></div>
             <div className="space-y-2"><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
             <div className="space-y-2"><Label>Mata Pelajaran</Label><Input value={form.mata_pelajaran} onChange={(e) => setForm({ ...form, mata_pelajaran: e.target.value })} /></div>
+            <div className="space-y-2">
+              <Label>Cabang</Label>
+              <Select value={form.cabang} onValueChange={(v) => setForm({ ...form, cabang: v })}>
+                <SelectTrigger><SelectValue placeholder="Pilih cabang" /></SelectTrigger>
+                <SelectContent>
+                  {CABANG_LIST.map((c) => <SelectItem key={c} value={c}>{CABANG_LABEL[c]}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2"><Label>URL Tanda Tangan</Label><Input value={form.tanda_tangan} onChange={(e) => setForm({ ...form, tanda_tangan: e.target.value })} placeholder="https://..." /></div>
             {form.tanda_tangan && <img src={form.tanda_tangan} alt="preview" className="h-16 object-contain border rounded p-1" />}
           </div>
