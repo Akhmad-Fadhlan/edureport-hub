@@ -257,8 +257,7 @@ const styles = StyleSheet.create({
   },
 
   scPhotoWrap: {
-    paddingLeft:10,
-    paddingTop:35,
+
     width: 82,
     height: 82,
     borderRadius: 10,
@@ -267,9 +266,9 @@ const styles = StyleSheet.create({
   },
 
   scPhoto: {
+    paddingLeft:10,
+    paddingTop:35,
     overflow: "hidden",
-    width: "100%",
-    height: "100%",
         width: 82,
     height: 82,
        borderRadius: 10,
@@ -918,7 +917,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 {isFirst && (
                   <View style={styles.studentCard}>
                     <View style={styles.scLeft}>
-                      <View style={styles.scPhotoWrap}>
+                      <View style={styles.scPhoto}>
                         {getPhotoSrc(data.student.photoDataUrl) ? (
                           <Image
                             src={getPhotoSrc(data.student.photoDataUrl)!}
