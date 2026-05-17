@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useApiData } from "@/hooks/use-api-data";
-import { api, apiPost, apiPut, apiDelete, studentPhotoUrl } from "@/lib/api";
+import { api, apiPost, apiPut, apiDelete, getStudentPhoto } from "@/lib/api";
 import { useAuth } from "@/stores/auth-store";
 import { toast } from "sonner";
 import { Pencil, Plus, Search, Trash2, Upload, Linkedin, Mail } from "lucide-react";
@@ -27,6 +27,21 @@ interface Student {
   nama_kelas?: string;
 }
 interface Klass { id: number; nama_kelas: string }
+
+function StudentAvatar({ photo, nama }: { photo?: string; nama: string }) {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    if (photo) getStudentPhoto(photo).then(setSrc);
+  }, [photo]);
+
+  return src ? (
+    <img src={src} alt={nama} className="h-10 w-10 rounded-full object-cover" />
+  ) : (
+    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
+      {nama?.[0]?.toUpperCase()}
+    </div>
+  );
+}
 
 function StudentsPage() {
   const { isGuru, getCabangId } = useAuth();
@@ -146,11 +161,7 @@ function StudentsPage() {
             {!loading && (data?.items || []).map((s) => (
               <TableRow key={s.id}>
                 <TableCell>
-                  {s.photo ? (
-                    <img src={studentPhotoUrl(s.photo)!} alt={s.nama} className="h-10 w-10 rounded-full object-cover" />
-                  ) : (
-                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">{s.nama?.[0]?.toUpperCase()}</div>
-                  )}
+                  <StudentAvatar photo={s.photo} nama={s.nama} />
                 </TableCell>
                 <TableCell className="font-medium capitalize">{s.nama}</TableCell>
                 <TableCell className="text-sm">{s.email}</TableCell>
