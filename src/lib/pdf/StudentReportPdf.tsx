@@ -267,8 +267,12 @@ const styles = StyleSheet.create({
   },
 
   scPhoto: {
+    overflow: "hidden",
     width: "100%",
     height: "100%",
+        width: 82,
+    height: 82,
+       borderRadius: 10,
     objectFit: "cover",
   },
 
