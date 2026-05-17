@@ -33,33 +33,58 @@ interface Student {
 interface Klass { id: number; nama_kelas: string; cabang?: Cabang | null }
 
 function StudentsPage() {
+  const { user, isGuru } = useAuth();
+  const guru = isGuru();
+  const guruCabang = (user?.cabang ?? null) as Cabang | null;
+
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
+  const [cabangFilter, setCabangFilter] = useState<string>(guru && guruCabang ? guruCabang : "all");
   const [page, setPage] = useState(1);
+
+  const effectiveCabang: Cabang | "all" =
+    guru && guruCabang ? guruCabang : (cabangFilter as Cabang | "all");
 
   const params: any = { page, per_page: 20 };
   if (search) params.search = search;
   if (classFilter !== "all") params.class_id = classFilter;
+  if (effectiveCabang !== "all") params.cabang = effectiveCabang;
 
   const { data, loading, reload } = useApiData<{ items: Student[]; pagination?: any }>("/students", params);
-  const classes = useApiData<Klass[]>("/classes");
+  const classParams: any = {};
+  if (effectiveCabang !== "all") classParams.cabang = effectiveCabang;
+  const classes = useApiData<Klass[]>("/classes", classParams);
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Student | null>(null);
-  const [form, setForm] = useState({ nama: "", email: "", linkedin: "", class_id: "" });
+  const [form, setForm] = useState<{ nama: string; email: string; linkedin: string; class_id: string; cabang: string }>({
+    nama: "", email: "", linkedin: "", class_id: "", cabang: guru && guruCabang ? guruCabang : "",
+  });
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   function openNew() {
     setEditing(null);
-    setForm({ nama: "", email: "", linkedin: "", class_id: classes.data?.[0]?.id?.toString() || "" });
+    setForm({
+      nama: "", email: "", linkedin: "",
+      class_id: classes.data?.[0]?.id?.toString() || "",
+      cabang: guru && guruCabang ? guruCabang : "",
+    });
     setPhotoFile(null); setPhotoPreview(null);
     setOpen(true);
   }
   async function openEdit(s: Student) {
+    if (guru && guruCabang && s.cabang && s.cabang !== guruCabang) {
+      toast.error("Anda tidak punya akses ke siswa cabang lain");
+      return;
+    }
     setEditing(s);
-    setForm({ nama: s.nama, email: s.email, linkedin: s.linkedin || "", class_id: String(s.class_id) });
+    setForm({
+      nama: s.nama, email: s.email, linkedin: s.linkedin || "",
+      class_id: String(s.class_id),
+      cabang: s.cabang || (guru && guruCabang ? guruCabang : ""),
+    });
     setPhotoFile(null);
     if (s.photo) {
       const d = await getStudentPhoto(s.photo);
