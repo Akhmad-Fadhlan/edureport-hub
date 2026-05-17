@@ -53,7 +53,7 @@ async function urlToDataUrl(url: string | null | undefined): Promise<string | nu
  * ========================================================================== */
 
 function ReportsPage() {
-  const { isGuru, getCabangId } = useAuth();
+  const { isGuru, getCabangId, user } = useAuth();
   const guruMode = isGuru();
   const cabangId = getCabangId();
 
@@ -62,6 +62,11 @@ function ReportsPage() {
   const classParams: any = {};
   if (guruMode && cabangId) classParams.cabang_id = cabangId;
   const classes = useApiData<any[]>("/classes", classParams);
+
+  const currentTeacher = useApiData<any[]>(
+    user?.id ? "/teachers" : null,
+    user?.id ? { user_id: user.id } : {},
+  );
 
   const [semesterId, setSemesterId] = useState<string>("");
   const [classId, setClassId] = useState<string>("");
@@ -104,7 +109,7 @@ function ReportsPage() {
     setBuilding(true);
     try {
       // ── 1. Fetch semua data paralel ────────────────────────────────────────
-      const [studentDetail, materials, indicators, grades, teacher] = await Promise.all([
+      const [studentDetail, materials, indicators, grades] = await Promise.all([
         apiGet<any>(`/students/${studentId}`).catch(
           () =>
             (students.data?.items ?? []).find(
@@ -117,8 +122,6 @@ function ReportsPage() {
           semester_id: semesterId,
           student_id: studentId,
         }),
-        // FIX: fetch /auth/me langsung di sini agar data guru selalu fresh
-        apiGet<any>("/auth/me").catch(() => null),
       ]);
 
       // ── 2. Semester info ───────────────────────────────────────────────────
@@ -161,18 +164,21 @@ function ReportsPage() {
         ? await getStudentPhoto(studentDetail.photo)
         : null;
 
-      // ── 5. Resolve data guru (user yang sedang login) ──────────────────────
-      // FIX: gunakan data teacher yang di-fetch langsung (bukan dari hook state)
+      // ── 5. Resolve data guru dari endpoint /teachers berdasarkan user_id ──
+      const teacherRecord = Array.isArray(currentTeacher.data)
+        ? currentTeacher.data[0]
+        : currentTeacher.data;
+
       const teacherNama: string =
-        teacher?.nama ?? teacher?.name ?? teacher?.full_name ?? "Nama Guru IT";
+        teacherRecord?.nama ?? "Nama Guru IT";
 
       const teacherJabatan: string =
-        teacher?.jabatan ?? teacher?.role_label ?? "Guru IT";
+        teacherRecord?.mata_pelajaran ?? teacherRecord?.jabatan ?? "Guru IT";
 
-      // TTD guru: fetch via URL (bisa diakses publik atau pakai credentials)
-      const ttdRawUrl = teacher?.ttd
-        ? teacher.ttd.startsWith("http")
-          ? teacher.ttd
+      // TTD guru: ambil dari field tanda_tangan di data teacher
+      const ttdRawUrl = teacherRecord?.tanda_tangan
+        ? teacherRecord.tanda_tangan.startsWith("http")
+          ? teacherRecord.tanda_tangan
           : null
         : null;
       const ttdDataUrl = await urlToDataUrl(ttdRawUrl);
@@ -204,13 +210,6 @@ function ReportsPage() {
           urlToDataUrl(reportLastBgUrl),
         ]);
 
-      // FIX: generate tanggal saat rapor di-build
-      const generatedDate = new Date().toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-
       // ── 8. Set state ───────────────────────────────────────────────────────
       setPdfData({
         student: {
@@ -235,7 +234,6 @@ function ReportsPage() {
           jabatan: teacherJabatan,
           ttdDataUrl: ttdDataUrl ?? null,
         },
-        generatedDate,
         materials: pdfMaterials,
         comment,
         schoolName: "SMP IDN Boarding School",
