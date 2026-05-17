@@ -248,6 +248,22 @@ function StudentsPage() {
                 </SelectContent>
               </Select>
             </div>
+            {!guru && (
+              <div className="space-y-2">
+                <Label>Cabang</Label>
+                <Select value={form.cabang} onValueChange={(v) => setForm({ ...form, cabang: v })}>
+                  <SelectTrigger><SelectValue placeholder="Pilih cabang" /></SelectTrigger>
+                  <SelectContent>
+                    {CABANG_LIST.map((c) => <SelectItem key={c} value={c}>{CABANG_LABEL[c]}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {guru && guruCabang && (
+              <div className="text-xs text-muted-foreground">
+                Cabang otomatis: <CabangBadge cabang={guruCabang} />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
