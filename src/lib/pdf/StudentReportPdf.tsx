@@ -265,6 +265,8 @@ const styles = StyleSheet.create({
   },
 
   scPhoto: {
+    paddingLeft:10,
+    paddingTop:35,
     width: "100%",
     height: "100%",
     objectFit: "cover",
@@ -302,7 +304,7 @@ const styles = StyleSheet.create({
     paddingLeft: 25,
     fontSize: 10.5,
     color: MUTED,
-    marginBottom: 5,
+    marginBottom: 10,
   },
 
   scRight: {
