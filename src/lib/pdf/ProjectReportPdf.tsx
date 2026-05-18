@@ -5,10 +5,15 @@ import {
   View,
   Image,
   StyleSheet,
+  Svg,
+  Path,
+  Circle,
+  Rect,
+  Polygon,
 } from "@react-pdf/renderer";
 
 /* ============================================================================
- * TYPES - Tetap sesuai struktur API
+ * TYPES
  * ========================================================================== */
 
 export interface ProjectDesign {
@@ -55,21 +60,21 @@ export interface ProjectCertificate {
 
 export interface ProjectSummary {
   nama: string;
-  itpt: number;   // persentase tercapai
-  itpb: number;   // persentase belum
-  itsl: number;   // total selesai
-  itbl: number;   // total proses/belum
+  itpt: number;    // persentase tercapai
+  itpb: number;    // persentase belum
+  itsl: number;    // total selesai
+  itbl: number;    // total proses
   ittuntas: number;
-  ityt: number;   // video youtube
-  itc: number;    // certificates
-  itg: number;    // game dev   ← FIELD BARU
-  itw: number;    // website    ← FIELD BARU
-  itm: number;    // idn mengajar
-  itb: number;    // karya buku
-  itr: number;    // robotik
-  iti: number;    // iot project ← FIELD BARU (sebelumnya tidak ada, hardcode 0)
-  itl: number;    // lomba/competitions
-  itd: number;    // desain grafis
+  ityt: number;    // video youtube
+  itc: number;     // sertifikat
+  itg: number;     // game dev
+  itw: number;     // website
+  itm: number;     // idn mengajar
+  itb: number;     // karya buku
+  itr: number;     // robotik
+  iti: number;     // iot
+  itl: number;     // lomba
+  itd: number;     // desain
 }
 
 export interface ProjectReportData {
@@ -85,55 +90,274 @@ export interface ProjectReportData {
  * COLORS
  * ========================================================================== */
 
-const BLUE      = "#3b3ec6";
-const DARK_BLUE = "#1e1e6e";
-const TEAL      = "#00b4b4";
-const ORANGE    = "#f5a623";
-const PINK      = "#e83e8c";
-const LIGHT_BG  = "#f4f4f8";
-const WHITE     = "#ffffff";
-const TEXT      = "#1a1a1a";
-const MUTED     = "#6b7280";
+const C = {
+  blue:      "#3b3ec6",
+  blueDark:  "#2a2da8",
+  blueDeep:  "#1e1e6e",
+  blueLight: "#eef2ff",
+  teal:      "#00b4b4",
+  tealDark:  "#007f7f",
+  orange:    "#f5a623",
+  orangeDrk: "#b87209",
+  pink:      "#e83e8c",
+  pinkDark:  "#a82868",
+  white:     "#ffffff",
+  text:      "#1a1a1a",
+  muted:     "#6b7280",
+  bg:        "#f4f4f8",
+  shadow:    "#a8a8cc",   // shadow utama (ungu-abu)
+  shadowDrk: "#7878a8",   // shadow lebih gelap
+  dark:      "#1f2937",
+  darkShad:  "#0f172a",
+};
 
 /* ============================================================================
- * STYLES
+ * SVG ICONS — solusi 100% native react-pdf, tanpa font emoji
+ * Setiap icon dibuat dari shape primitif SVG (Circle, Rect, Polygon, Path)
+ * ========================================================================== */
+
+const IcoVideo = ({ n = 22 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 24 24">
+    <Circle cx="12" cy="12" r="11" fill="#ef4444" />
+    <Polygon points="9,7 9,17 18,12" fill={C.white} />
+  </Svg>
+);
+
+const IcoCert = ({ n = 22 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 24 24">
+    <Polygon
+      points="12,2 14.9,8.3 22,9.3 17,14.2 18.2,21.1 12,17.8 5.8,21.1 7,14.2 2,9.3 9.1,8.3"
+      fill="#f59e0b"
+    />
+    <Polygon
+      points="12,5.5 14.1,9.9 19,10.5 15.5,13.8 16.4,18.7 12,16.3 7.6,18.7 8.5,13.8 5,10.5 9.9,9.9"
+      fill="#fcd34d"
+    />
+  </Svg>
+);
+
+const IcoGame = ({ n = 22 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 24 24">
+    <Rect x="1" y="7" width="22" height="10" rx="5" fill="#7c3aed" />
+    <Rect x="4.5" y="11" width="5" height="2" rx="1" fill={C.white} />
+    <Rect x="6" y="9.5" width="2" height="5" rx="1" fill={C.white} />
+    <Circle cx="16" cy="11" r="1.3" fill={C.white} />
+    <Circle cx="18.5" cy="13" r="1.3" fill={C.white} />
+  </Svg>
+);
+
+const IcoWebsite = ({ n = 22 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 24 24">
+    <Circle cx="12" cy="12" r="10" fill="none" stroke="#3b82f6" strokeWidth="2" />
+    <Path d="M12 2 Q8.5 7 8.5 12 Q8.5 17 12 22 Q15.5 17 15.5 12 Q15.5 7 12 2Z" fill="#bfdbfe" />
+    <Path d="M2 9 Q12 7 22 9" stroke="#3b82f6" strokeWidth="1.5" fill="none" />
+    <Path d="M2 15 Q12 17 22 15" stroke="#3b82f6" strokeWidth="1.5" fill="none" />
+  </Svg>
+);
+
+const IcoMengajar = ({ n = 22 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 24 24">
+    <Circle cx="8" cy="6" r="3.5" fill="#f59e0b" />
+    <Path d="M1 22 Q1.5 14 8 14 Q14.5 14 15 22Z" fill="#f59e0b" />
+    <Rect x="15" y="8" width="8" height="9" rx="1.5" fill={C.blue} />
+    <Rect x="16.5" y="10" width="5" height="1.2" rx="0.6" fill={C.white} />
+    <Rect x="16.5" y="12.5" width="5" height="1.2" rx="0.6" fill={C.white} />
+    <Rect x="16.5" y="15" width="3.5" height="1.2" rx="0.6" fill={C.white} />
+  </Svg>
+);
+
+const IcoBuku = ({ n = 22 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 24 24">
+    <Rect x="4" y="3" width="13" height="16" rx="2" fill={C.pink} />
+    <Rect x="6" y="7"  width="9" height="1.5" rx="0.75" fill={C.white} />
+    <Rect x="6" y="10" width="9" height="1.5" rx="0.75" fill={C.white} />
+    <Rect x="6" y="13" width="6" height="1.5" rx="0.75" fill={C.white} />
+    <Rect x="4" y="18.5" width="13" height="2.5" rx="1.25" fill={C.pinkDark} />
+  </Svg>
+);
+
+const IcoRobot = ({ n = 22 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 24 24">
+    <Rect x="5" y="7"  width="14" height="12" rx="3" fill={C.blue} />
+    <Rect x="8" y="10" width="3"  height="3"  rx="1.5" fill="#00e5ff" />
+    <Rect x="13" y="10" width="3" height="3"  rx="1.5" fill="#00e5ff" />
+    <Rect x="8" y="15" width="8"  height="1.5" rx="0.75" fill={C.white} />
+    <Rect x="11" y="3" width="2"  height="4"  rx="1" fill="#9ca3af" />
+    <Circle cx="12" cy="2.5" r="1.5" fill="#9ca3af" />
+    <Rect x="1" y="9"  width="4" height="7" rx="2" fill="#9ca3af" />
+    <Rect x="19" y="9" width="4" height="7" rx="2" fill="#9ca3af" />
+  </Svg>
+);
+
+const IcoIoT = ({ n = 22 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 24 24">
+    <Path d="M3 8.5 Q12 3 21 8.5"  stroke="#10b981" strokeWidth="2" fill="none" strokeLinecap="round" />
+    <Path d="M6 13 Q12 8.5 18 13"  stroke="#10b981" strokeWidth="2" fill="none" strokeLinecap="round" />
+    <Path d="M9 17 Q12 14.5 15 17" stroke="#10b981" strokeWidth="2" fill="none" strokeLinecap="round" />
+    <Circle cx="12" cy="20" r="1.8" fill="#10b981" />
+  </Svg>
+);
+
+const IcoLomba = ({ n = 22 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 24 24">
+    <Path d="M6 3 L18 3 L16.5 12 Q16 16 12 16 Q8 16 7.5 12 Z" fill="#f59e0b" />
+    <Path d="M6 3 L3 3 L3 9 Q3 12 6 12" stroke="#f59e0b" strokeWidth="2" fill="none" strokeLinecap="round" />
+    <Path d="M18 3 L21 3 L21 9 Q21 12 18 12" stroke="#f59e0b" strokeWidth="2" fill="none" strokeLinecap="round" />
+    <Rect x="10.5" y="16" width="3"  height="4"  fill="#d97706" />
+    <Rect x="7"    y="20" width="10" height="2"  rx="1" fill="#d97706" />
+    <Path d="M9 6.5 Q10 5.5 11 7" stroke={C.white} strokeWidth="1.5" fill="none" strokeLinecap="round" />
+  </Svg>
+);
+
+const IcoDesain = ({ n = 22 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 24 24">
+    <Circle cx="12" cy="12" r="9" fill="none" stroke={C.orange} strokeWidth="1.5" />
+    <Circle cx="12"   cy="5.5" r="3.2" fill="#ef4444" />
+    <Circle cx="17.5" cy="15" r="3.2" fill="#3b82f6" />
+    <Circle cx="6.5"  cy="15" r="3.2" fill="#22c55e" />
+  </Svg>
+);
+
+const IcoPlay = ({ n = 48 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 48 48">
+    <Circle cx="24" cy="24" r="23" fill="#ef4444" />
+    <Polygon points="18,12 18,36 38,24" fill={C.white} />
+  </Svg>
+);
+
+const IcoStar = ({ n = 40 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 40 40">
+    <Polygon
+      points="20,3 24.8,13.8 36.7,15.5 28.4,23.6 30.6,35.5 20,29.8 9.4,35.5 11.6,23.6 3.3,15.5 15.2,13.8"
+      fill="#fbbf24"
+    />
+  </Svg>
+);
+
+/* ============================================================================
+ * 3D CARD PRIMITIVES
+ * Teknik: border bawah+kanan tebal (shadow) + border atas+kiri tipis (highlight)
+ * Menghasilkan ilusi permukaan yang naik / timbul (emboss effect).
+ * ========================================================================== */
+
+function Card3D({
+  children,
+  bg = C.white,
+  shad = C.shadow,
+  depth = 4,
+  r = 10,
+  pad = 0,
+  style,
+}: {
+  children: React.ReactNode;
+  bg?: string;
+  shad?: string;
+  depth?: number;
+  r?: number;
+  pad?: number;
+  style?: object;
+}) {
+  return (
+    <View
+      style={{
+        backgroundColor: bg,
+        borderRadius: r,
+        padding: pad,
+        borderBottomWidth: depth,
+        borderRightWidth: depth,
+        borderBottomColor: shad,
+        borderRightColor: shad,
+        borderTopWidth: 1,
+        borderLeftWidth: 1,
+        borderTopColor: "rgba(255,255,255,0.9)",
+        borderLeftColor: "rgba(255,255,255,0.9)",
+        ...style,
+      }}
+    >
+      {children}
+    </View>
+  );
+}
+
+function TealCard3D({ children }: { children: React.ReactNode }) {
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: C.teal,
+        borderRadius: 10,
+        padding: 12,
+        borderBottomWidth: 4,
+        borderRightWidth: 4,
+        borderBottomColor: C.tealDark,
+        borderRightColor: C.tealDark,
+        borderTopWidth: 1,
+        borderLeftWidth: 1,
+        borderTopColor: "rgba(255,255,255,0.3)",
+        borderLeftColor: "rgba(255,255,255,0.3)",
+      }}
+    >
+      {children}
+    </View>
+  );
+}
+
+function DarkCard3D({ children }: { children: React.ReactNode }) {
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: C.dark,
+        borderRadius: 10,
+        padding: 12,
+        borderBottomWidth: 4,
+        borderRightWidth: 4,
+        borderBottomColor: C.darkShad,
+        borderRightColor: C.darkShad,
+        borderTopWidth: 1,
+        borderLeftWidth: 1,
+        borderTopColor: "rgba(255,255,255,0.1)",
+        borderLeftColor: "rgba(255,255,255,0.1)",
+      }}
+    >
+      {children}
+    </View>
+  );
+}
+
+/* ============================================================================
+ * STYLES (hanya yang tidak bisa diekspresikan via Card3D inline)
  * ========================================================================== */
 
 const s = StyleSheet.create({
   page: {
-    backgroundColor: WHITE,
+    backgroundColor: C.white,
     fontFamily: "Helvetica",
-    color: TEXT,
+    color: C.text,
     position: "relative",
   },
-
-  // ── FOOTER ────────────────────────────────────────────────────────────────
   footer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     height: 32,
-    backgroundColor: DARK_BLUE,
+    backgroundColor: C.blueDeep,
     justifyContent: "center",
     paddingHorizontal: 24,
   },
   footerText: {
-    color: WHITE,
+    color: C.white,
     fontSize: 9,
     fontFamily: "Helvetica-Bold",
     letterSpacing: 1.2,
     textAlign: "center",
   },
+  content: { padding: 28, paddingBottom: 48 },
 
-  content: {
-    padding: 28,
-    paddingBottom: 44,
-  },
-
-  // ── COVER PAGE ────────────────────────────────────────────────────────────
+  // COVER
   coverPage: {
-    backgroundColor: BLUE,
+    backgroundColor: C.blue,
     alignItems: "center",
     justifyContent: "center",
     padding: 48,
@@ -142,73 +366,82 @@ const s = StyleSheet.create({
   coverBadge: {
     backgroundColor: "rgba(255,255,255,0.15)",
     borderRadius: 30,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    marginBottom: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 7,
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
   },
   coverBadgeText: {
-    color: "rgba(255,255,255,0.9)",
+    color: C.white,
     fontSize: 11,
     fontFamily: "Helvetica-Bold",
-    letterSpacing: 2,
+    letterSpacing: 2.5,
     textAlign: "center",
   },
   coverTitle: {
     fontSize: 28,
     fontFamily: "Helvetica-Bold",
-    color: WHITE,
+    color: C.white,
     marginBottom: 6,
     textAlign: "center",
-    letterSpacing: 1,
   },
   coverSubtitle: {
     fontSize: 13,
     color: "rgba(255,255,255,0.8)",
-    marginBottom: 36,
+    marginBottom: 32,
     textAlign: "center",
   },
   coverDivider: {
-    width: 48,
+    width: 52,
     height: 3,
-    backgroundColor: TEAL,
+    backgroundColor: C.teal,
     borderRadius: 2,
-    marginBottom: 36,
+    marginBottom: 32,
   },
   coverProfile: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.4)",
+    marginBottom: 18,
+    // 3D ring
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderTopColor: "rgba(255,255,255,0.45)",
+    borderLeftColor: "rgba(255,255,255,0.45)",
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderBottomColor: "rgba(0,0,0,0.25)",
+    borderRightColor: "rgba(0,0,0,0.25)",
   },
-  coverProfileInitial: {
-    fontSize: 32,
+  coverInitial: {
+    fontSize: 30,
     fontFamily: "Helvetica-Bold",
-    color: WHITE,
+    color: C.white,
+    textAlign: "center",
   },
   coverName: {
     fontSize: 24,
     fontFamily: "Helvetica-Bold",
-    color: WHITE,
-    marginBottom: 6,
+    color: C.white,
+    marginBottom: 8,
     textAlign: "center",
   },
   coverRoleBadge: {
     backgroundColor: "rgba(255,255,255,0.1)",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.25)",
   },
   coverRole: {
     fontSize: 9,
     color: "rgba(255,255,255,0.85)",
-    letterSpacing: 1,
+    letterSpacing: 1.5,
     textAlign: "center",
   },
   coverFooterBar: {
@@ -217,300 +450,324 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     height: 32,
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "rgba(0,0,0,0.25)",
     justifyContent: "center",
   },
   coverFooterText: {
-    color: "rgba(255,255,255,0.7)",
+    color: "rgba(255,255,255,0.75)",
     fontSize: 9,
     fontFamily: "Helvetica-Bold",
-    letterSpacing: 1.2,
+    letterSpacing: 1.5,
     textAlign: "center",
   },
 
-  // ── SUMMARY PAGE ──────────────────────────────────────────────────────────
+  // SUMMARY
   summaryHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
-    paddingBottom: 16,
+    marginBottom: 18,
+    paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#e5e7eb",
   },
   summaryAvatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: BLUE,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: C.blue,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    marginRight: 14,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.3)",
+    borderLeftColor: "rgba(255,255,255,0.3)",
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderBottomColor: C.blueDark,
+    borderRightColor: C.blueDark,
   },
-  summaryAvatarInitial: {
-    fontSize: 20,
-    fontFamily: "Helvetica-Bold",
-    color: WHITE,
-  },
+  summaryAvatarInitial: { fontSize: 20, fontFamily: "Helvetica-Bold", color: C.white },
   summaryNameBox: { flex: 1, minWidth: 0 },
-  summaryName: {
-    fontSize: 18,
-    fontFamily: "Helvetica-Bold",
-    color: TEXT,
-    marginBottom: 2,
-  },
-  summaryRole: { fontSize: 9, color: MUTED },
+  summaryName: { fontSize: 18, fontFamily: "Helvetica-Bold", color: C.text, marginBottom: 2 },
+  summaryRole: { fontSize: 9, color: C.muted },
+  summaryTitle: { fontSize: 21, fontFamily: "Helvetica-Bold", color: C.blue, marginBottom: 14 },
 
-  summaryTitle: {
-    fontSize: 22,
-    fontFamily: "Helvetica-Bold",
-    color: BLUE,
-    marginBottom: 14,
-  },
+  summaryRow: { flexDirection: "row", marginBottom: 12 },
 
-  summaryCard: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#f9fafb",
-    padding: 16,
-  },
-
-  summaryRow: {
-    flexDirection: "row",
-    marginBottom: 12,
-  },
-
+  // Name box kiri (Progress Status)
   nameBox: {
     width: "42%",
-    backgroundColor: "#eef2ff",
-    borderRadius: 8,
+    backgroundColor: C.blueLight,
+    borderRadius: 10,
     padding: 12,
     justifyContent: "center",
     marginRight: 12,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderBottomColor: "#c7d2fe",
+    borderRightColor: "#c7d2fe",
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
   },
-  nameText: {
-    fontSize: 14,
-    fontFamily: "Helvetica-Bold",
-    color: BLUE,
-  },
+  nameText: { fontSize: 13, fontFamily: "Helvetica-Bold", color: C.blue },
 
-  persenBox: {
-    flex: 1,
-    backgroundColor: TEAL,
-    borderRadius: 8,
+  // Keterangan box
+  keteranganBox: {
+    width: "42%",
+    backgroundColor: C.white,
+    borderRadius: 10,
     padding: 12,
+    marginRight: 12,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderBottomColor: C.shadow,
+    borderRightColor: C.shadow,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
   },
-  persenTitle: {
-    color: WHITE,
-    fontSize: 10,
-    fontFamily: "Helvetica-Bold",
-    marginBottom: 6,
-  },
+  keteranganLabel: { fontSize: 8, color: C.muted, marginBottom: 4 },
+  keteranganValue: { fontSize: 20, fontFamily: "Helvetica-Bold", color: C.text },
+
+  // Teal inner items
   persenRow: { flexDirection: "row", marginRight: -8 },
   persenItem: {
     flex: 1,
     backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 6,
+    borderRadius: 7,
     padding: 8,
     alignItems: "center",
     marginRight: 8,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.35)",
+    borderLeftColor: "rgba(255,255,255,0.35)",
+    borderBottomWidth: 3,
+    borderRightWidth: 2,
+    borderBottomColor: "rgba(0,0,0,0.18)",
+    borderRightColor: "rgba(0,0,0,0.18)",
   },
-  persenLabel: { color: WHITE, fontSize: 7 },
-  persenValue: { color: WHITE, fontSize: 18, fontFamily: "Helvetica-Bold" },
+  persenLabel: { color: C.white, fontSize: 7 },
+  persenValue: { color: C.white, fontSize: 18, fontFamily: "Helvetica-Bold" },
+  persenTitle: { color: C.white, fontSize: 10, fontFamily: "Helvetica-Bold", marginBottom: 6 },
 
-  keteranganBox: {
-    width: "42%",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    padding: 12,
-    marginRight: 12,
-  },
-  keteranganLabel: { fontSize: 8, color: MUTED, marginBottom: 4 },
-  keteranganValue: { fontSize: 20, fontFamily: "Helvetica-Bold", color: TEXT },
-
-  totalBox: {
-    flex: 1,
-    backgroundColor: "#1f2937",
-    borderRadius: 8,
-    padding: 12,
-  },
-  totalTitle: { color: WHITE, fontSize: 10, fontFamily: "Helvetica-Bold", marginBottom: 6 },
+  // Dark inner items
   totalRow: { flexDirection: "row", marginRight: -8 },
   totalItem: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderRadius: 6,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderRadius: 7,
     padding: 8,
     alignItems: "center",
     marginRight: 8,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.1)",
+    borderLeftColor: "rgba(255,255,255,0.1)",
+    borderBottomWidth: 3,
+    borderRightWidth: 2,
+    borderBottomColor: "rgba(0,0,0,0.35)",
+    borderRightColor: "rgba(0,0,0,0.35)",
   },
   totalLabel: { color: "#9ca3af", fontSize: 7 },
-  totalValue: { color: WHITE, fontSize: 16, fontFamily: "Helvetica-Bold" },
+  totalValue: { color: C.white, fontSize: 16, fontFamily: "Helvetica-Bold" },
+  totalTitle: { color: C.white, fontSize: 10, fontFamily: "Helvetica-Bold", marginBottom: 6 },
 
-  // Badges Grid
-  badgesGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 10,
-  },
+  // BADGE GRID
+  badgesGrid: { flexDirection: "row", flexWrap: "wrap", marginTop: 10 },
   badgeItem: {
     width: "23.5%",
     marginBottom: 10,
     marginRight: "2%",
     alignItems: "center",
-    backgroundColor: WHITE,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
+    backgroundColor: C.white,
+    borderRadius: 8,
     padding: 10,
+    // 3D timbul per badge
+    borderBottomWidth: 4,
+    borderRightWidth: 3,
+    borderBottomColor: C.shadow,
+    borderRightColor: C.shadow,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.95)",
+    borderLeftColor: "rgba(255,255,255,0.95)",
   },
-  badgeItemLastInRow: {
-    marginRight: 0,
-  },
-  badgeIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#eef2ff",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
-  },
-  badgeIconText: { fontSize: 14, color: BLUE, fontFamily: "Helvetica-Bold" },
+  badgeItemLastInRow: { marginRight: 0 },
   badgeLabel: {
     fontSize: 7,
-    color: MUTED,
+    color: C.muted,
     marginBottom: 4,
+    marginTop: 4,
     textAlign: "center",
-    lineHeight: 1.2,
+    lineHeight: 1.3,
     minHeight: 16,
   },
-  badgeValue: {
-    backgroundColor: ORANGE,
+  badgePillOrange: {
+    backgroundColor: C.orange,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
-    color: WHITE,
+    color: C.white,
     fontSize: 10,
     fontFamily: "Helvetica-Bold",
     textAlign: "center",
     minWidth: 20,
+    borderBottomWidth: 2,
+    borderRightWidth: 1,
+    borderBottomColor: C.orangeDrk,
+    borderRightColor: C.orangeDrk,
   },
-  badgeValuePink: {
-    backgroundColor: PINK,
+  badgePillPink: {
+    backgroundColor: C.pink,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
-    color: WHITE,
+    color: C.white,
     fontSize: 10,
     fontFamily: "Helvetica-Bold",
     textAlign: "center",
     minWidth: 20,
+    borderBottomWidth: 2,
+    borderRightWidth: 1,
+    borderBottomColor: C.pinkDark,
+    borderRightColor: C.pinkDark,
   },
-  badgeValueGray: {
+  badgePillGray: {
     backgroundColor: "#9ca3af",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
-    color: WHITE,
+    color: C.white,
     fontSize: 10,
     fontFamily: "Helvetica-Bold",
     textAlign: "center",
     minWidth: 20,
+    borderBottomWidth: 2,
+    borderRightWidth: 1,
+    borderBottomColor: "#6b7280",
+    borderRightColor: "#6b7280",
   },
 
-  // ── PROJECT PAGES ─────────────────────────────────────────────────────────
-  projectHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  projectIconBox: {
-    backgroundColor: "#eef2ff",
+  // PROJECT PAGE
+  projectHeaderRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
+  projectTypeBadge: {
+    backgroundColor: C.blue,
     borderRadius: 6,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
     marginRight: 10,
+    borderBottomWidth: 3,
+    borderRightWidth: 2,
+    borderBottomColor: C.blueDeep,
+    borderRightColor: C.blueDeep,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.2)",
+    borderLeftColor: "rgba(255,255,255,0.2)",
   },
-  projectIconText: { fontSize: 10, fontFamily: "Helvetica-Bold", color: BLUE },
-  projectTitle: {
-    fontSize: 20,
-    fontFamily: "Helvetica-Bold",
-    color: BLUE,
-  },
-  projectSubtitle: {
-    fontSize: 13,
-    fontFamily: "Helvetica-Bold",
-    color: TEXT,
-    marginBottom: 12,
-  },
+  projectTypeLabel: { fontSize: 10, fontFamily: "Helvetica-Bold", color: C.white },
+  projectTitle: { fontSize: 20, fontFamily: "Helvetica-Bold", color: C.blue },
+  projectSubtitle: { fontSize: 13, fontFamily: "Helvetica-Bold", color: C.text, marginBottom: 14 },
+
+  // 3D screenshot frame
   screenshotBox: {
     width: "100%",
     height: 240,
-    backgroundColor: LIGHT_BG,
-    borderRadius: 6,
+    backgroundColor: C.bg,
+    borderRadius: 10,
     marginBottom: 14,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
+    borderBottomWidth: 6,
+    borderRightWidth: 5,
+    borderBottomColor: C.shadowDrk,
+    borderRightColor: C.shadowDrk,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
   },
   screenshotImg: { width: "100%", height: "100%" },
   screenshotPlaceholder: { color: "#9ca3af", fontSize: 10, textAlign: "center" },
 
+  // 3D info boxes
   infoRow: { flexDirection: "row", marginRight: -10 },
   infoBox: {
     flex: 1,
-    backgroundColor: LIGHT_BG,
-    borderRadius: 6,
+    backgroundColor: C.bg,
+    borderRadius: 8,
     padding: 10,
     minHeight: 60,
     marginRight: 10,
     minWidth: 0,
+    borderBottomWidth: 4,
+    borderRightWidth: 3,
+    borderBottomColor: C.shadow,
+    borderRightColor: C.shadow,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
   },
   infoBoxWide: {
     flex: 2,
-    backgroundColor: LIGHT_BG,
-    borderRadius: 6,
+    backgroundColor: C.bg,
+    borderRadius: 8,
     padding: 10,
     minHeight: 60,
     marginRight: 10,
     minWidth: 0,
+    borderBottomWidth: 4,
+    borderRightWidth: 3,
+    borderBottomColor: C.shadow,
+    borderRightColor: C.shadow,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
   },
-  infoTitle: {
-    fontSize: 8,
-    fontFamily: "Helvetica-Bold",
-    color: TEXT,
-    marginBottom: 6,
-  },
-  infoText: { fontSize: 8, color: TEXT, lineHeight: 1.4 },
+  infoTitle: { fontSize: 8, fontFamily: "Helvetica-Bold", color: C.blue, marginBottom: 6 },
+  infoText: { fontSize: 8, color: C.text, lineHeight: 1.5 },
 
-  // ── VIDEO PAGE ────────────────────────────────────────────────────────────
+  // VIDEO PAGE
   videoHeader: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: LIGHT_BG,
-    borderRadius: 6,
+    backgroundColor: C.bg,
+    borderRadius: 8,
     padding: 10,
     marginBottom: 12,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderBottomColor: C.shadow,
+    borderRightColor: C.shadow,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
   },
-  videoHeaderIconBox: {
-    backgroundColor: "#fee2e2",
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    marginRight: 8,
-  },
-  videoHeaderIconText: { fontSize: 9, fontFamily: "Helvetica-Bold", color: "#dc2626" },
-  videoHeaderText: { fontSize: 11, fontFamily: "Helvetica-Bold", color: BLUE },
-
+  videoHeaderText: { fontSize: 11, fontFamily: "Helvetica-Bold", color: C.blue, marginLeft: 8 },
   videoThumb: {
     width: "100%",
     height: 200,
-    backgroundColor: LIGHT_BG,
-    borderRadius: 6,
+    backgroundColor: C.bg,
+    borderRadius: 10,
     marginBottom: 12,
     overflow: "hidden",
+    borderBottomWidth: 6,
+    borderRightWidth: 5,
+    borderBottomColor: C.shadowDrk,
+    borderRightColor: C.shadowDrk,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
   },
   videoPlaceholder: {
     width: "100%",
@@ -518,144 +775,169 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
-  ytRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
+  ytRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   ytLogoBox: {
-    width: 50,
-    backgroundColor: LIGHT_BG,
-    borderRadius: 6,
-    padding: 6,
+    width: 54,
+    backgroundColor: C.bg,
+    borderRadius: 8,
+    padding: 8,
     alignItems: "center",
     marginRight: 10,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderBottomColor: C.shadow,
+    borderRightColor: C.shadow,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
   },
   ytLogoText: { fontSize: 7, color: "#dc2626", fontFamily: "Helvetica-Bold" },
   ytTitleBox: { flex: 1, minWidth: 0 },
-  ytLabel: { fontSize: 7, fontFamily: "Helvetica-Bold", color: ORANGE },
-  ytTitle: { fontSize: 10, fontFamily: "Helvetica-Bold", color: TEXT },
-
+  ytLabel: { fontSize: 7, fontFamily: "Helvetica-Bold", color: C.orange },
+  ytTitle: { fontSize: 10, fontFamily: "Helvetica-Bold", color: C.text },
   competenceBox: {
-    backgroundColor: LIGHT_BG,
-    borderRadius: 6,
-    padding: 10,
+    backgroundColor: C.bg,
+    borderRadius: 8,
+    padding: 12,
+    borderBottomWidth: 4,
+    borderRightWidth: 3,
+    borderBottomColor: C.shadow,
+    borderRightColor: C.shadow,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
   },
-  competenceLabel: {
-    fontSize: 8,
-    fontFamily: "Helvetica-Bold",
-    color: ORANGE,
-    marginBottom: 4,
-  },
-  competenceText: { fontSize: 8, color: TEXT, lineHeight: 1.4 },
+  competenceLabel: { fontSize: 8, fontFamily: "Helvetica-Bold", color: C.orange, marginBottom: 4 },
+  competenceText: { fontSize: 8, color: C.text, lineHeight: 1.5 },
 
-  // ── MENGAJAR PAGE ─────────────────────────────────────────────────────────
-  mengajarTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  mengajarIconBox: {
+  // MENGAJAR PAGE
+  mengajarTitleRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  mengajarTypeBadge: {
     backgroundColor: "#fef3c7",
     borderRadius: 6,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
     marginRight: 10,
+    borderBottomWidth: 3,
+    borderRightWidth: 2,
+    borderBottomColor: "#fde68a",
+    borderRightColor: "#fde68a",
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
   },
-  mengajarIconText: { fontSize: 10, fontFamily: "Helvetica-Bold", color: "#d97706" },
-  mengajarTitle: {
-    fontSize: 20,
-    fontFamily: "Helvetica-Bold",
-    color: BLUE,
-  },
-
+  mengajarTypeText: { fontSize: 10, fontFamily: "Helvetica-Bold", color: "#92400e" },
+  mengajarTitle: { fontSize: 20, fontFamily: "Helvetica-Bold", color: C.blue },
   photoRow: { flexDirection: "row", marginRight: -10, marginBottom: 10 },
   photoBox: {
     flex: 1,
     height: 160,
-    backgroundColor: LIGHT_BG,
-    borderRadius: 6,
+    backgroundColor: C.bg,
+    borderRadius: 10,
     overflow: "hidden",
     marginRight: 10,
+    borderBottomWidth: 6,
+    borderRightWidth: 5,
+    borderBottomColor: C.shadowDrk,
+    borderRightColor: C.shadowDrk,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
   },
-
-  metaRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 10,
-  },
+  metaRow: { flexDirection: "row", flexWrap: "wrap", marginBottom: 10 },
   metaItem: {
-    backgroundColor: LIGHT_BG,
-    borderRadius: 4,
+    backgroundColor: C.bg,
+    borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 4,
     marginRight: 8,
     marginBottom: 6,
     flexDirection: "row",
     alignItems: "center",
+    borderBottomWidth: 2,
+    borderRightWidth: 2,
+    borderBottomColor: C.shadow,
+    borderRightColor: C.shadow,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
   },
-  metaLabel: { fontSize: 7, fontFamily: "Helvetica-Bold", color: MUTED, marginRight: 4 },
-  metaValue: { fontSize: 8, color: TEXT },
-
+  metaLabel: { fontSize: 7, fontFamily: "Helvetica-Bold", color: C.muted, marginRight: 4 },
+  metaValue: { fontSize: 8, color: C.text },
   storyRow: { flexDirection: "row", marginRight: -10 },
   storyBox: {
     flex: 1,
-    backgroundColor: LIGHT_BG,
-    borderRadius: 6,
+    backgroundColor: C.bg,
+    borderRadius: 8,
     padding: 10,
     minHeight: 70,
     marginRight: 10,
     minWidth: 0,
+    borderBottomWidth: 4,
+    borderRightWidth: 3,
+    borderBottomColor: C.shadow,
+    borderRightColor: C.shadow,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
   },
-  storyTitle: { fontSize: 8, fontFamily: "Helvetica-Bold", color: TEXT, marginBottom: 4 },
-  storyText: { fontSize: 8, color: TEXT, lineHeight: 1.4 },
+  storyTitle: { fontSize: 8, fontFamily: "Helvetica-Bold", color: C.blue, marginBottom: 4 },
+  storyText: { fontSize: 8, color: C.text, lineHeight: 1.5 },
 
-  // ── CERTIFICATE PAGE ──────────────────────────────────────────────────────
-  certTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  certIconBox: {
+  // CERTIFICATES PAGE
+  certTitleRow: { flexDirection: "row", alignItems: "center", marginBottom: 14 },
+  certTypeBadge: {
     backgroundColor: "#fef9c3",
     borderRadius: 6,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
     marginRight: 10,
+    borderBottomWidth: 3,
+    borderRightWidth: 2,
+    borderBottomColor: "#fef08a",
+    borderRightColor: "#fef08a",
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
   },
-  certIconText: { fontSize: 10, fontFamily: "Helvetica-Bold", color: "#ca8a04" },
-  certTitle: {
-    fontSize: 20,
-    fontFamily: "Helvetica-Bold",
-    color: BLUE,
-  },
+  certTypeText: { fontSize: 10, fontFamily: "Helvetica-Bold", color: "#854d0e" },
+  certTitle: { fontSize: 20, fontFamily: "Helvetica-Bold", color: C.blue },
   certGrid: { flexDirection: "row", flexWrap: "wrap", marginRight: -12 },
-  certItem: {
-    width: "48%",
-    marginBottom: 12,
-    marginRight: "4%",
-  },
+  certItem: { width: "48%", marginBottom: 12, marginRight: "4%" },
   certItemLast: { marginRight: 0 },
   certImgBox: {
     width: "100%",
     height: 160,
-    backgroundColor: LIGHT_BG,
-    borderRadius: 6,
+    backgroundColor: C.bg,
+    borderRadius: 10,
     overflow: "hidden",
     marginBottom: 6,
     alignItems: "center",
     justifyContent: "center",
+    borderBottomWidth: 6,
+    borderRightWidth: 5,
+    borderBottomColor: C.shadowDrk,
+    borderRightColor: C.shadowDrk,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
   },
-  certMeta: { fontSize: 7, color: MUTED },
-  certTema: { fontSize: 9, fontFamily: "Helvetica-Bold", color: TEXT, marginBottom: 2 },
+  certMeta: { fontSize: 7, color: C.muted },
+  certTema: { fontSize: 9, fontFamily: "Helvetica-Bold", color: C.text, marginBottom: 2 },
 });
 
 /* ============================================================================
  * HELPERS
  * ========================================================================== */
 
-/** Ambil 1–2 huruf kapital dari nama untuk dijadikan initial avatar */
 function getInitials(name: string): string {
   return name
     .split(" ")
@@ -676,35 +958,24 @@ function FooterBar() {
   );
 }
 
-/** Cover page — sama persis seperti milik Abdul Muthalib */
 function CoverPage({ name }: { name: string }) {
   return (
     <Page size="A4" style={s.page}>
       <View style={s.coverPage}>
-        {/* Badge label atas */}
         <View style={s.coverBadge}>
           <Text style={s.coverBadgeText}>PORTFOLIO REPORT</Text>
         </View>
-
         <Text style={s.coverTitle}>Talent Achievement</Text>
-        <Text style={s.coverSubtitle}>IT & Robotics</Text>
-
-        {/* Garis aksen */}
+        <Text style={s.coverSubtitle}>IT &amp; Robotics</Text>
         <View style={s.coverDivider} />
-
-        {/* Avatar dengan initial */}
         <View style={s.coverProfile}>
-          <Text style={s.coverProfileInitial}>{getInitials(name)}</Text>
+          <Text style={s.coverInitial}>{getInitials(name)}</Text>
         </View>
-
         <Text style={s.coverName}>{name}</Text>
-
         <View style={s.coverRoleBadge}>
           <Text style={s.coverRole}>STUDENT DEVELOPER &amp; DESIGNER</Text>
         </View>
       </View>
-
-      {/* Footer khusus cover (warna gelap transparan di atas biru) */}
       <View style={s.coverFooterBar}>
         <Text style={s.coverFooterText}>TALENT ACHIEVEMENTS</Text>
       </View>
@@ -713,33 +984,26 @@ function CoverPage({ name }: { name: string }) {
 }
 
 function SummaryPage({ summary }: { summary: ProjectSummary }) {
-  /**
-   * Daftar badge — urutan & label sama dengan PDF Abdul Muthalib.
-   * Semua field sekarang diambil dari summary (tidak ada yang di-hardcode 0).
-   */
-  const badges: { label: string; shortLabel: string; value: number; color: "orange" | "pink" | "gray" }[] = [
-    { label: "Youtube",       shortLabel: "YT",  value: summary.ityt,        color: "orange" },
-    { label: "Certificates",  shortLabel: "Cert",value: summary.itc,         color: "orange" },
-    { label: "Game Dev",      shortLabel: "Game",value: summary.itg ?? 0,    color: "orange" },
-    { label: "Website",       shortLabel: "Web", value: summary.itw ?? 0,    color: "orange" },
-    { label: "IDN Mengajar",  shortLabel: "IDN", value: summary.itm,         color: "pink"   },
-    { label: "Karya Buku",    shortLabel: "Buku",value: summary.itb,         color: "pink"   },
-    { label: "Robotic",       shortLabel: "Bot", value: summary.itr,         color: "orange" },
-    { label: "IoT Project",   shortLabel: "IoT", value: summary.iti ?? 0,    color: "gray"   },
-    { label: "Competitions",  shortLabel: "Comp",value: summary.itl,         color: "orange" },
-    { label: "Desain Grafis", shortLabel: "Art", value: summary.itd,         color: "orange" },
+  type BC = "orange" | "pink" | "gray";
+  const badges: { label: string; value: number; color: BC; Icon: (p: { n?: number }) => JSX.Element }[] = [
+    { label: "Youtube",       value: summary.ityt,     color: "orange", Icon: IcoVideo    },
+    { label: "Certificates",  value: summary.itc,      color: "orange", Icon: IcoCert     },
+    { label: "Game Dev",      value: summary.itg ?? 0, color: "orange", Icon: IcoGame     },
+    { label: "Website",       value: summary.itw ?? 0, color: "orange", Icon: IcoWebsite  },
+    { label: "IDN Mengajar",  value: summary.itm,      color: "pink",   Icon: IcoMengajar },
+    { label: "Karya Buku",    value: summary.itb,      color: "pink",   Icon: IcoBuku     },
+    { label: "Robotic",       value: summary.itr,      color: "orange", Icon: IcoRobot    },
+    { label: "IoT Project",   value: summary.iti ?? 0, color: "gray",   Icon: IcoIoT      },
+    { label: "Competitions",  value: summary.itl,      color: "orange", Icon: IcoLomba    },
+    { label: "Desain Grafis", value: summary.itd,      color: "orange", Icon: IcoDesain   },
   ];
 
-  const getBadgeStyle = (color: "orange" | "pink" | "gray") => {
-    if (color === "pink") return s.badgeValuePink;
-    if (color === "gray") return s.badgeValueGray;
-    return s.badgeValue;
-  };
+  const pill = (c: BC) =>
+    c === "pink" ? s.badgePillPink : c === "gray" ? s.badgePillGray : s.badgePillOrange;
 
   return (
     <Page size="A4" style={s.page}>
       <View style={s.content}>
-        {/* Header nama */}
         <View style={s.summaryHeader}>
           <View style={s.summaryAvatar}>
             <Text style={s.summaryAvatarInitial}>{getInitials(summary.nama)}</Text>
@@ -752,13 +1016,14 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
 
         <Text style={s.summaryTitle}>Summary IT</Text>
 
-        <View style={s.summaryCard}>
-          {/* Row 1 — Progress Status + Persentase */}
+        {/* Outer card 3D */}
+        <Card3D shad={C.shadowDrk} depth={5} r={10} pad={16}>
+          {/* Row 1 */}
           <View style={s.summaryRow}>
             <View style={s.nameBox}>
               <Text style={s.nameText}>Progress Status</Text>
             </View>
-            <View style={s.persenBox}>
+            <TealCard3D>
               <Text style={s.persenTitle}>Persen</Text>
               <View style={s.persenRow}>
                 <View style={s.persenItem}>
@@ -770,16 +1035,16 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
                   <Text style={s.persenValue}>{summary.itpb}%</Text>
                 </View>
               </View>
-            </View>
+            </TealCard3D>
           </View>
 
-          {/* Row 2 — Keterangan + Total */}
+          {/* Row 2 */}
           <View style={s.summaryRow}>
             <View style={s.keteranganBox}>
               <Text style={s.keteranganLabel}>Keterangan Project :</Text>
               <Text style={s.keteranganValue}>{summary.ittuntas} Tuntas</Text>
             </View>
-            <View style={s.totalBox}>
+            <DarkCard3D>
               <Text style={s.totalTitle}>Total Project</Text>
               <View style={s.totalRow}>
                 <View style={s.totalItem}>
@@ -791,29 +1056,23 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
                   <Text style={s.totalValue}>{summary.itbl}</Text>
                 </View>
               </View>
-            </View>
+            </DarkCard3D>
           </View>
 
-          {/* Badge Grid */}
+          {/* Badge grid */}
           <View style={s.badgesGrid}>
             {badges.map((b, i) => {
-              const isLastInRow = (i + 1) % 4 === 0;
+              const last = (i + 1) % 4 === 0;
               return (
-                <View
-                  key={i}
-                  style={[s.badgeItem, isLastInRow && s.badgeItemLastInRow]}
-                >
-                  {/* Icon placeholder (huruf singkat) */}
-                  <View style={s.badgeIcon}>
-                    <Text style={s.badgeIconText}>{b.shortLabel.slice(0, 2)}</Text>
-                  </View>
+                <View key={i} style={[s.badgeItem, last && s.badgeItemLastInRow]}>
+                  <b.Icon n={22} />
                   <Text style={s.badgeLabel}>{b.label}</Text>
-                  <Text style={getBadgeStyle(b.color)}>{b.value}</Text>
+                  <Text style={pill(b.color)}>{b.value}</Text>
                 </View>
               );
             })}
           </View>
-        </View>
+        </Card3D>
       </View>
       <FooterBar />
     </Page>
@@ -832,9 +1091,9 @@ function ProjectPage({
   return (
     <Page size="A4" style={s.page}>
       <View style={s.content}>
-        <View style={s.projectHeader}>
-          <View style={s.projectIconBox}>
-            <Text style={s.projectIconText}>{typeLabel}</Text>
+        <View style={s.projectHeaderRow}>
+          <View style={s.projectTypeBadge}>
+            <Text style={s.projectTypeLabel}>{typeLabel}</Text>
           </View>
           <Text style={s.projectTitle}>{type}</Text>
         </View>
@@ -876,9 +1135,7 @@ function VideoPage({ video }: { video: ProjectVideo }) {
     <Page size="A4" style={s.page}>
       <View style={s.content}>
         <View style={s.videoHeader}>
-          <View style={s.videoHeaderIconBox}>
-            <Text style={s.videoHeaderIconText}>YT</Text>
-          </View>
+          <IcoVideo n={18} />
           <Text style={s.videoHeaderText}>Project Video Tutorial</Text>
         </View>
 
@@ -887,9 +1144,7 @@ function VideoPage({ video }: { video: ProjectVideo }) {
             <Image src={video.thumbnail} style={{ width: "100%", height: "100%" }} />
           ) : (
             <View style={s.videoPlaceholder}>
-              <Text style={{ fontSize: 28, color: "#dc2626", fontFamily: "Helvetica-Bold" }}>
-                PLAY
-              </Text>
+              <IcoPlay n={48} />
             </View>
           )}
         </View>
@@ -928,8 +1183,8 @@ function MengajarPage({ item }: { item: ProjectMengajar }) {
     <Page size="A4" style={s.page}>
       <View style={s.content}>
         <View style={s.mengajarTitleRow}>
-          <View style={s.mengajarIconBox}>
-            <Text style={s.mengajarIconText}>IDN</Text>
+          <View style={s.mengajarTypeBadge}>
+            <Text style={s.mengajarTypeText}>IDN</Text>
           </View>
           <Text style={s.mengajarTitle}>IDN Mengajar</Text>
         </View>
@@ -950,10 +1205,10 @@ function MengajarPage({ item }: { item: ProjectMengajar }) {
 
         <View style={s.metaRow}>
           {[
-            { label: "Lokasi",   value: item.lokasi },
-            { label: "Tanggal",  value: item.tanggal },
-            { label: "Tema",     value: item.tema },
-            { label: "Peserta",  value: item.jumlah_peserta ? `${item.jumlah_peserta} Orang` : undefined },
+            { label: "Lokasi",  value: item.lokasi },
+            { label: "Tanggal", value: item.tanggal },
+            { label: "Tema",    value: item.tema },
+            { label: "Peserta", value: item.jumlah_peserta ? `${item.jumlah_peserta} Orang` : undefined },
           ]
             .filter((m) => m.value)
             .map((m, i) => (
@@ -992,37 +1247,32 @@ function CertificatesPage({ certs }: { certs: ProjectCertificate[] }) {
         <Page key={pageIdx} size="A4" style={s.page}>
           <View style={s.content}>
             <View style={s.certTitleRow}>
-              <View style={s.certIconBox}>
-                <Text style={s.certIconText}>CERT</Text>
+              <View style={s.certTypeBadge}>
+                <Text style={s.certTypeText}>CERT</Text>
               </View>
               <Text style={s.certTitle}>Certificates</Text>
             </View>
             <View style={s.certGrid}>
-              {pair
-                .filter(Boolean)
-                .map((cert, i) =>
-                  cert ? (
-                    <View
-                      key={i}
-                      style={[
-                        s.certItem,
-                        i === pair.filter(Boolean).length - 1 ? s.certItemLast : null,
-                      ]}
-                    >
-                      <View style={s.certImgBox}>
-                        {cert.gambar ? (
-                          <Image src={cert.gambar} style={{ width: "100%", height: "100%" }} />
-                        ) : (
-                          <Text style={{ color: "#9ca3af", fontSize: 8 }}>[ Sertifikat ]</Text>
-                        )}
-                      </View>
-                      <Text style={s.certTema}>{cert.tema || "(Tanpa tema)"}</Text>
-                      <Text style={s.certMeta}>
-                        {[cert.lingkup, cert.tanggal].filter(Boolean).join(" • ")}
-                      </Text>
+              {pair.filter(Boolean).map((cert, i) =>
+                cert ? (
+                  <View
+                    key={i}
+                    style={[s.certItem, i === pair.filter(Boolean).length - 1 ? s.certItemLast : null]}
+                  >
+                    <View style={s.certImgBox}>
+                      {cert.gambar ? (
+                        <Image src={cert.gambar} style={{ width: "100%", height: "100%" }} />
+                      ) : (
+                        <IcoStar n={40} />
+                      )}
                     </View>
-                  ) : null
-                )}
+                    <Text style={s.certTema}>{cert.tema || "(Tanpa tema)"}</Text>
+                    <Text style={s.certMeta}>
+                      {[cert.lingkup, cert.tanggal].filter(Boolean).join(" • ")}
+                    </Text>
+                  </View>
+                ) : null
+              )}
             </View>
           </View>
           <FooterBar />
@@ -1039,43 +1289,25 @@ function CertificatesPage({ certs }: { certs: ProjectCertificate[] }) {
 export function ProjectReportPdf({ data }: { data: ProjectReportData }) {
   return (
     <Document>
-      {/* 1. Cover */}
       <CoverPage name={data.summary.nama} />
-
-      {/* 2. Summary */}
       <SummaryPage summary={data.summary} />
 
-      {/* 3. Design Projects */}
       {data.designs.map((d, i) => (
-        <ProjectPage
-          key={`design-${i}`}
-          project={d}
-          type="Design Project"
-          typeLabel="ART"
-        />
+        <ProjectPage key={`design-${i}`} project={d} type="Design Project" typeLabel="ART" />
       ))}
 
-      {/* 4. Robotics Projects */}
       {data.robotics.map((r, i) => (
-        <ProjectPage
-          key={`robotik-${i}`}
-          project={r}
-          type="Robotics Project"
-          typeLabel="BOT"
-        />
+        <ProjectPage key={`robotik-${i}`} project={r} type="Robotics Project" typeLabel="BOT" />
       ))}
 
-      {/* 5. Videos */}
       {data.videos.map((v, i) => (
         <VideoPage key={`video-${i}`} video={v} />
       ))}
 
-      {/* 6. IDN Mengajar */}
       {data.mengajar.map((m, i) => (
         <MengajarPage key={`mengajar-${i}`} item={m} />
       ))}
 
-      {/* 7. Certificates */}
       {data.certificates.length > 0 && (
         <CertificatesPage certs={data.certificates} />
       )}
