@@ -23,8 +23,6 @@ import {
   getCertificates,
   getYoutubeVideoId,
   resolveUploadUrl,
-  type DesignProject,
-  type RoboticsProject,
 } from "@/lib/portfolio-api";
 import { ProjectReportPdf, type ProjectReportData } from "@/lib/pdf/ProjectReportPdf";
 import { api } from "@/lib/api";
@@ -37,10 +35,30 @@ export const Route = createFileRoute("/_authed/project-reports")({
  * HELPERS
  * ========================================================================== */
 
+/**
+ * Konversi Google Drive share/view URL ke URL yang bisa di-fetch langsung.
+ * https://drive.google.com/file/d/{ID}/view  →  https://drive.google.com/uc?export=download&id={ID}
+ */
+function convertGoogleDriveUrl(url: string): string {
+  // Format: /file/d/{ID}/view atau /file/d/{ID}/preview
+  const match = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
+  if (match) {
+    return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+  }
+  // Sudah format uc?export=... atau bukan drive link
+  return url;
+}
+
+/**
+ * Fetch URL menjadi data URL (base64).
+ * Menggunakan credentials: "omit" agar tidak konflik dengan CORS wildcard (*).
+ * Google Drive URL dikonversi otomatis ke direct-download.
+ */
 async function urlToDataUrl(url: string | null | undefined): Promise<string | null> {
   if (!url) return null;
   try {
-    const res = await fetch(url, { mode: "cors", credentials: "include" });
+    const finalUrl = convertGoogleDriveUrl(url);
+    const res = await fetch(finalUrl, { mode: "cors", credentials: "omit" });
     if (!res.ok) return null;
     const blob = await res.blob();
     return await new Promise<string>((resolve, reject) => {
@@ -54,22 +72,47 @@ async function urlToDataUrl(url: string | null | undefined): Promise<string | nu
   }
 }
 
+/**
+ * YouTube thumbnail — coba beberapa resolusi dari tinggi ke rendah.
+ * Pakai credentials: "omit" agar tidak konflik dengan header CORS YouTube.
+ */
 async function getYoutubeThumbnail(link: string): Promise<string | null> {
   const videoId = getYoutubeVideoId(link);
   if (!videoId) return null;
-  const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-  return await urlToDataUrl(thumbUrl);
+
+  const candidates = [
+    `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+    `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+    `https://img.youtube.com/vi/${videoId}/default.jpg`,
+  ];
+
+  for (const thumbUrl of candidates) {
+    try {
+      const res = await fetch(thumbUrl, { mode: "cors", credentials: "omit" });
+      if (!res.ok) continue;
+      const blob = await res.blob();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      return dataUrl;
+    } catch {
+      continue;
+    }
+  }
+  return null;
 }
 
 async function getUploadImageDataUrl(path: string | null | undefined): Promise<string | null> {
   if (!path) return null;
   const resolvedUrl = resolveUploadUrl(path);
   if (!resolvedUrl) return null;
-  // Try fetching via authenticated API proxy if needed, or direct URL
   return await urlToDataUrl(resolvedUrl);
 }
 
-// Try authenticated photo fetch via /get-student-photo or direct URL
+// Coba via authenticated API proxy dulu, fallback ke direct URL
 async function getAuthImage(path: string | null | undefined): Promise<string | null> {
   if (!path) return null;
   try {
@@ -85,7 +128,7 @@ async function getAuthImage(path: string | null | undefined): Promise<string | n
  * ========================================================================== */
 
 function ProjectReportsPage() {
-  const { isGuru, getCabangId, user } = useAuth();
+  const { isGuru, getCabangId } = useAuth();
   const guruMode = isGuru();
   const cabangId = getCabangId();
 
@@ -136,7 +179,6 @@ function ProjectReportsPage() {
       const sid = parseInt(studentId);
       const semId = parseInt(semesterId);
 
-      // Fetch all portfolio data in parallel
       const [summary, designs, robotics, videos, teachings, certs, studentDetail] = await Promise.all([
         getStudentSummary(sid, semId),
         getDesignProjects(sid, semId),
@@ -159,10 +201,12 @@ function ProjectReportsPage() {
         return;
       }
 
-      const studentName = studentDetail?.nama ?? 
-        (students.data?.items ?? []).find((s: any) => s.id === sid)?.nama ?? "Siswa";
+      const studentName =
+        studentDetail?.nama ??
+        (students.data?.items ?? []).find((s: any) => s.id === sid)?.nama ??
+        "Siswa";
 
-      // Resolve design screenshots
+      // Resolve design screenshots — Google Drive URL dikonversi otomatis di urlToDataUrl
       const designsWithImg = await Promise.all(
         designs.map(async (d) => ({
           judul: d.judul,
@@ -170,7 +214,7 @@ function ProjectReportsPage() {
           teknologi: d.teknologi,
           deskripsi: d.deskripsi,
           screenshot: d.link_file_flyer
-            ? await urlToDataUrl(d.link_file_flyer).then(v => v || null)
+            ? await urlToDataUrl(d.link_file_flyer)
             : null,
         })),
       );
@@ -183,7 +227,7 @@ function ProjectReportsPage() {
           teknologi: r.teknologi,
           deskripsi: r.deskripsi,
           screenshot: r.link_file_flyer
-            ? await urlToDataUrl(r.link_file_flyer).then(v => v || null)
+            ? await urlToDataUrl(r.link_file_flyer)
             : null,
         })),
       );
@@ -226,18 +270,18 @@ function ProjectReportsPage() {
       setPdfData({
         summary: {
           nama: studentName,
-          itpt: summary.total_tercapai,
-          itpb: summary.belum_tercapai,
-          itsl: summary.selesai,
-          itbl: summary.belum_selesai,
-          ittuntas: summary.tuntas,
-          ityt: summary.total_video_youtube,
-          itc: summary.total_sertifikat,
-          itm: summary.total_mengajar,
-          itb: summary.total_buku,
-          itl: summary.total_lomba_it,
-          itr: summary.total_robotik,
-          itd: summary.total_desain,
+          itpt: Number(summary.total_tercapai),
+          itpb: Number(summary.belum_tercapai),
+          itsl: Number(summary.selesai),
+          itbl: Number(summary.belum_selesai),
+          ittuntas: Number(summary.tuntas),
+          ityt: Number(summary.total_video_youtube),
+          itc: Number(summary.total_sertifikat),
+          itm: Number(summary.total_mengajar),
+          itb: Number(summary.total_buku),
+          itl: Number(summary.total_lomba_it),
+          itr: Number(summary.total_robotik),
+          itd: Number(summary.total_desain),
         },
         designs: designsWithImg,
         robotics: roboticsWithImg,
@@ -306,7 +350,11 @@ function ProjectReportsPage() {
 
         <div className="space-y-2">
           <Label>Siswa</Label>
-          <Select value={studentId} onValueChange={(v) => { setStudentId(v); setPdfData(null); }} disabled={!classId}>
+          <Select
+            value={studentId}
+            onValueChange={(v) => { setStudentId(v); setPdfData(null); }}
+            disabled={!classId}
+          >
             <SelectTrigger><SelectValue placeholder="Pilih siswa" /></SelectTrigger>
             <SelectContent>
               {(students.data?.items ?? []).map((s: any) => (
@@ -317,7 +365,9 @@ function ProjectReportsPage() {
         </div>
 
         <Button onClick={buildReport} disabled={!studentId || building}>
-          {building ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Briefcase className="h-4 w-4 mr-2" />}
+          {building
+            ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            : <Briefcase className="h-4 w-4 mr-2" />}
           Generate Preview
         </Button>
       </Card>
