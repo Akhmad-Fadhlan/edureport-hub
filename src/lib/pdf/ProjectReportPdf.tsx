@@ -573,7 +573,7 @@ const s = StyleSheet.create({
     borderRightColor: "rgba(0,0,0,0.18)",
   },
   persenLabel: { color: C.white, fontSize: 7 },
-  persenValue: { color: C.white, fontSize: 20, fontFamily: "Helvetica-Bold" },
+  persenValue: { color: C.white, fontSize: 14, fontFamily: "Helvetica-Bold" },
   persenTitle: { color: C.white, fontSize: 9, fontFamily: "Helvetica-Bold", marginBottom: 6 },
 
   totalRow: { flexDirection: "row", gap: 6 },
@@ -593,7 +593,7 @@ const s = StyleSheet.create({
     borderRightColor: "rgba(0,0,0,0.35)",
   },
   totalLabel: { color: "#9ca3af", fontSize: 7 },
-  totalValue: { color: C.white, fontSize: 18, fontFamily: "Helvetica-Bold" },
+  totalValue: { color: C.white, fontSize: 14, fontFamily: "Helvetica-Bold" },
   totalTitle: { color: C.white, fontSize: 9, fontFamily: "Helvetica-Bold", marginBottom: 6 },
 
   // BADGE GRID — 4 column, inside blue card so cards are white
@@ -1193,15 +1193,41 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
             </DarkCard3D>
           </View>
 
-          {/* Badge grid — 4 columns */}
-          <View style={s.badgesGrid}>
-            {badges.map((b, i) => (
-              <View key={i} style={s.badgeItem}>
-                <b.Icon n={32} />
-                <Text style={s.badgeLabel}>{b.label}</Text>
-                <Text style={pillStyle(b.pill)}>{b.value}</Text>
+          {/* Badge grid — dibungkus 1 card putih, sejajar dengan Persen+Total (kanan keterangan) */}
+          <View style={{ flexDirection: "row", marginTop: 10 }}>
+            {/* Spacer sejajar lebar keterangan box + marginRight-nya */}
+            <View style={{ width: "34%" }} />
+
+            {/* Outer card putih membungkus semua badge */}
+            <View style={{
+              flex: 1,
+              backgroundColor: C.white,
+              borderRadius: 12,
+              padding: 8,
+              borderBottomWidth: 4,
+              borderRightWidth: 3,
+              borderBottomColor: "#c7c7e8",
+              borderRightColor: "#c7c7e8",
+              borderTopWidth: 1,
+              borderLeftWidth: 1,
+              borderTopColor: "rgba(255,255,255,0.95)",
+              borderLeftColor: "rgba(255,255,255,0.95)",
+            }}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                {badges.map((b, i) => (
+                  <View key={i} style={{
+                    width: "25%",
+                    alignItems: "center",
+                    paddingVertical: 8,
+                    paddingHorizontal: 2,
+                  }}>
+                    <b.Icon n={28} />
+                    <Text style={s.badgeLabel}>{b.label}</Text>
+                    <Text style={pillStyle(b.pill)}>{b.value}</Text>
+                  </View>
+                ))}
               </View>
-            ))}
+            </View>
           </View>
 
         </View>
