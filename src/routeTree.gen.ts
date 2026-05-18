@@ -20,9 +20,11 @@ import { Route as AuthedReportsRouteImport } from './routes/_authed/reports'
 import { Route as AuthedNotesRouteImport } from './routes/_authed/notes'
 import { Route as AuthedMaterialsRouteImport } from './routes/_authed/materials'
 import { Route as AuthedIndicatorsRouteImport } from './routes/_authed/indicators'
+import { Route as AuthedPortfolioRouteImport } from './routes/_authed/portfolio'
 import { Route as AuthedGradesRouteImport } from './routes/_authed/grades'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedClassesRouteImport } from './routes/_authed/classes'
+import { Route as AuthedProjectReportsRouteImport } from './routes/_authed/project-reports'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -93,6 +95,16 @@ const AuthedClassesRoute = AuthedClassesRouteImport.update({
   path: '/classes',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedPortfolioRoute = AuthedPortfolioRouteImport.update({
+  id: '/portfolio',
+  path: '/portfolio',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedProjectReportsRoute = AuthedProjectReportsRouteImport.update({
+  id: '/project-reports',
+  path: '/project-reports',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -108,6 +120,8 @@ export interface FileRoutesByFullPath {
   '/students': typeof AuthedStudentsRoute
   '/subjects': typeof AuthedSubjectsRoute
   '/teachers': typeof AuthedTeachersRoute
+ '/portfolio': typeof AuthedPortfolioRoute
+  '/project-reports': typeof AuthedProjectReportsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -123,6 +137,10 @@ export interface FileRoutesByTo {
   '/students': typeof AuthedStudentsRoute
   '/subjects': typeof AuthedSubjectsRoute
   '/teachers': typeof AuthedTeachersRoute
+  '/portfolio': typeof AuthedPortfolioRoute
+  '/project-reports': typeof AuthedProjectReportsRoute
+  '/_authed/portfolio': typeof AuthedPortfolioRoute
+  '/_authed/project-reports': typeof AuthedProjectReportsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -157,6 +175,8 @@ export interface FileRouteTypes {
     | '/students'
     | '/subjects'
     | '/teachers'
+    | '/portfolio'
+    | '/project-reports'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -172,6 +192,8 @@ export interface FileRouteTypes {
     | '/students'
     | '/subjects'
     | '/teachers'
+    | '/portfolio'
+    | '/project-reports'
   id:
     | '__root__'
     | '/'
@@ -188,6 +210,8 @@ export interface FileRouteTypes {
     | '/_authed/students'
     | '/_authed/subjects'
     | '/_authed/teachers'
+    | '/_authed/portfolio'
+    | '/_authed/project-reports'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -296,6 +320,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedClassesRouteImport
       parentRoute: typeof AuthedRoute
     }
+      '/_authed/portfolio': {
+      id: '/_authed/portfolio'
+      path: '/portfolio'
+      fullPath: '/portfolio'
+      preLoaderRoute: typeof AuthedPortfolioRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/project-reports': {
+      id: '/_authed/project-reports'
+      path: '/project-reports'
+      fullPath: '/project-reports'
+      preLoaderRoute: typeof AuthedProjectReportsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
@@ -311,6 +349,8 @@ interface AuthedRouteChildren {
   AuthedStudentsRoute: typeof AuthedStudentsRoute
   AuthedSubjectsRoute: typeof AuthedSubjectsRoute
   AuthedTeachersRoute: typeof AuthedTeachersRoute
+  AuthedPortfolioRoute: typeof AuthedPortfolioRoute
+  AuthedProjectReportsRoute: typeof AuthedProjectReportsRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -325,6 +365,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedStudentsRoute: AuthedStudentsRoute,
   AuthedSubjectsRoute: AuthedSubjectsRoute,
   AuthedTeachersRoute: AuthedTeachersRoute,
+  AuthedPortfolioRoute: AuthedPortfolioRoute,
+  AuthedProjectReportsRoute: AuthedProjectReportsRoute,
 }
 
 const AuthedRouteWithChildren =
