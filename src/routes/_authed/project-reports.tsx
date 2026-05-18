@@ -40,13 +40,8 @@ if (typeof window !== 'undefined') {
   // Mock Buffer for react-pdf
   if (!(window as any).Buffer) {
     (window as any).Buffer = {
-      isBuffer: (obj: any) => false,
-      from: (data: any) => {
-        if (typeof data === 'string') {
-          return data;
-        }
-        return data;
-      },
+      isBuffer: () => false,
+      from: (data: any) => data,
       alloc: (size: number) => new Uint8Array(size),
     };
   }
@@ -66,79 +61,71 @@ if (typeof window !== 'undefined') {
 
 /** Cek apakah URL adalah Google Drive */
 function isGoogleDriveUrl(url: string): boolean {
-  return url.includes("drive.google.com") || url.includes("docs.google.com");
+  return url?.includes("drive.google.com") || url?.includes("docs.google.com") || false;
 }
 
 /**
- * Konversi URL Google Drive ke format proxy URL
- * Contoh: https://drive.google.com/file/d/FILE_ID/view?usp=drive_link
- * menjadi: https://rapor.codestechno.com/api/proxy-image?url=FILE_ID&format=jpeg
+ * Extract Google Drive File ID dari URL
  */
-function convertToProxyUrl(url: string): string {
-  // Extract file ID dari berbagai format URL Google Drive
-  let fileId = null;
+function extractGoogleDriveFileId(url: string): string | null {
+  if (!url) return null;
   
   // Pattern 1: /file/d/FILE_ID/view
   const match1 = url.match(/drive\.google\.com\/file\/d\/([^\/?#]+)/);
-  if (match1) {
-    fileId = match1[1];
-  }
+  if (match1) return match1[1];
   
   // Pattern 2: /open?id=FILE_ID
   const match2 = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
-  if (match2) {
-    fileId = match2[1];
-  }
+  if (match2) return match2[1];
   
   // Pattern 3: /uc?id=FILE_ID
   const match3 = url.match(/drive\.google\.com\/uc\?id=([^&]+)/);
-  if (match3) {
-    fileId = match3[1];
-  }
+  if (match3) return match3[1];
   
-  if (fileId) {
-    // Return proxy URL dengan format JPEG
-    return `/api/proxy-image?url=https://drive.google.com/file/d/${fileId}/view&format=jpeg`;
-  }
-  
-  // Jika tidak bisa extract, return original URL
-  return url;
+  return null;
 }
 
 /**
- * Fetch gambar dari URL eksternal (Google Drive, dll) melalui backend proxy.
- * Backend melakukan cURL ke URL tersebut (tidak ada CORS di server-side)
- * dan mengembalikan base64 data URL.
+ * Fetch gambar dari Google Drive via proxy
+ * Menggunakan fetch langsung untuk menghindari double /api/ prefix
  */
 async function fetchViaProxy(url: string): Promise<string | null> {
   try {
-    // Konversi URL ke format proxy dengan parameter format=jpeg
-    const proxyUrl = convertToProxyUrl(url);
+    const fileId = extractGoogleDriveFileId(url);
+    if (!fileId) {
+      console.warn('Could not extract Google Drive file ID from:', url);
+      return null;
+    }
+    
+    // Gunakan fetch langsung ke endpoint proxy
+    const proxyUrl = `https://rapor.codestechno.com/api/proxy-image?url=https://drive.google.com/file/d/${fileId}/view&format=jpeg`;
     
     console.log('Fetching via proxy:', proxyUrl);
     
-    const res = await api.get<any>(proxyUrl, {
-      timeout: 30000, // 30 seconds timeout untuk gambar besar
+    const response = await fetch(proxyUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
     
-    // Cek berbagai kemungkinan struktur response
-    let dataUrl = null;
-    
-    if (res.data?.data?.data && typeof res.data.data.data === 'string') {
-      dataUrl = res.data.data.data;
-    } else if (res.data?.data && typeof res.data.data === 'string') {
-      dataUrl = res.data.data;
-    } else if (res.data?.data && typeof res.data.data === 'object') {
-      dataUrl = res.data.data.data;
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
     
-    // Validasi data URL
-    if (typeof dataUrl === 'string' && dataUrl.startsWith('data:image/')) {
-      console.log('Proxy fetch success, image type:', dataUrl.substring(0, 50));
-      return dataUrl;
+    const result = await response.json();
+    console.log('Proxy response success:', !!result.success);
+    
+    // Response dari backend: { success: true, data: "data:image/png;base64,..." }
+    if (result.success && result.data) {
+      const dataUrl = result.data;
+      if (typeof dataUrl === 'string' && dataUrl.startsWith('data:image/')) {
+        console.log('Proxy fetch success, image type:', dataUrl.substring(0, 50));
+        return dataUrl;
+      }
     }
     
-    console.warn('Invalid data URL format:', dataUrl?.substring(0, 100));
+    console.warn('Invalid response format:', result);
     return null;
   } catch (error: any) {
     console.error('Proxy fetch failed:', error?.message);
@@ -153,7 +140,7 @@ async function fetchViaProxy(url: string): Promise<string | null> {
 async function urlToDataUrl(url: string | null | undefined): Promise<string | null> {
   if (!url) return null;
 
-  // Google Drive selalu lewat proxy — tidak bisa di-fetch langsung dari browser
+  // Google Drive selalu lewat proxy
   if (isGoogleDriveUrl(url)) {
     return await fetchViaProxy(url);
   }
@@ -203,7 +190,7 @@ async function convertWebPToJPEG(webpBlob: Blob): Promise<Blob> {
           }
         },
         'image/jpeg',
-        0.85 // Quality
+        0.85
       );
     };
     img.onerror = reject;
@@ -213,7 +200,6 @@ async function convertWebPToJPEG(webpBlob: Blob): Promise<Blob> {
 
 /**
  * YouTube thumbnail — coba beberapa resolusi dari tinggi ke rendah.
- * Pakai credentials: "omit" agar tidak konflik dengan header CORS YouTube.
  */
 async function getYoutubeThumbnail(link: string): Promise<string | null> {
   const videoId = getYoutubeVideoId(link);
@@ -345,14 +331,13 @@ function ProjectReportsPage() {
         (students.data?.items ?? []).find((s: any) => s.id === sid)?.nama ??
         "Siswa";
 
-      // Resolve design screenshots — Google Drive URL dikonversi otomatis di urlToDataUrl
+      // Resolve design screenshots
       const designsWithImg = await Promise.all(
         designs.map(async (d) => {
-          console.log('Processing design image:', d.judul, 'URL:', d.link_file_flyer);
+          console.log('Processing design:', d.judul);
           const screenshot = d.link_file_flyer
             ? await urlToDataUrl(d.link_file_flyer)
             : null;
-          console.log('Design image result:', screenshot ? 'Success' : 'Failed');
           return {
             judul: d.judul,
             kompetensi_siswa: d.kompetensi_siswa,
@@ -414,18 +399,18 @@ function ProjectReportsPage() {
       setPdfData({
         summary: {
           nama: studentName,
-          itpt: Number(summary.total_tercapai),
-          itpb: Number(summary.belum_tercapai),
-          itsl: Number(summary.selesai),
-          itbl: Number(summary.belum_selesai),
-          ittuntas: Number(summary.tuntas),
-          ityt: Number(summary.total_video_youtube),
-          itc: Number(summary.total_sertifikat),
-          itm: Number(summary.total_mengajar),
-          itb: Number(summary.total_buku),
-          itl: Number(summary.total_lomba_it),
-          itr: Number(summary.total_robotik),
-          itd: Number(summary.total_desain),
+          itpt: Number(summary.total_tercapai) || 0,
+          itpb: Number(summary.belum_tercapai) || 0,
+          itsl: Number(summary.selesai) || 0,
+          itbl: Number(summary.belum_selesai) || 0,
+          ittuntas: Number(summary.tuntas) || 0,
+          ityt: Number(summary.total_video_youtube) || 0,
+          itc: Number(summary.total_sertifikat) || 0,
+          itm: Number(summary.total_mengajar) || 0,
+          itb: Number(summary.total_buku) || 0,
+          itl: Number(summary.total_lomba_it) || 0,
+          itr: Number(summary.total_robotik) || 0,
+          itd: Number(summary.total_desain) || 0,
         },
         designs: designsWithImg,
         robotics: roboticsWithImg,
