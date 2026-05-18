@@ -478,7 +478,9 @@ const s = StyleSheet.create({
   },
   summaryOuterContent: {
     padding: 20,
-    paddingBottom: 48,
+    paddingBottom: 52,
+    flex: 1,
+    flexDirection: "column",
   },
   summaryPageTitle: {
     fontSize: 24,
@@ -487,11 +489,12 @@ const s = StyleSheet.create({
     marginBottom: 14,
   },
 
-  // Inner BLUE card that holds everything
+  // Inner BLUE card that holds everything — memanjang ke bawah
   summaryInnerCard: {
     backgroundColor: C.blue,
     borderRadius: 14,
     padding: 16,
+    flex: 1,
     borderBottomWidth: 6,
     borderRightWidth: 5,
     borderBottomColor: "#1e1e6e",
@@ -1193,40 +1196,34 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
             </DarkCard3D>
           </View>
 
-          {/* Badge grid — dibungkus 1 card putih, sejajar dengan Persen+Total (kanan keterangan) */}
-          <View style={{ flexDirection: "row", marginTop: 10 }}>
-            {/* Spacer sejajar lebar keterangan box + marginRight-nya */}
-            <View style={{ width: "34%" }} />
-
-            {/* Outer card putih membungkus semua badge */}
-            <View style={{
-              flex: 1,
-              backgroundColor: C.white,
-              borderRadius: 12,
-              padding: 8,
-              borderBottomWidth: 4,
-              borderRightWidth: 3,
-              borderBottomColor: "#c7c7e8",
-              borderRightColor: "#c7c7e8",
-              borderTopWidth: 1,
-              borderLeftWidth: 1,
-              borderTopColor: "rgba(255,255,255,0.95)",
-              borderLeftColor: "rgba(255,255,255,0.95)",
-            }}>
-              <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-                {badges.map((b, i) => (
-                  <View key={i} style={{
-                    width: "25%",
-                    alignItems: "center",
-                    paddingVertical: 8,
-                    paddingHorizontal: 2,
-                  }}>
-                    <b.Icon n={28} />
-                    <Text style={s.badgeLabel}>{b.label}</Text>
-                    <Text style={pillStyle(b.pill)}>{b.value}</Text>
-                  </View>
-                ))}
-              </View>
+          {/* Badge grid — card putih penuh dari Tuntas hingga Total */}
+          <View style={{
+            backgroundColor: C.white,
+            borderRadius: 12,
+            padding: 8,
+            marginTop: 10,
+            borderBottomWidth: 4,
+            borderRightWidth: 3,
+            borderBottomColor: "#c7c7e8",
+            borderRightColor: "#c7c7e8",
+            borderTopWidth: 1,
+            borderLeftWidth: 1,
+            borderTopColor: "rgba(255,255,255,0.95)",
+            borderLeftColor: "rgba(255,255,255,0.95)",
+          }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+              {badges.map((b, i) => (
+                <View key={i} style={{
+                  width: "20%",
+                  alignItems: "center",
+                  paddingVertical: 8,
+                  paddingHorizontal: 2,
+                }}>
+                  <b.Icon n={28} />
+                  <Text style={s.badgeLabel}>{b.label}</Text>
+                  <Text style={pillStyle(b.pill)}>{b.value}</Text>
+                </View>
+              ))}
             </View>
           </View>
 
