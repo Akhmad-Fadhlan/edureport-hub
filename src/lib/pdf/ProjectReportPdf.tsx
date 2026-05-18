@@ -115,7 +115,7 @@ const C = {
  * SVG ICONS
  * ========================================================================== */
 
-const IcoVideo = ({ n = 32 }: { n?: number }) => (
+const IcoVideo = ({ n = 36 }: { n?: number }) => (
   <Svg width={n} height={n} viewBox="0 0 48 48">
     <Circle cx="24" cy="24" r="22" fill="#ef4444" />
     <Circle cx="24" cy="24" r="18" fill="#dc2626" />
@@ -123,7 +123,7 @@ const IcoVideo = ({ n = 32 }: { n?: number }) => (
   </Svg>
 );
 
-const IcoCert = ({ n = 32 }: { n?: number }) => (
+const IcoCert = ({ n = 36 }: { n?: number }) => (
   <Svg width={n} height={n} viewBox="0 0 48 48">
     <Circle cx="24" cy="20" r="14" fill="#f59e0b" />
     <Circle cx="24" cy="20" r="10" fill="#fcd34d" />
@@ -134,7 +134,7 @@ const IcoCert = ({ n = 32 }: { n?: number }) => (
   </Svg>
 );
 
-const IcoGame = ({ n = 32 }: { n?: number }) => (
+const IcoGame = ({ n = 36 }: { n?: number }) => (
   <Svg width={n} height={n} viewBox="0 0 48 48">
     <Rect x="4" y="14" width="40" height="20" rx="10" fill="#7c3aed" />
     <Rect x="4" y="14" width="40" height="20" rx="10" fill="none" stroke="#6d28d9" strokeWidth="2" />
@@ -146,7 +146,7 @@ const IcoGame = ({ n = 32 }: { n?: number }) => (
   </Svg>
 );
 
-const IcoWebsite = ({ n = 32 }: { n?: number }) => (
+const IcoWebsite = ({ n = 36 }: { n?: number }) => (
   <Svg width={n} height={n} viewBox="0 0 48 48">
     <Circle cx="24" cy="24" r="20" fill="#1d4ed8" />
     <Circle cx="24" cy="24" r="20" fill="none" stroke="#3b82f6" strokeWidth="1.5" />
@@ -158,7 +158,7 @@ const IcoWebsite = ({ n = 32 }: { n?: number }) => (
   </Svg>
 );
 
-const IcoMengajar = ({ n = 32 }: { n?: number }) => (
+const IcoMengajar = ({ n = 36 }: { n?: number }) => (
   <Svg width={n} height={n} viewBox="0 0 48 48">
     <Circle cx="16" cy="12" r="7" fill="#f59e0b" />
     <Path d="M2 44 Q3 28 16 28 Q29 28 30 44Z" fill="#f59e0b" />
@@ -169,7 +169,7 @@ const IcoMengajar = ({ n = 32 }: { n?: number }) => (
   </Svg>
 );
 
-const IcoBuku = ({ n = 32 }: { n?: number }) => (
+const IcoBuku = ({ n = 36 }: { n?: number }) => (
   <Svg width={n} height={n} viewBox="0 0 48 48">
     <Rect x="8" y="6" width="26" height="32" rx="4" fill="#e83e8c" />
     <Rect x="12" y="14" width="18" height="3" rx="1.5" fill="#ffffff" />
@@ -180,7 +180,7 @@ const IcoBuku = ({ n = 32 }: { n?: number }) => (
   </Svg>
 );
 
-const IcoRobot = ({ n = 32 }: { n?: number }) => (
+const IcoRobot = ({ n = 36 }: { n?: number }) => (
   <Svg width={n} height={n} viewBox="0 0 48 48">
     <Rect x="10" y="14" width="28" height="24" rx="6" fill="#3b3ec6" />
     <Rect x="10" y="14" width="28" height="24" rx="6" fill="none" stroke="#2a2da8" strokeWidth="1.5" />
@@ -196,7 +196,7 @@ const IcoRobot = ({ n = 32 }: { n?: number }) => (
   </Svg>
 );
 
-const IcoIoT = ({ n = 32 }: { n?: number }) => (
+const IcoIoT = ({ n = 36 }: { n?: number }) => (
   <Svg width={n} height={n} viewBox="0 0 48 48">
     <Path d="M6 17 Q24 6 42 17" stroke="#10b981" strokeWidth="3.5" fill="none" strokeLinecap="round" />
     <Path d="M12 26 Q24 17 36 26" stroke="#10b981" strokeWidth="3.5" fill="none" strokeLinecap="round" />
@@ -206,7 +206,7 @@ const IcoIoT = ({ n = 32 }: { n?: number }) => (
   </Svg>
 );
 
-const IcoLomba = ({ n = 32 }: { n?: number }) => (
+const IcoLomba = ({ n = 36 }: { n?: number }) => (
   <Svg width={n} height={n} viewBox="0 0 48 48">
     <Path d="M12 6 L36 6 L33 24 Q32 32 24 32 Q16 32 15 24 Z" fill="#f59e0b" />
     <Path d="M12 6 L6 6 L6 18 Q6 24 12 24" stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinecap="round" />
@@ -218,7 +218,7 @@ const IcoLomba = ({ n = 32 }: { n?: number }) => (
   </Svg>
 );
 
-const IcoDesain = ({ n = 32 }: { n?: number }) => (
+const IcoDesain = ({ n = 36 }: { n?: number }) => (
   <Svg width={n} height={n} viewBox="0 0 48 48">
     <Circle cx="24" cy="17" r="11" fill="#ef4444" />
     <Circle cx="35" cy="31" r="11" fill="#3b82f6" />
@@ -229,14 +229,14 @@ const IcoDesain = ({ n = 32 }: { n?: number }) => (
   </Svg>
 );
 
-const IcoPlay = ({ n = 48 }: { n?: number }) => (
+const IcoPlay = ({ n = 52 }: { n?: number }) => (
   <Svg width={n} height={n} viewBox="0 0 48 48">
     <Circle cx="24" cy="24" r="23" fill="#ef4444" />
     <Polygon points="18,12 18,36 38,24" fill={C.white} />
   </Svg>
 );
 
-const IcoStar = ({ n = 40 }: { n?: number }) => (
+const IcoStar = ({ n = 44 }: { n?: number }) => (
   <Svg width={n} height={n} viewBox="0 0 40 40">
     <Polygon
       points="20,3 24.8,13.8 36.7,15.5 28.4,23.6 30.6,35.5 20,29.8 9.4,35.5 11.6,23.6 3.3,15.5 15.2,13.8"
@@ -575,9 +575,9 @@ const s = StyleSheet.create({
     borderBottomColor: "rgba(0,0,0,0.18)",
     borderRightColor: "rgba(0,0,0,0.18)",
   },
-  persenLabel: { color: C.white, fontSize: 7 },
-  persenValue: { color: C.white, fontSize: 14, fontFamily: "Helvetica-Bold" },
-  persenTitle: { color: C.white, fontSize: 9, fontFamily: "Helvetica-Bold", marginBottom: 6 },
+  persenLabel: { color: C.white, fontSize: 10 },
+  persenValue: { color: C.white, fontSize: 17, fontFamily: "Helvetica-Bold" },
+  persenTitle: { color: C.white, fontSize: 12, fontFamily: "Helvetica-Bold", marginBottom: 6 },
 
   totalRow: { flexDirection: "row", gap: 6 },
   totalItem: {
@@ -595,9 +595,9 @@ const s = StyleSheet.create({
     borderBottomColor: "rgba(0,0,0,0.35)",
     borderRightColor: "rgba(0,0,0,0.35)",
   },
-  totalLabel: { color: "#9ca3af", fontSize: 7 },
-  totalValue: { color: C.white, fontSize: 14, fontFamily: "Helvetica-Bold" },
-  totalTitle: { color: C.white, fontSize: 9, fontFamily: "Helvetica-Bold", marginBottom: 6 },
+  totalLabel: { color: "#9ca3af", fontSize: 10 },
+  totalValue: { color: C.white, fontSize: 17, fontFamily: "Helvetica-Bold" },
+  totalTitle: { color: C.white, fontSize: 12, fontFamily: "Helvetica-Bold", marginBottom: 6 },
 
   // BADGE GRID — 4 column, inside blue card so cards are white
   badgesGrid: {
@@ -623,7 +623,7 @@ const s = StyleSheet.create({
     borderLeftColor: "rgba(255,255,255,0.95)",
   },
   badgeLabel: {
-    fontSize: 9,
+    fontSize: 12,
     color: C.muted,
     marginBottom: 5,
     marginTop: 6,
