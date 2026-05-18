@@ -1196,12 +1196,13 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
             </DarkCard3D>
           </View>
 
-          {/* Badge grid — card putih penuh dari Tuntas hingga Total */}
+          {/* Badge grid — card abu muda flex:1 hampir setinggi card biru, badge individual 3D putih */}
           <View style={{
-            backgroundColor: C.white,
+            backgroundColor: "#eef0f8",
             borderRadius: 12,
             padding: 8,
             marginTop: 10,
+            flex: 1,
             borderBottomWidth: 4,
             borderRightWidth: 3,
             borderBottomColor: "#c7c7e8",
@@ -1211,13 +1212,23 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
             borderTopColor: "rgba(255,255,255,0.95)",
             borderLeftColor: "rgba(255,255,255,0.95)",
           }}>
-            <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
               {badges.map((b, i) => (
                 <View key={i} style={{
-                  width: "20%",
+                  width: "18.4%",
                   alignItems: "center",
-                  paddingVertical: 8,
-                  paddingHorizontal: 2,
+                  backgroundColor: C.white,
+                  borderRadius: 10,
+                  paddingVertical: 10,
+                  paddingHorizontal: 4,
+                  borderBottomWidth: 4,
+                  borderRightWidth: 3,
+                  borderBottomColor: "#d0d0e8",
+                  borderRightColor: "#d0d0e8",
+                  borderTopWidth: 1,
+                  borderLeftWidth: 1,
+                  borderTopColor: "rgba(255,255,255,1)",
+                  borderLeftColor: "rgba(255,255,255,1)",
                 }}>
                   <b.Icon n={28} />
                   <Text style={s.badgeLabel}>{b.label}</Text>
