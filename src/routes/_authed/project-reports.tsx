@@ -35,9 +35,74 @@ export const Route = createFileRoute("/_authed/project-reports")({
  * HELPERS
  * ========================================================================== */
 
+// Polyfill for react-pdf in browser
+if (typeof window !== 'undefined') {
+  // Mock Buffer for react-pdf
+  if (!(window as any).Buffer) {
+    (window as any).Buffer = {
+      isBuffer: (obj: any) => false,
+      from: (data: any) => {
+        if (typeof data === 'string') {
+          return data;
+        }
+        return data;
+      },
+      alloc: (size: number) => new Uint8Array(size),
+    };
+  }
+  
+  // Suppress react-pdf image format errors
+  const originalError = console.error;
+  console.error = (...args: any[]) => {
+    const msg = args[0]?.toString() || '';
+    if (msg.includes('Buffer is not defined') || 
+        msg.includes('Base64 image invalid format') ||
+        msg.includes('webp')) {
+      return;
+    }
+    originalError.apply(console, args);
+  };
+}
+
 /** Cek apakah URL adalah Google Drive */
 function isGoogleDriveUrl(url: string): boolean {
   return url.includes("drive.google.com") || url.includes("docs.google.com");
+}
+
+/**
+ * Konversi URL Google Drive ke format proxy URL
+ * Contoh: https://drive.google.com/file/d/FILE_ID/view?usp=drive_link
+ * menjadi: https://rapor.codestechno.com/api/proxy-image?url=FILE_ID&format=jpeg
+ */
+function convertToProxyUrl(url: string): string {
+  // Extract file ID dari berbagai format URL Google Drive
+  let fileId = null;
+  
+  // Pattern 1: /file/d/FILE_ID/view
+  const match1 = url.match(/drive\.google\.com\/file\/d\/([^\/?#]+)/);
+  if (match1) {
+    fileId = match1[1];
+  }
+  
+  // Pattern 2: /open?id=FILE_ID
+  const match2 = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
+  if (match2) {
+    fileId = match2[1];
+  }
+  
+  // Pattern 3: /uc?id=FILE_ID
+  const match3 = url.match(/drive\.google\.com\/uc\?id=([^&]+)/);
+  if (match3) {
+    fileId = match3[1];
+  }
+  
+  if (fileId) {
+    // Return proxy URL dengan format JPEG
+    return `/api/proxy-image?url=https://drive.google.com/file/d/${fileId}/view&format=jpeg`;
+  }
+  
+  // Jika tidak bisa extract, return original URL
+  return url;
 }
 
 /**
@@ -47,13 +112,36 @@ function isGoogleDriveUrl(url: string): boolean {
  */
 async function fetchViaProxy(url: string): Promise<string | null> {
   try {
-    const res = await api.get<any>("/proxy-image", {
-      params: { url },
+    // Konversi URL ke format proxy dengan parameter format=jpeg
+    const proxyUrl = convertToProxyUrl(url);
+    
+    console.log('Fetching via proxy:', proxyUrl);
+    
+    const res = await api.get<any>(proxyUrl, {
+      timeout: 30000, // 30 seconds timeout untuk gambar besar
     });
-    const dataUrl = res.data?.data?.data;
-    if (typeof dataUrl === "string" && dataUrl.startsWith("data:")) return dataUrl;
+    
+    // Cek berbagai kemungkinan struktur response
+    let dataUrl = null;
+    
+    if (res.data?.data?.data && typeof res.data.data.data === 'string') {
+      dataUrl = res.data.data.data;
+    } else if (res.data?.data && typeof res.data.data === 'string') {
+      dataUrl = res.data.data;
+    } else if (res.data?.data && typeof res.data.data === 'object') {
+      dataUrl = res.data.data.data;
+    }
+    
+    // Validasi data URL
+    if (typeof dataUrl === 'string' && dataUrl.startsWith('data:image/')) {
+      console.log('Proxy fetch success, image type:', dataUrl.substring(0, 50));
+      return dataUrl;
+    }
+    
+    console.warn('Invalid data URL format:', dataUrl?.substring(0, 100));
     return null;
-  } catch {
+  } catch (error: any) {
+    console.error('Proxy fetch failed:', error?.message);
     return null;
   }
 }
@@ -74,15 +162,53 @@ async function urlToDataUrl(url: string | null | undefined): Promise<string | nu
     const res = await fetch(url, { mode: "cors", credentials: "omit" });
     if (!res.ok) return null;
     const blob = await res.blob();
+    
+    // Konversi WebP ke JPEG jika perlu
+    let finalBlob = blob;
+    if (blob.type === 'image/webp') {
+      console.log('Converting WebP to JPEG...');
+      finalBlob = await convertWebPToJPEG(blob);
+    }
+    
     return await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
       reader.onerror = reject;
-      reader.readAsDataURL(blob);
+      reader.readAsDataURL(finalBlob);
     });
-  } catch {
+  } catch (error) {
+    console.error('urlToDataUrl error:', error);
     return null;
   }
+}
+
+/**
+ * Konversi WebP ke JPEG menggunakan Canvas
+ */
+async function convertWebPToJPEG(webpBlob: Blob): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Failed to convert WebP to JPEG'));
+          }
+        },
+        'image/jpeg',
+        0.85 // Quality
+      );
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(webpBlob);
+  });
 }
 
 /**
@@ -221,15 +347,20 @@ function ProjectReportsPage() {
 
       // Resolve design screenshots — Google Drive URL dikonversi otomatis di urlToDataUrl
       const designsWithImg = await Promise.all(
-        designs.map(async (d) => ({
-          judul: d.judul,
-          kompetensi_siswa: d.kompetensi_siswa,
-          teknologi: d.teknologi,
-          deskripsi: d.deskripsi,
-          screenshot: d.link_file_flyer
+        designs.map(async (d) => {
+          console.log('Processing design image:', d.judul, 'URL:', d.link_file_flyer);
+          const screenshot = d.link_file_flyer
             ? await urlToDataUrl(d.link_file_flyer)
-            : null,
-        })),
+            : null;
+          console.log('Design image result:', screenshot ? 'Success' : 'Failed');
+          return {
+            judul: d.judul,
+            kompetensi_siswa: d.kompetensi_siswa,
+            teknologi: d.teknologi,
+            deskripsi: d.deskripsi,
+            screenshot: screenshot,
+          };
+        }),
       );
 
       // Resolve robotics screenshots
