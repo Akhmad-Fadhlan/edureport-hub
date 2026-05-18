@@ -60,21 +60,21 @@ export interface ProjectCertificate {
 
 export interface ProjectSummary {
   nama: string;
-  itpt: number;    // persentase tercapai
-  itpb: number;    // persentase belum
-  itsl: number;    // total selesai
-  itbl: number;    // total proses
+  itpt: number;
+  itpb: number;
+  itsl: number;
+  itbl: number;
   ittuntas: number;
-  ityt: number;    // video youtube
-  itc: number;     // sertifikat
-  itg: number;     // game dev
-  itw: number;     // website
-  itm: number;     // idn mengajar
-  itb: number;     // karya buku
-  itr: number;     // robotik
-  iti: number;     // iot
-  itl: number;     // lomba
-  itd: number;     // desain
+  ityt: number;
+  itc: number;
+  itg: number;
+  itw: number;
+  itm: number;
+  itb: number;
+  itr: number;
+  iti: number;
+  itl: number;
+  itd: number;
 }
 
 export interface ProjectReportData {
@@ -105,116 +105,127 @@ const C = {
   text:      "#1a1a1a",
   muted:     "#6b7280",
   bg:        "#f4f4f8",
-  shadow:    "#a8a8cc",   // shadow utama (ungu-abu)
-  shadowDrk: "#7878a8",   // shadow lebih gelap
+  shadow:    "#a8a8cc",
+  shadowDrk: "#7878a8",
   dark:      "#1f2937",
   darkShad:  "#0f172a",
 };
 
 /* ============================================================================
- * SVG ICONS — solusi 100% native react-pdf, tanpa font emoji
- * Setiap icon dibuat dari shape primitif SVG (Circle, Rect, Polygon, Path)
+ * SVG ICONS
  * ========================================================================== */
 
-const IcoVideo = ({ n = 22 }: { n?: number }) => (
-  <Svg width={n} height={n} viewBox="0 0 24 24">
-    <Circle cx="12" cy="12" r="11" fill="#ef4444" />
-    <Polygon points="9,7 9,17 18,12" fill={C.white} />
+const IcoVideo = ({ n = 32 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 48 48">
+    <Circle cx="24" cy="24" r="22" fill="#ef4444" />
+    <Circle cx="24" cy="24" r="18" fill="#dc2626" />
+    <Polygon points="19,14 19,34 36,24" fill="#ffffff" />
   </Svg>
 );
 
-const IcoCert = ({ n = 22 }: { n?: number }) => (
-  <Svg width={n} height={n} viewBox="0 0 24 24">
-    <Polygon
-      points="12,2 14.9,8.3 22,9.3 17,14.2 18.2,21.1 12,17.8 5.8,21.1 7,14.2 2,9.3 9.1,8.3"
-      fill="#f59e0b"
-    />
-    <Polygon
-      points="12,5.5 14.1,9.9 19,10.5 15.5,13.8 16.4,18.7 12,16.3 7.6,18.7 8.5,13.8 5,10.5 9.9,9.9"
-      fill="#fcd34d"
-    />
+const IcoCert = ({ n = 32 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 48 48">
+    <Circle cx="24" cy="20" r="14" fill="#f59e0b" />
+    <Circle cx="24" cy="20" r="10" fill="#fcd34d" />
+    <Polygon points="24,12 26.4,17.6 32.5,18.3 28.3,22.3 29.4,28.4 24,25.4 18.6,28.4 19.7,22.3 15.5,18.3 21.6,17.6" fill="#f59e0b" />
+    <Rect x="19" y="33" width="10" height="4" rx="2" fill="#d97706" />
+    <Rect x="21" y="31" width="6" height="3" rx="1" fill="#f59e0b" />
+    <Rect x="15" y="37" width="18" height="3" rx="1.5" fill="#d97706" />
   </Svg>
 );
 
-const IcoGame = ({ n = 22 }: { n?: number }) => (
-  <Svg width={n} height={n} viewBox="0 0 24 24">
-    <Rect x="1" y="7" width="22" height="10" rx="5" fill="#7c3aed" />
-    <Rect x="4.5" y="11" width="5" height="2" rx="1" fill={C.white} />
-    <Rect x="6" y="9.5" width="2" height="5" rx="1" fill={C.white} />
-    <Circle cx="16" cy="11" r="1.3" fill={C.white} />
-    <Circle cx="18.5" cy="13" r="1.3" fill={C.white} />
+const IcoGame = ({ n = 32 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 48 48">
+    <Rect x="4" y="14" width="40" height="20" rx="10" fill="#7c3aed" />
+    <Rect x="4" y="14" width="40" height="20" rx="10" fill="none" stroke="#6d28d9" strokeWidth="2" />
+    <Rect x="10" y="22" width="10" height="4" rx="2" fill="#ddd6fe" />
+    <Rect x="13" y="19" width="4" height="10" rx="2" fill="#ddd6fe" />
+    <Circle cx="32" cy="21" r="3" fill="#ddd6fe" />
+    <Circle cx="37" cy="25" r="3" fill="#ddd6fe" />
+    <Circle cx="27" cy="25" r="2" fill="#a78bfa" />
   </Svg>
 );
 
-const IcoWebsite = ({ n = 22 }: { n?: number }) => (
-  <Svg width={n} height={n} viewBox="0 0 24 24">
-    <Circle cx="12" cy="12" r="10" fill="none" stroke="#3b82f6" strokeWidth="2" />
-    <Path d="M12 2 Q8.5 7 8.5 12 Q8.5 17 12 22 Q15.5 17 15.5 12 Q15.5 7 12 2Z" fill="#bfdbfe" />
-    <Path d="M2 9 Q12 7 22 9" stroke="#3b82f6" strokeWidth="1.5" fill="none" />
-    <Path d="M2 15 Q12 17 22 15" stroke="#3b82f6" strokeWidth="1.5" fill="none" />
+const IcoWebsite = ({ n = 32 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 48 48">
+    <Circle cx="24" cy="24" r="20" fill="#1d4ed8" />
+    <Circle cx="24" cy="24" r="20" fill="none" stroke="#3b82f6" strokeWidth="1.5" />
+    <Path d="M24 4 Q18 12 18 24 Q18 36 24 44 Q30 36 30 24 Q30 12 24 4Z" fill="#3b82f6" />
+    <Path d="M4 18 Q24 14 44 18" stroke="#93c5fd" strokeWidth="2" fill="none" />
+    <Path d="M4 30 Q24 34 44 30" stroke="#93c5fd" strokeWidth="2" fill="none" />
+    <Rect x="2" y="22" width="44" height="4" fill="#60a5fa" />
+    <Circle cx="24" cy="24" r="20" fill="none" stroke="#93c5fd" strokeWidth="0.5" />
   </Svg>
 );
 
-const IcoMengajar = ({ n = 22 }: { n?: number }) => (
-  <Svg width={n} height={n} viewBox="0 0 24 24">
-    <Circle cx="8" cy="6" r="3.5" fill="#f59e0b" />
-    <Path d="M1 22 Q1.5 14 8 14 Q14.5 14 15 22Z" fill="#f59e0b" />
-    <Rect x="15" y="8" width="8" height="9" rx="1.5" fill={C.blue} />
-    <Rect x="16.5" y="10" width="5" height="1.2" rx="0.6" fill={C.white} />
-    <Rect x="16.5" y="12.5" width="5" height="1.2" rx="0.6" fill={C.white} />
-    <Rect x="16.5" y="15" width="3.5" height="1.2" rx="0.6" fill={C.white} />
+const IcoMengajar = ({ n = 32 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 48 48">
+    <Circle cx="16" cy="12" r="7" fill="#f59e0b" />
+    <Path d="M2 44 Q3 28 16 28 Q29 28 30 44Z" fill="#f59e0b" />
+    <Rect x="30" y="16" width="16" height="18" rx="3" fill="#3b3ec6" />
+    <Rect x="33" y="20" width="10" height="2.5" rx="1.25" fill="#ffffff" />
+    <Rect x="33" y="25" width="10" height="2.5" rx="1.25" fill="#ffffff" />
+    <Rect x="33" y="30" width="7" height="2.5" rx="1.25" fill="#a5b4fc" />
   </Svg>
 );
 
-const IcoBuku = ({ n = 22 }: { n?: number }) => (
-  <Svg width={n} height={n} viewBox="0 0 24 24">
-    <Rect x="4" y="3" width="13" height="16" rx="2" fill={C.pink} />
-    <Rect x="6" y="7"  width="9" height="1.5" rx="0.75" fill={C.white} />
-    <Rect x="6" y="10" width="9" height="1.5" rx="0.75" fill={C.white} />
-    <Rect x="6" y="13" width="6" height="1.5" rx="0.75" fill={C.white} />
-    <Rect x="4" y="18.5" width="13" height="2.5" rx="1.25" fill={C.pinkDark} />
+const IcoBuku = ({ n = 32 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 48 48">
+    <Rect x="8" y="6" width="26" height="32" rx="4" fill="#e83e8c" />
+    <Rect x="12" y="14" width="18" height="3" rx="1.5" fill="#ffffff" />
+    <Rect x="12" y="20" width="18" height="3" rx="1.5" fill="#ffffff" />
+    <Rect x="12" y="26" width="12" height="3" rx="1.5" fill="#ffb3d1" />
+    <Rect x="8" y="37" width="26" height="5" rx="2.5" fill="#a82868" />
+    <Rect x="5" y="6" width="4" height="36" rx="2" fill="#c02070" />
   </Svg>
 );
 
-const IcoRobot = ({ n = 22 }: { n?: number }) => (
-  <Svg width={n} height={n} viewBox="0 0 24 24">
-    <Rect x="5" y="7"  width="14" height="12" rx="3" fill={C.blue} />
-    <Rect x="8" y="10" width="3"  height="3"  rx="1.5" fill="#00e5ff" />
-    <Rect x="13" y="10" width="3" height="3"  rx="1.5" fill="#00e5ff" />
-    <Rect x="8" y="15" width="8"  height="1.5" rx="0.75" fill={C.white} />
-    <Rect x="11" y="3" width="2"  height="4"  rx="1" fill="#9ca3af" />
-    <Circle cx="12" cy="2.5" r="1.5" fill="#9ca3af" />
-    <Rect x="1" y="9"  width="4" height="7" rx="2" fill="#9ca3af" />
-    <Rect x="19" y="9" width="4" height="7" rx="2" fill="#9ca3af" />
+const IcoRobot = ({ n = 32 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 48 48">
+    <Rect x="10" y="14" width="28" height="24" rx="6" fill="#3b3ec6" />
+    <Rect x="10" y="14" width="28" height="24" rx="6" fill="none" stroke="#2a2da8" strokeWidth="1.5" />
+    <Rect x="15" y="20" width="7" height="7" rx="3.5" fill="#00e5ff" />
+    <Rect x="26" y="20" width="7" height="7" rx="3.5" fill="#00e5ff" />
+    <Circle cx="18.5" cy="23.5" r="2" fill="#ffffff" />
+    <Circle cx="29.5" cy="23.5" r="2" fill="#ffffff" />
+    <Rect x="16" y="30" width="16" height="3" rx="1.5" fill="#a5b4fc" />
+    <Rect x="22" y="6" width="4" height="8" rx="2" fill="#9ca3af" />
+    <Circle cx="24" cy="5" r="3" fill="#9ca3af" />
+    <Rect x="2" y="18" width="8" height="14" rx="4" fill="#9ca3af" />
+    <Rect x="38" y="18" width="8" height="14" rx="4" fill="#9ca3af" />
   </Svg>
 );
 
-const IcoIoT = ({ n = 22 }: { n?: number }) => (
-  <Svg width={n} height={n} viewBox="0 0 24 24">
-    <Path d="M3 8.5 Q12 3 21 8.5"  stroke="#10b981" strokeWidth="2" fill="none" strokeLinecap="round" />
-    <Path d="M6 13 Q12 8.5 18 13"  stroke="#10b981" strokeWidth="2" fill="none" strokeLinecap="round" />
-    <Path d="M9 17 Q12 14.5 15 17" stroke="#10b981" strokeWidth="2" fill="none" strokeLinecap="round" />
-    <Circle cx="12" cy="20" r="1.8" fill="#10b981" />
+const IcoIoT = ({ n = 32 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 48 48">
+    <Path d="M6 17 Q24 6 42 17" stroke="#10b981" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+    <Path d="M12 26 Q24 17 36 26" stroke="#10b981" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+    <Path d="M18 35 Q24 29 30 35" stroke="#10b981" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+    <Circle cx="24" cy="41" r="4" fill="#10b981" />
+    <Circle cx="24" cy="41" r="2" fill="#d1fae5" />
   </Svg>
 );
 
-const IcoLomba = ({ n = 22 }: { n?: number }) => (
-  <Svg width={n} height={n} viewBox="0 0 24 24">
-    <Path d="M6 3 L18 3 L16.5 12 Q16 16 12 16 Q8 16 7.5 12 Z" fill="#f59e0b" />
-    <Path d="M6 3 L3 3 L3 9 Q3 12 6 12" stroke="#f59e0b" strokeWidth="2" fill="none" strokeLinecap="round" />
-    <Path d="M18 3 L21 3 L21 9 Q21 12 18 12" stroke="#f59e0b" strokeWidth="2" fill="none" strokeLinecap="round" />
-    <Rect x="10.5" y="16" width="3"  height="4"  fill="#d97706" />
-    <Rect x="7"    y="20" width="10" height="2"  rx="1" fill="#d97706" />
-    <Path d="M9 6.5 Q10 5.5 11 7" stroke={C.white} strokeWidth="1.5" fill="none" strokeLinecap="round" />
+const IcoLomba = ({ n = 32 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 48 48">
+    <Path d="M12 6 L36 6 L33 24 Q32 32 24 32 Q16 32 15 24 Z" fill="#f59e0b" />
+    <Path d="M12 6 L6 6 L6 18 Q6 24 12 24" stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinecap="round" />
+    <Path d="M36 6 L42 6 L42 18 Q42 24 36 24" stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinecap="round" />
+    <Rect x="21" y="32" width="6" height="8" fill="#d97706" />
+    <Rect x="14" y="40" width="20" height="4" rx="2" fill="#d97706" />
+    <Path d="M18 13 Q20 11 22 14" stroke="#ffffff" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+    <Circle cx="27" cy="16" r="2.5" fill="#fef3c7" />
   </Svg>
 );
 
-const IcoDesain = ({ n = 22 }: { n?: number }) => (
-  <Svg width={n} height={n} viewBox="0 0 24 24">
-    <Circle cx="12" cy="12" r="9" fill="none" stroke={C.orange} strokeWidth="1.5" />
-    <Circle cx="12"   cy="5.5" r="3.2" fill="#ef4444" />
-    <Circle cx="17.5" cy="15" r="3.2" fill="#3b82f6" />
-    <Circle cx="6.5"  cy="15" r="3.2" fill="#22c55e" />
+const IcoDesain = ({ n = 32 }: { n?: number }) => (
+  <Svg width={n} height={n} viewBox="0 0 48 48">
+    <Circle cx="24" cy="17" r="11" fill="#ef4444" />
+    <Circle cx="35" cy="31" r="11" fill="#3b82f6" />
+    <Circle cx="13" cy="31" r="11" fill="#22c55e" />
+    <Circle cx="24" cy="17" r="11" fill="#ef4444" fillOpacity="0.85" />
+    <Circle cx="35" cy="31" r="11" fill="#3b82f6" fillOpacity="0.85" />
+    <Circle cx="13" cy="31" r="11" fill="#22c55e" fillOpacity="0.85" />
   </Svg>
 );
 
@@ -236,8 +247,6 @@ const IcoStar = ({ n = 40 }: { n?: number }) => (
 
 /* ============================================================================
  * 3D CARD PRIMITIVES
- * Teknik: border bawah+kanan tebal (shadow) + border atas+kiri tipis (highlight)
- * Menghasilkan ilusi permukaan yang naik / timbul (emboss effect).
  * ========================================================================== */
 
 function Card3D({
@@ -279,11 +288,10 @@ function Card3D({
   );
 }
 
-function TealCard3D({ children }: { children: React.ReactNode }) {
+function TealCard3D({ children, style }: { children: React.ReactNode; style?: object }) {
   return (
     <View
       style={{
-        flex: 1,
         backgroundColor: C.teal,
         borderRadius: 10,
         padding: 12,
@@ -295,6 +303,7 @@ function TealCard3D({ children }: { children: React.ReactNode }) {
         borderLeftWidth: 1,
         borderTopColor: "rgba(255,255,255,0.3)",
         borderLeftColor: "rgba(255,255,255,0.3)",
+        ...style,
       }}
     >
       {children}
@@ -302,11 +311,10 @@ function TealCard3D({ children }: { children: React.ReactNode }) {
   );
 }
 
-function DarkCard3D({ children }: { children: React.ReactNode }) {
+function DarkCard3D({ children, style }: { children: React.ReactNode; style?: object }) {
   return (
     <View
       style={{
-        flex: 1,
         backgroundColor: C.dark,
         borderRadius: 10,
         padding: 12,
@@ -318,6 +326,7 @@ function DarkCard3D({ children }: { children: React.ReactNode }) {
         borderLeftWidth: 1,
         borderTopColor: "rgba(255,255,255,0.1)",
         borderLeftColor: "rgba(255,255,255,0.1)",
+        ...style,
       }}
     >
       {children}
@@ -326,7 +335,7 @@ function DarkCard3D({ children }: { children: React.ReactNode }) {
 }
 
 /* ============================================================================
- * STYLES (hanya yang tidak bisa diekspresikan via Card3D inline)
+ * STYLES
  * ========================================================================== */
 
 const s = StyleSheet.create({
@@ -407,7 +416,6 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 18,
-    // 3D ring
     borderTopWidth: 2,
     borderLeftWidth: 2,
     borderTopColor: "rgba(255,255,255,0.45)",
@@ -461,23 +469,53 @@ const s = StyleSheet.create({
     textAlign: "center",
   },
 
-  // SUMMARY
-  summaryHeader: {
+  // SUMMARY — outer page bg with blue watermark feel
+  summaryPage: {
+    backgroundColor: "#3b3ec6",
+    fontFamily: "Helvetica",
+    color: C.text,
+    position: "relative",
+  },
+  summaryOuterContent: {
+    padding: 20,
+    paddingBottom: 48,
+  },
+  summaryPageTitle: {
+    fontSize: 24,
+    fontFamily: "Helvetica-Bold",
+    color: C.white,
+    marginBottom: 14,
+  },
+
+  // Inner white card that holds everything
+  summaryInnerCard: {
+    backgroundColor: C.white,
+    borderRadius: 14,
+    padding: 16,
+    borderBottomWidth: 6,
+    borderRightWidth: 5,
+    borderBottomColor: "#1e1e6e",
+    borderRightColor: "#1e1e6e",
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderTopColor: "rgba(255,255,255,0.9)",
+    borderLeftColor: "rgba(255,255,255,0.9)",
+  },
+
+  // Name row inside card
+  summaryNameRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 18,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
+    marginBottom: 12,
   },
   summaryAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: C.blue,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 14,
+    marginRight: 10,
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderTopColor: "rgba(255,255,255,0.3)",
@@ -487,61 +525,43 @@ const s = StyleSheet.create({
     borderBottomColor: C.blueDark,
     borderRightColor: C.blueDark,
   },
-  summaryAvatarInitial: { fontSize: 20, fontFamily: "Helvetica-Bold", color: C.white },
-  summaryNameBox: { flex: 1, minWidth: 0 },
-  summaryName: { fontSize: 18, fontFamily: "Helvetica-Bold", color: C.text, marginBottom: 2 },
-  summaryRole: { fontSize: 9, color: C.muted },
-  summaryTitle: { fontSize: 21, fontFamily: "Helvetica-Bold", color: C.blue, marginBottom: 14 },
+  summaryAvatarInitial: { fontSize: 16, fontFamily: "Helvetica-Bold", color: C.white },
+  summaryName: { fontSize: 16, fontFamily: "Helvetica-Bold", color: C.text },
 
-  summaryRow: { flexDirection: "row", marginBottom: 12 },
-
-  // Name box kiri (Progress Status)
-  nameBox: {
-    width: "42%",
-    backgroundColor: C.blueLight,
-    borderRadius: 10,
-    padding: 12,
-    justifyContent: "center",
-    marginRight: 12,
-    borderBottomWidth: 3,
-    borderRightWidth: 3,
-    borderBottomColor: "#c7d2fe",
-    borderRightColor: "#c7d2fe",
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderTopColor: C.white,
-    borderLeftColor: C.white,
+  // Persen + Total row
+  statsRow: {
+    flexDirection: "row",
+    marginBottom: 12,
   },
-  nameText: { fontSize: 13, fontFamily: "Helvetica-Bold", color: C.blue },
 
-  // Keterangan box
+  // Keterangan box (left)
   keteranganBox: {
     width: "42%",
     backgroundColor: C.white,
     borderRadius: 10,
-    padding: 12,
-    marginRight: 12,
+    padding: 10,
+    marginRight: 10,
+    justifyContent: "center",
     borderBottomWidth: 3,
     borderRightWidth: 3,
     borderBottomColor: C.shadow,
     borderRightColor: C.shadow,
     borderTopWidth: 1,
     borderLeftWidth: 1,
-    borderTopColor: C.white,
-    borderLeftColor: C.white,
+    borderTopColor: "rgba(255,255,255,0.9)",
+    borderLeftColor: "rgba(255,255,255,0.9)",
   },
-  keteranganLabel: { fontSize: 8, color: C.muted, marginBottom: 4 },
-  keteranganValue: { fontSize: 20, fontFamily: "Helvetica-Bold", color: C.text },
+  keteranganLabel: { fontSize: 7, color: C.muted, marginBottom: 4 },
+  keteranganValue: { fontSize: 24, fontFamily: "Helvetica-Bold", color: C.text },
 
-  // Teal inner items
-  persenRow: { flexDirection: "row", marginRight: -8 },
+  // Inner persen items
+  persenRow: { flexDirection: "row", gap: 6 },
   persenItem: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "rgba(255,255,255,0.18)",
     borderRadius: 7,
     padding: 8,
     alignItems: "center",
-    marginRight: 8,
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderTopColor: "rgba(255,255,255,0.35)",
@@ -552,18 +572,16 @@ const s = StyleSheet.create({
     borderRightColor: "rgba(0,0,0,0.18)",
   },
   persenLabel: { color: C.white, fontSize: 7 },
-  persenValue: { color: C.white, fontSize: 18, fontFamily: "Helvetica-Bold" },
-  persenTitle: { color: C.white, fontSize: 10, fontFamily: "Helvetica-Bold", marginBottom: 6 },
+  persenValue: { color: C.white, fontSize: 20, fontFamily: "Helvetica-Bold" },
+  persenTitle: { color: C.white, fontSize: 9, fontFamily: "Helvetica-Bold", marginBottom: 6 },
 
-  // Dark inner items
-  totalRow: { flexDirection: "row", marginRight: -8 },
+  totalRow: { flexDirection: "row", gap: 6 },
   totalItem: {
     flex: 1,
     backgroundColor: "rgba(255,255,255,0.07)",
     borderRadius: 7,
     padding: 8,
     alignItems: "center",
-    marginRight: 8,
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderTopColor: "rgba(255,255,255,0.1)",
@@ -574,20 +592,22 @@ const s = StyleSheet.create({
     borderRightColor: "rgba(0,0,0,0.35)",
   },
   totalLabel: { color: "#9ca3af", fontSize: 7 },
-  totalValue: { color: C.white, fontSize: 16, fontFamily: "Helvetica-Bold" },
-  totalTitle: { color: C.white, fontSize: 10, fontFamily: "Helvetica-Bold", marginBottom: 6 },
+  totalValue: { color: C.white, fontSize: 18, fontFamily: "Helvetica-Bold" },
+  totalTitle: { color: C.white, fontSize: 9, fontFamily: "Helvetica-Bold", marginBottom: 6 },
 
-  // BADGE GRID
-  badgesGrid: { flexDirection: "row", flexWrap: "wrap", marginTop: 10 },
+  // BADGE GRID — 4 column
+  badgesGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
   badgeItem: {
-    width: "23.5%",
-    marginBottom: 10,
-    marginRight: "2%",
+    width: "25%",
+    marginBottom: 8,
     alignItems: "center",
     backgroundColor: C.white,
-    borderRadius: 8,
-    padding: 10,
-    // 3D timbul per badge
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
     borderBottomWidth: 4,
     borderRightWidth: 3,
     borderBottomColor: C.shadow,
@@ -597,56 +617,131 @@ const s = StyleSheet.create({
     borderTopColor: "rgba(255,255,255,0.95)",
     borderLeftColor: "rgba(255,255,255,0.95)",
   },
-  badgeItemLastInRow: { marginRight: 0 },
   badgeLabel: {
     fontSize: 7,
     color: C.muted,
-    marginBottom: 4,
-    marginTop: 4,
+    marginBottom: 5,
+    marginTop: 6,
     textAlign: "center",
     lineHeight: 1.3,
-    minHeight: 16,
   },
-  badgePillOrange: {
-    backgroundColor: C.orange,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+
+  // Pill colors
+  pillRed: {
+    backgroundColor: "#ef4444",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
     borderRadius: 10,
     color: C.white,
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: "Helvetica-Bold",
     textAlign: "center",
-    minWidth: 20,
+    minWidth: 28,
+    borderBottomWidth: 2,
+    borderRightWidth: 1,
+    borderBottomColor: "#b91c1c",
+    borderRightColor: "#b91c1c",
+  },
+  pillOrange: {
+    backgroundColor: C.orange,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+    color: C.white,
+    fontSize: 11,
+    fontFamily: "Helvetica-Bold",
+    textAlign: "center",
+    minWidth: 28,
     borderBottomWidth: 2,
     borderRightWidth: 1,
     borderBottomColor: C.orangeDrk,
     borderRightColor: C.orangeDrk,
   },
-  badgePillPink: {
-    backgroundColor: C.pink,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  pillPurple: {
+    backgroundColor: "#7c3aed",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
     borderRadius: 10,
     color: C.white,
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: "Helvetica-Bold",
     textAlign: "center",
-    minWidth: 20,
+    minWidth: 28,
+    borderBottomWidth: 2,
+    borderRightWidth: 1,
+    borderBottomColor: "#5b21b6",
+    borderRightColor: "#5b21b6",
+  },
+  pillBlue: {
+    backgroundColor: "#3b82f6",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+    color: C.white,
+    fontSize: 11,
+    fontFamily: "Helvetica-Bold",
+    textAlign: "center",
+    minWidth: 28,
+    borderBottomWidth: 2,
+    borderRightWidth: 1,
+    borderBottomColor: "#1d4ed8",
+    borderRightColor: "#1d4ed8",
+  },
+  pillPink: {
+    backgroundColor: C.pink,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+    color: C.white,
+    fontSize: 11,
+    fontFamily: "Helvetica-Bold",
+    textAlign: "center",
+    minWidth: 28,
     borderBottomWidth: 2,
     borderRightWidth: 1,
     borderBottomColor: C.pinkDark,
     borderRightColor: C.pinkDark,
   },
-  badgePillGray: {
-    backgroundColor: "#9ca3af",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  pillBlueIndigo: {
+    backgroundColor: C.blue,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
     borderRadius: 10,
     color: C.white,
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: "Helvetica-Bold",
     textAlign: "center",
-    minWidth: 20,
+    minWidth: 28,
+    borderBottomWidth: 2,
+    borderRightWidth: 1,
+    borderBottomColor: C.blueDark,
+    borderRightColor: C.blueDark,
+  },
+  pillGreen: {
+    backgroundColor: "#10b981",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+    color: C.white,
+    fontSize: 11,
+    fontFamily: "Helvetica-Bold",
+    textAlign: "center",
+    minWidth: 28,
+    borderBottomWidth: 2,
+    borderRightWidth: 1,
+    borderBottomColor: "#047857",
+    borderRightColor: "#047857",
+  },
+  pillGray: {
+    backgroundColor: "#9ca3af",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+    color: C.white,
+    fontSize: 11,
+    fontFamily: "Helvetica-Bold",
+    textAlign: "center",
+    minWidth: 28,
     borderBottomWidth: 2,
     borderRightWidth: 1,
     borderBottomColor: "#6b7280",
@@ -674,7 +769,6 @@ const s = StyleSheet.create({
   projectTitle: { fontSize: 20, fontFamily: "Helvetica-Bold", color: C.blue },
   projectSubtitle: { fontSize: 13, fontFamily: "Helvetica-Bold", color: C.text, marginBottom: 14 },
 
-  // 3D screenshot frame
   screenshotBox: {
     width: "100%",
     height: 240,
@@ -696,7 +790,6 @@ const s = StyleSheet.create({
   screenshotImg: { width: "100%", height: "100%" },
   screenshotPlaceholder: { color: "#9ca3af", fontSize: 10, textAlign: "center" },
 
-  // 3D info boxes
   infoRow: { flexDirection: "row", marginRight: -10 },
   infoBox: {
     flex: 1,
@@ -983,47 +1076,96 @@ function CoverPage({ name }: { name: string }) {
   );
 }
 
+/* ============================================================================
+ * SUMMARY PAGE — layout sesuai referensi gambar
+ * ========================================================================== */
 function SummaryPage({ summary }: { summary: ProjectSummary }) {
-  type BC = "orange" | "pink" | "gray";
-  const badges: { label: string; value: number; color: BC; Icon: (p: { n?: number }) => JSX.Element }[] = [
-    { label: "Youtube",       value: summary.ityt,     color: "orange", Icon: IcoVideo    },
-    { label: "Certificates",  value: summary.itc,      color: "orange", Icon: IcoCert     },
-    { label: "Game Dev",      value: summary.itg ?? 0, color: "orange", Icon: IcoGame     },
-    { label: "Website",       value: summary.itw ?? 0, color: "orange", Icon: IcoWebsite  },
-    { label: "IDN Mengajar",  value: summary.itm,      color: "pink",   Icon: IcoMengajar },
-    { label: "Karya Buku",    value: summary.itb,      color: "pink",   Icon: IcoBuku     },
-    { label: "Robotic",       value: summary.itr,      color: "orange", Icon: IcoRobot    },
-    { label: "IoT Project",   value: summary.iti ?? 0, color: "gray",   Icon: IcoIoT      },
-    { label: "Competitions",  value: summary.itl,      color: "orange", Icon: IcoLomba    },
-    { label: "Desain Grafis", value: summary.itd,      color: "orange", Icon: IcoDesain   },
+  type PillKey = "red" | "orange" | "purple" | "blue" | "pink" | "indigoBlue" | "green" | "gray";
+
+  const badges: {
+    label: string;
+    value: number;
+    pill: PillKey;
+    Icon: (p: { n?: number }) => JSX.Element;
+  }[] = [
+    { label: "Youtube",       value: summary.ityt,     pill: "red",       Icon: IcoVideo    },
+    { label: "Certificates",  value: summary.itc,      pill: "orange",    Icon: IcoCert     },
+    { label: "Game",          value: summary.itg ?? 0, pill: "purple",    Icon: IcoGame     },
+    { label: "Website",       value: summary.itw ?? 0, pill: "blue",      Icon: IcoWebsite  },
+    { label: "IDN Mengajar",  value: summary.itm,      pill: "indigoBlue",Icon: IcoMengajar },
+    { label: "Karya Buku",    value: summary.itb,      pill: "pink",      Icon: IcoBuku     },
+    { label: "Robotic",       value: summary.itr,      pill: "indigoBlue",Icon: IcoRobot    },
+    { label: "IoT",           value: summary.iti ?? 0, pill: "green",     Icon: IcoIoT      },
+    { label: "Competitions",  value: summary.itl,      pill: "gray",      Icon: IcoLomba    },
+    { label: "Desain Grafis", value: summary.itd,      pill: "orange",    Icon: IcoDesain   },
   ];
 
-  const pill = (c: BC) =>
-    c === "pink" ? s.badgePillPink : c === "gray" ? s.badgePillGray : s.badgePillOrange;
+  const pillStyle = (p: PillKey) => {
+    const map: Record<PillKey, object> = {
+      red:       s.pillRed,
+      orange:    s.pillOrange,
+      purple:    s.pillPurple,
+      blue:      s.pillBlue,
+      pink:      s.pillPink,
+      indigoBlue:s.pillBlueIndigo,
+      green:     s.pillGreen,
+      gray:      s.pillGray,
+    };
+    return map[p];
+  };
 
   return (
-    <Page size="A4" style={s.page}>
-      <View style={s.content}>
-        <View style={s.summaryHeader}>
-          <View style={s.summaryAvatar}>
-            <Text style={s.summaryAvatarInitial}>{getInitials(summary.nama)}</Text>
-          </View>
-          <View style={s.summaryNameBox}>
-            <Text style={s.summaryName}>{summary.nama}</Text>
-            <Text style={s.summaryRole}>IT &amp; Robotics Student Portfolio</Text>
-          </View>
-        </View>
-
-        <Text style={s.summaryTitle}>Summary IT</Text>
-
-        {/* Outer card 3D */}
-        <Card3D shad={C.shadowDrk} depth={5} r={10} pad={16}>
-          {/* Row 1 */}
-          <View style={s.summaryRow}>
-            <View style={s.nameBox}>
-              <Text style={s.nameText}>Progress Status</Text>
+    <Page size="A4" style={s.summaryPage}>
+      {/* Watermark dots pattern using repeated small circles */}
+      <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 32, opacity: 0.08 }}>
+        {Array.from({ length: 8 }).map((_, row) =>
+          Array.from({ length: 10 }).map((_, col) => (
+            <View
+              key={`${row}-${col}`}
+              style={{
+                position: "absolute",
+                top: row * 55 + 20,
+                left: col * 56 + 10,
+                width: 28,
+                height: 28,
+              }}
+            >
+              <Svg width={28} height={28} viewBox="0 0 28 28">
+                <Text style={{ fontSize: 18, color: "#ffffff", fontFamily: "Helvetica-Bold" }}>
+                  ih
+                </Text>
+              </Svg>
             </View>
-            <TealCard3D>
+          ))
+        )}
+      </View>
+
+      <View style={s.summaryOuterContent}>
+        {/* Page title */}
+        <Text style={s.summaryPageTitle}>Summary IT</Text>
+
+        {/* Main white inner card */}
+        <View style={s.summaryInnerCard}>
+
+          {/* Name row */}
+          <View style={s.summaryNameRow}>
+            <View style={s.summaryAvatar}>
+              <Text style={s.summaryAvatarInitial}>{getInitials(summary.nama)}</Text>
+            </View>
+            <Text style={s.summaryName}>{summary.nama}</Text>
+          </View>
+
+          {/* Stats row: Keterangan | Persen card | Total card */}
+          <View style={s.statsRow}>
+            {/* Keterangan */}
+            <View style={s.keteranganBox}>
+              <Text style={s.keteranganLabel}>Keterangan Project :</Text>
+              <Text style={s.keteranganValue}>{summary.ittuntas}</Text>
+              <Text style={{ fontSize: 13, fontFamily: "Helvetica-Bold", color: C.text }}>Tuntas</Text>
+            </View>
+
+            {/* Persen teal card */}
+            <TealCard3D style={{ flex: 1, marginRight: 10 }}>
               <Text style={s.persenTitle}>Persen</Text>
               <View style={s.persenRow}>
                 <View style={s.persenItem}>
@@ -1036,43 +1178,35 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
                 </View>
               </View>
             </TealCard3D>
-          </View>
 
-          {/* Row 2 */}
-          <View style={s.summaryRow}>
-            <View style={s.keteranganBox}>
-              <Text style={s.keteranganLabel}>Keterangan Project :</Text>
-              <Text style={s.keteranganValue}>{summary.ittuntas} Tuntas</Text>
-            </View>
-            <DarkCard3D>
-              <Text style={s.totalTitle}>Total Project</Text>
+            {/* Total dark card */}
+            <DarkCard3D style={{ flex: 1 }}>
+              <Text style={s.totalTitle}>Total</Text>
               <View style={s.totalRow}>
                 <View style={s.totalItem}>
                   <Text style={s.totalLabel}>Selesai</Text>
                   <Text style={s.totalValue}>{summary.itsl}</Text>
                 </View>
                 <View style={s.totalItem}>
-                  <Text style={s.totalLabel}>Proses</Text>
+                  <Text style={s.totalLabel}>Belum</Text>
                   <Text style={s.totalValue}>{summary.itbl}</Text>
                 </View>
               </View>
             </DarkCard3D>
           </View>
 
-          {/* Badge grid */}
+          {/* Badge grid — 4 columns, icons ~32px, sesuai referensi */}
           <View style={s.badgesGrid}>
-            {badges.map((b, i) => {
-              const last = (i + 1) % 4 === 0;
-              return (
-                <View key={i} style={[s.badgeItem, last && s.badgeItemLastInRow]}>
-                  <b.Icon n={22} />
-                  <Text style={s.badgeLabel}>{b.label}</Text>
-                  <Text style={pill(b.color)}>{b.value}</Text>
-                </View>
-              );
-            })}
+            {badges.map((b, i) => (
+              <View key={i} style={s.badgeItem}>
+                <b.Icon n={32} />
+                <Text style={s.badgeLabel}>{b.label}</Text>
+                <Text style={pillStyle(b.pill)}>{b.value}</Text>
+              </View>
+            ))}
           </View>
-        </Card3D>
+
+        </View>
       </View>
       <FooterBar />
     </Page>
