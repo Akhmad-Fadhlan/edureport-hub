@@ -185,17 +185,17 @@ function SummaryCard({
 
   const stats = summary
     ? [
-        { label: "Total Tercapai",  value: summary.total_tercapai,      color: "text-green-600" },
-        { label: "Belum Tercapai",  value: summary.belum_tercapai,      color: "text-red-500" },
-        { label: "Selesai",         value: summary.selesai,             color: "text-blue-600" },
-        { label: "Belum Selesai",   value: summary.belum_selesai,       color: "text-orange-500" },
-        { label: "Desain",          value: summary.total_desain,        color: "text-purple-600" },
-        { label: "Robotik",         value: summary.total_robotik,       color: "text-cyan-600" },
-        { label: "Video YT",        value: summary.total_video_youtube, color: "text-red-600" },
-        { label: "Sertifikat",      value: summary.total_sertifikat,    color: "text-yellow-600" },
-        { label: "Mengajar",        value: summary.total_mengajar,      color: "text-indigo-600" },
-        { label: "Buku",            value: summary.total_buku,          color: "text-teal-600" },
-        { label: "Lomba IT",        value: summary.total_lomba_it,      color: "text-pink-600" },
+        { label: "Total Tercapai",  value: Number(summary.total_tercapai),      color: "text-green-600" },
+        { label: "Belum Tercapai",  value: Number(summary.belum_tercapai),      color: "text-red-500" },
+        { label: "Selesai",         value: Number(summary.selesai),             color: "text-blue-600" },
+        { label: "Belum Selesai",   value: Number(summary.belum_selesai),       color: "text-orange-500" },
+        { label: "Desain",          value: Number(summary.total_desain),        color: "text-purple-600" },
+        { label: "Robotik",         value: Number(summary.total_robotik),       color: "text-cyan-600" },
+        { label: "Video YT",        value: Number(summary.total_video_youtube), color: "text-red-600" },
+        { label: "Sertifikat",      value: Number(summary.total_sertifikat),    color: "text-yellow-600" },
+        { label: "Mengajar",        value: Number(summary.total_mengajar),      color: "text-indigo-600" },
+        { label: "Buku",            value: Number(summary.total_buku),          color: "text-teal-600" },
+        { label: "Lomba IT",        value: Number(summary.total_lomba_it),      color: "text-pink-600" },
       ]
     : [];
 
@@ -211,11 +211,11 @@ function SummaryCard({
             {summary && (
               <>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{summary.persentase.toFixed(1)}%</div>
+                  <div className="text-2xl font-bold text-primary">{Number(summary.persentase).toFixed(1)}%</div>
                   <div className="text-xs text-muted-foreground">Persentase</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{summary.tuntas}</div>
+                  <div className="text-2xl font-bold text-green-600">{Number(summary.tuntas)}</div>
                   <div className="text-xs text-muted-foreground">Tuntas</div>
                 </div>
               </>
