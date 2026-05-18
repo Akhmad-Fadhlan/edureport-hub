@@ -35,30 +35,43 @@ export const Route = createFileRoute("/_authed/project-reports")({
  * HELPERS
  * ========================================================================== */
 
-/**
- * Konversi Google Drive share/view URL ke URL yang bisa di-fetch langsung.
- * https://drive.google.com/file/d/{ID}/view  →  https://drive.google.com/uc?export=download&id={ID}
- */
-function convertGoogleDriveUrl(url: string): string {
-  // Format: /file/d/{ID}/view atau /file/d/{ID}/preview
-  const match = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
-  if (match) {
-    return `https://drive.google.com/uc?export=download&id=${match[1]}`;
-  }
-  // Sudah format uc?export=... atau bukan drive link
-  return url;
+/** Cek apakah URL adalah Google Drive */
+function isGoogleDriveUrl(url: string): boolean {
+  return url.includes("drive.google.com") || url.includes("docs.google.com");
 }
 
 /**
- * Fetch URL menjadi data URL (base64).
- * Menggunakan credentials: "omit" agar tidak konflik dengan CORS wildcard (*).
- * Google Drive URL dikonversi otomatis ke direct-download.
+ * Fetch gambar dari URL eksternal (Google Drive, dll) melalui backend proxy.
+ * Backend melakukan cURL ke URL tersebut (tidak ada CORS di server-side)
+ * dan mengembalikan base64 data URL.
+ */
+async function fetchViaProxy(url: string): Promise<string | null> {
+  try {
+    const res = await api.get<any>("/proxy-image", {
+      params: { url },
+    });
+    const dataUrl = res.data?.data?.data;
+    if (typeof dataUrl === "string" && dataUrl.startsWith("data:")) return dataUrl;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch URL biasa (bukan Google Drive) langsung dari browser menjadi data URL.
+ * Pakai credentials: "omit" agar tidak konflik dengan CORS wildcard (*).
  */
 async function urlToDataUrl(url: string | null | undefined): Promise<string | null> {
   if (!url) return null;
+
+  // Google Drive selalu lewat proxy — tidak bisa di-fetch langsung dari browser
+  if (isGoogleDriveUrl(url)) {
+    return await fetchViaProxy(url);
+  }
+
   try {
-    const finalUrl = convertGoogleDriveUrl(url);
-    const res = await fetch(finalUrl, { mode: "cors", credentials: "omit" });
+    const res = await fetch(url, { mode: "cors", credentials: "omit" });
     if (!res.ok) return null;
     const blob = await res.blob();
     return await new Promise<string>((resolve, reject) => {
