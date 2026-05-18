@@ -55,18 +55,21 @@ export interface ProjectCertificate {
 
 export interface ProjectSummary {
   nama: string;
-  itpt: number;
-  itpb: number;
-  itsl: number;
-  itbl: number;
+  itpt: number;   // persentase tercapai
+  itpb: number;   // persentase belum
+  itsl: number;   // total selesai
+  itbl: number;   // total proses/belum
   ittuntas: number;
-  ityt: number;
-  itc: number;
-  itm: number;
-  itb: number;
-  itl: number;
-  itr: number;
-  itd: number;
+  ityt: number;   // video youtube
+  itc: number;    // certificates
+  itg: number;    // game dev   ← FIELD BARU
+  itw: number;    // website    ← FIELD BARU
+  itm: number;    // idn mengajar
+  itb: number;    // karya buku
+  itr: number;    // robotik
+  iti: number;    // iot project ← FIELD BARU (sebelumnya tidak ada, hardcode 0)
+  itl: number;    // lomba/competitions
+  itd: number;    // desain grafis
 }
 
 export interface ProjectReportData {
@@ -82,18 +85,18 @@ export interface ProjectReportData {
  * COLORS
  * ========================================================================== */
 
-const BLUE = "#3b3ec6";
+const BLUE      = "#3b3ec6";
 const DARK_BLUE = "#1e1e6e";
-const TEAL = "#00b4b4";
-const ORANGE = "#f5a623";
-const PINK = "#e83e8c";
-const LIGHT_BG = "#f4f4f8";
-const WHITE = "#ffffff";
-const TEXT = "#1a1a1a";
-const MUTED = "#6b7280";
+const TEAL      = "#00b4b4";
+const ORANGE    = "#f5a623";
+const PINK      = "#e83e8c";
+const LIGHT_BG  = "#f4f4f8";
+const WHITE     = "#ffffff";
+const TEXT      = "#1a1a1a";
+const MUTED     = "#6b7280";
 
 /* ============================================================================
- * STYLES - Optimized for @react-pdf/renderer
+ * STYLES
  * ========================================================================== */
 
 const s = StyleSheet.create({
@@ -104,7 +107,7 @@ const s = StyleSheet.create({
     position: "relative",
   },
 
-  // Footer
+  // ── FOOTER ────────────────────────────────────────────────────────────────
   footer: {
     position: "absolute",
     bottom: 0,
@@ -125,7 +128,7 @@ const s = StyleSheet.create({
 
   content: {
     padding: 28,
-    paddingBottom: 44, // 12px clearance above footer
+    paddingBottom: 44,
   },
 
   // ── COVER PAGE ────────────────────────────────────────────────────────────
@@ -136,37 +139,94 @@ const s = StyleSheet.create({
     padding: 48,
     height: "100%",
   },
-  coverLogo: { fontSize: 44, marginBottom: 16 },
+  coverBadge: {
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 30,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginBottom: 20,
+  },
+  coverBadgeText: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 11,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 2,
+    textAlign: "center",
+  },
   coverTitle: {
-    fontSize: 26,
+    fontSize: 28,
+    fontFamily: "Helvetica-Bold",
+    color: WHITE,
+    marginBottom: 6,
+    textAlign: "center",
+    letterSpacing: 1,
+  },
+  coverSubtitle: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.8)",
+    marginBottom: 36,
+    textAlign: "center",
+  },
+  coverDivider: {
+    width: 48,
+    height: 3,
+    backgroundColor: TEAL,
+    borderRadius: 2,
+    marginBottom: 36,
+  },
+  coverProfile: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.4)",
+  },
+  coverProfileInitial: {
+    fontSize: 32,
+    fontFamily: "Helvetica-Bold",
+    color: WHITE,
+  },
+  coverName: {
+    fontSize: 24,
     fontFamily: "Helvetica-Bold",
     color: WHITE,
     marginBottom: 6,
     textAlign: "center",
   },
-  coverSubtitle: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.9)",
-    marginBottom: 28,
+  coverRoleBadge: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+  },
+  coverRole: {
+    fontSize: 9,
+    color: "rgba(255,255,255,0.85)",
+    letterSpacing: 1,
     textAlign: "center",
   },
-  coverProfile: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
+  coverFooterBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 32,
+    backgroundColor: "rgba(0,0,0,0.3)",
     justifyContent: "center",
-    marginBottom: 14,
   },
-  coverProfileIcon: { fontSize: 36, color: WHITE },
-  coverName: {
-    fontSize: 22,
+  coverFooterText: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 9,
     fontFamily: "Helvetica-Bold",
-    color: WHITE,
-    marginBottom: 4,
+    letterSpacing: 1.2,
+    textAlign: "center",
   },
-  coverRole: { fontSize: 10, color: "rgba(255,255,255,0.8)" },
 
   // ── SUMMARY PAGE ──────────────────────────────────────────────────────────
   summaryHeader: {
@@ -186,7 +246,11 @@ const s = StyleSheet.create({
     justifyContent: "center",
     marginRight: 12,
   },
-  summaryAvatarIcon: { fontSize: 22, color: WHITE },
+  summaryAvatarInitial: {
+    fontSize: 20,
+    fontFamily: "Helvetica-Bold",
+    color: WHITE,
+  },
   summaryNameBox: { flex: 1, minWidth: 0 },
   summaryName: {
     fontSize: 18,
@@ -284,7 +348,7 @@ const s = StyleSheet.create({
   totalLabel: { color: "#9ca3af", fontSize: 7 },
   totalValue: { color: WHITE, fontSize: 16, fontFamily: "Helvetica-Bold" },
 
-  // Badges Grid - Fixed for PDF
+  // Badges Grid
   badgesGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -304,7 +368,16 @@ const s = StyleSheet.create({
   badgeItemLastInRow: {
     marginRight: 0,
   },
-  badgeEmoji: { fontSize: 18, marginBottom: 4, textAlign: "center" },
+  badgeIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#eef2ff",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  badgeIconText: { fontSize: 14, color: BLUE, fontFamily: "Helvetica-Bold" },
   badgeLabel: {
     fontSize: 7,
     color: MUTED,
@@ -335,6 +408,17 @@ const s = StyleSheet.create({
     textAlign: "center",
     minWidth: 20,
   },
+  badgeValueGray: {
+    backgroundColor: "#9ca3af",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    color: WHITE,
+    fontSize: 10,
+    fontFamily: "Helvetica-Bold",
+    textAlign: "center",
+    minWidth: 20,
+  },
 
   // ── PROJECT PAGES ─────────────────────────────────────────────────────────
   projectHeader: {
@@ -342,7 +426,14 @@ const s = StyleSheet.create({
     alignItems: "center",
     marginBottom: 6,
   },
-  projectIcon: { fontSize: 18, marginRight: 8 },
+  projectIconBox: {
+    backgroundColor: "#eef2ff",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 10,
+  },
+  projectIconText: { fontSize: 10, fontFamily: "Helvetica-Bold", color: BLUE },
   projectTitle: {
     fontSize: 20,
     fontFamily: "Helvetica-Bold",
@@ -375,7 +466,7 @@ const s = StyleSheet.create({
     padding: 10,
     minHeight: 60,
     marginRight: 10,
-    minWidth: 0, // Prevent overflow
+    minWidth: 0,
   },
   infoBoxWide: {
     flex: 2,
@@ -391,10 +482,8 @@ const s = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     color: TEXT,
     marginBottom: 6,
-    flexDirection: "row",
-    alignItems: "center",
   },
-  infoText: { fontSize: 8, color: TEXT, lineHeight: 1.4, wrap: true },
+  infoText: { fontSize: 8, color: TEXT, lineHeight: 1.4 },
 
   // ── VIDEO PAGE ────────────────────────────────────────────────────────────
   videoHeader: {
@@ -405,7 +494,14 @@ const s = StyleSheet.create({
     padding: 10,
     marginBottom: 12,
   },
-  videoHeaderIcon: { fontSize: 14, marginRight: 8 },
+  videoHeaderIconBox: {
+    backgroundColor: "#fee2e2",
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    marginRight: 8,
+  },
+  videoHeaderIconText: { fontSize: 9, fontFamily: "Helvetica-Bold", color: "#dc2626" },
   videoHeaderText: { fontSize: 11, fontFamily: "Helvetica-Bold", color: BLUE },
 
   videoThumb: {
@@ -439,11 +535,9 @@ const s = StyleSheet.create({
   ytLogoText: { fontSize: 7, color: "#dc2626", fontFamily: "Helvetica-Bold" },
   ytTitleBox: { flex: 1, minWidth: 0 },
   ytLabel: { fontSize: 7, fontFamily: "Helvetica-Bold", color: ORANGE },
-  ytTitle: { fontSize: 10, fontFamily: "Helvetica-Bold", color: TEXT, wrap: true },
+  ytTitle: { fontSize: 10, fontFamily: "Helvetica-Bold", color: TEXT },
 
   competenceBox: {
-    flexDirection: "row",
-    alignItems: "flex-start",
     backgroundColor: LIGHT_BG,
     borderRadius: 6,
     padding: 10,
@@ -454,18 +548,27 @@ const s = StyleSheet.create({
     color: ORANGE,
     marginBottom: 4,
   },
-  competenceText: { fontSize: 8, color: TEXT, lineHeight: 1.4, wrap: true },
+  competenceText: { fontSize: 8, color: TEXT, lineHeight: 1.4 },
 
   // ── MENGAJAR PAGE ─────────────────────────────────────────────────────────
+  mengajarTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  mengajarIconBox: {
+    backgroundColor: "#fef3c7",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 10,
+  },
+  mengajarIconText: { fontSize: 10, fontFamily: "Helvetica-Bold", color: "#d97706" },
   mengajarTitle: {
     fontSize: 20,
     fontFamily: "Helvetica-Bold",
     color: BLUE,
-    marginBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
   },
-  mengajarIcon: { fontSize: 18, marginRight: 8 },
 
   photoRow: { flexDirection: "row", marginRight: -10, marginBottom: 10 },
   photoBox: {
@@ -506,18 +609,27 @@ const s = StyleSheet.create({
     minWidth: 0,
   },
   storyTitle: { fontSize: 8, fontFamily: "Helvetica-Bold", color: TEXT, marginBottom: 4 },
-  storyText: { fontSize: 8, color: TEXT, lineHeight: 1.4, wrap: true },
+  storyText: { fontSize: 8, color: TEXT, lineHeight: 1.4 },
 
   // ── CERTIFICATE PAGE ──────────────────────────────────────────────────────
+  certTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  certIconBox: {
+    backgroundColor: "#fef9c3",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 10,
+  },
+  certIconText: { fontSize: 10, fontFamily: "Helvetica-Bold", color: "#ca8a04" },
   certTitle: {
     fontSize: 20,
     fontFamily: "Helvetica-Bold",
     color: BLUE,
-    marginBottom: 14,
-    flexDirection: "row",
-    alignItems: "center",
   },
-  certIcon: { fontSize: 18, marginRight: 8 },
   certGrid: { flexDirection: "row", flexWrap: "wrap", marginRight: -12 },
   certItem: {
     width: "48%",
@@ -540,6 +652,19 @@ const s = StyleSheet.create({
 });
 
 /* ============================================================================
+ * HELPERS
+ * ========================================================================== */
+
+/** Ambil 1–2 huruf kapital dari nama untuk dijadikan initial avatar */
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+/* ============================================================================
  * PAGE COMPONENTS
  * ========================================================================== */
 
@@ -551,74 +676,104 @@ function FooterBar() {
   );
 }
 
+/** Cover page — sama persis seperti milik Abdul Muthalib */
 function CoverPage({ name }: { name: string }) {
   return (
     <Page size="A4" style={s.page}>
       <View style={s.coverPage}>
-        <Text style={s.coverLogo}>🎓</Text>
-        <Text style={s.coverTitle}>PORTFOLIO REPORT</Text>
-        <Text style={s.coverSubtitle}>Talent Achievement • IT & Robotics</Text>
-        <View style={s.coverProfile}>
-          <Text style={s.coverProfileIcon}>👤</Text>
+        {/* Badge label atas */}
+        <View style={s.coverBadge}>
+          <Text style={s.coverBadgeText}>PORTFOLIO REPORT</Text>
         </View>
+
+        <Text style={s.coverTitle}>Talent Achievement</Text>
+        <Text style={s.coverSubtitle}>IT & Robotics</Text>
+
+        {/* Garis aksen */}
+        <View style={s.coverDivider} />
+
+        {/* Avatar dengan initial */}
+        <View style={s.coverProfile}>
+          <Text style={s.coverProfileInitial}>{getInitials(name)}</Text>
+        </View>
+
         <Text style={s.coverName}>{name}</Text>
-        <Text style={s.coverRole}>Student Developer & Designer</Text>
+
+        <View style={s.coverRoleBadge}>
+          <Text style={s.coverRole}>STUDENT DEVELOPER &amp; DESIGNER</Text>
+        </View>
       </View>
-      <FooterBar />
+
+      {/* Footer khusus cover (warna gelap transparan di atas biru) */}
+      <View style={s.coverFooterBar}>
+        <Text style={s.coverFooterText}>TALENT ACHIEVEMENTS</Text>
+      </View>
     </Page>
   );
 }
 
 function SummaryPage({ summary }: { summary: ProjectSummary }) {
-  const badges = [
-    { emoji: "🎬", label: "Video", value: summary.ityt, color: "orange" },
-    { emoji: "🏅", label: "Sertifikat", value: summary.itc, color: "orange" },
-    { emoji: "🎮", label: "Game", value: 0, color: "gray" },
-    { emoji: "🌐", label: "Website", value: 0, color: "gray" },
-    { emoji: "👨‍🏫", label: "IDN Mengajar", value: summary.itm, color: "pink" },
-    { emoji: "📚", label: "Karya Buku", value: summary.itb, color: "pink" },
-    { emoji: "🤖", label: "Robotik", value: summary.itr, color: "orange" },
-    { emoji: "💡", label: "IoT", value: 0, color: "gray" },
-    { emoji: "🏆", label: "Lomba IT", value: summary.itl, color: "orange" },
-    { emoji: "🎨", label: "Desain", value: summary.itd, color: "orange" },
+  /**
+   * Daftar badge — urutan & label sama dengan PDF Abdul Muthalib.
+   * Semua field sekarang diambil dari summary (tidak ada yang di-hardcode 0).
+   */
+  const badges: { label: string; shortLabel: string; value: number; color: "orange" | "pink" | "gray" }[] = [
+    { label: "Youtube",       shortLabel: "YT",  value: summary.ityt,        color: "orange" },
+    { label: "Certificates",  shortLabel: "Cert",value: summary.itc,         color: "orange" },
+    { label: "Game Dev",      shortLabel: "Game",value: summary.itg ?? 0,    color: "orange" },
+    { label: "Website",       shortLabel: "Web", value: summary.itw ?? 0,    color: "orange" },
+    { label: "IDN Mengajar",  shortLabel: "IDN", value: summary.itm,         color: "pink"   },
+    { label: "Karya Buku",    shortLabel: "Buku",value: summary.itb,         color: "pink"   },
+    { label: "Robotic",       shortLabel: "Bot", value: summary.itr,         color: "orange" },
+    { label: "IoT Project",   shortLabel: "IoT", value: summary.iti ?? 0,    color: "gray"   },
+    { label: "Competitions",  shortLabel: "Comp",value: summary.itl,         color: "orange" },
+    { label: "Desain Grafis", shortLabel: "Art", value: summary.itd,         color: "orange" },
   ];
+
+  const getBadgeStyle = (color: "orange" | "pink" | "gray") => {
+    if (color === "pink") return s.badgeValuePink;
+    if (color === "gray") return s.badgeValueGray;
+    return s.badgeValue;
+  };
 
   return (
     <Page size="A4" style={s.page}>
       <View style={s.content}>
+        {/* Header nama */}
         <View style={s.summaryHeader}>
           <View style={s.summaryAvatar}>
-            <Text style={s.summaryAvatarIcon}>👤</Text>
+            <Text style={s.summaryAvatarInitial}>{getInitials(summary.nama)}</Text>
           </View>
           <View style={s.summaryNameBox}>
             <Text style={s.summaryName}>{summary.nama}</Text>
-            <Text style={s.summaryRole}>IT & Robotics Student Portfolio</Text>
+            <Text style={s.summaryRole}>IT &amp; Robotics Student Portfolio</Text>
           </View>
         </View>
 
-        <Text style={s.summaryTitle}>📊 Summary IT</Text>
+        <Text style={s.summaryTitle}>Summary IT</Text>
+
         <View style={s.summaryCard}>
-          {/* Row 1 */}
+          {/* Row 1 — Progress Status + Persentase */}
           <View style={s.summaryRow}>
             <View style={s.nameBox}>
               <Text style={s.nameText}>Progress Status</Text>
             </View>
             <View style={s.persenBox}>
-              <Text style={s.persenTitle}>Persentase</Text>
+              <Text style={s.persenTitle}>Persen</Text>
               <View style={s.persenRow}>
                 <View style={s.persenItem}>
                   <Text style={s.persenLabel}>Tercapai</Text>
-                  <Text style={s.persenValue}>{summary.itpt}</Text>
+                  <Text style={s.persenValue}>{summary.itpt}%</Text>
                 </View>
                 <View style={s.persenItem}>
                   <Text style={s.persenLabel}>Belum</Text>
-                  <Text style={s.persenValue}>{summary.itpb}</Text>
+                  <Text style={s.persenValue}>{summary.itpb}%</Text>
                 </View>
               </View>
             </View>
           </View>
 
-          {/* Row 2 */}
+          {/* Row 2 — Keterangan + Total */}
           <View style={s.summaryRow}>
             <View style={s.keteranganBox}>
               <Text style={s.keteranganLabel}>Keterangan Project :</Text>
@@ -639,17 +794,21 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
             </View>
           </View>
 
-          {/* Badges */}
+          {/* Badge Grid */}
           <View style={s.badgesGrid}>
             {badges.map((b, i) => {
               const isLastInRow = (i + 1) % 4 === 0;
               return (
-                <View key={i} style={[s.badgeItem, isLastInRow && s.badgeItemLastInRow]}>
-                  <Text style={s.badgeEmoji}>{b.emoji}</Text>
+                <View
+                  key={i}
+                  style={[s.badgeItem, isLastInRow && s.badgeItemLastInRow]}
+                >
+                  {/* Icon placeholder (huruf singkat) */}
+                  <View style={s.badgeIcon}>
+                    <Text style={s.badgeIconText}>{b.shortLabel.slice(0, 2)}</Text>
+                  </View>
                   <Text style={s.badgeLabel}>{b.label}</Text>
-                  <Text style={b.color === "pink" ? s.badgeValuePink : s.badgeValue}>
-                    {b.value}
-                  </Text>
+                  <Text style={getBadgeStyle(b.color)}>{b.value}</Text>
                 </View>
               );
             })}
@@ -664,17 +823,19 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
 function ProjectPage({
   project,
   type = "IT Project",
-  icon = "💻",
+  typeLabel = "IT",
 }: {
   project: ProjectDesign | ProjectRobotik;
   type?: string;
-  icon?: string;
+  typeLabel?: string;
 }) {
   return (
     <Page size="A4" style={s.page}>
       <View style={s.content}>
         <View style={s.projectHeader}>
-          <Text style={s.projectIcon}>{icon}</Text>
+          <View style={s.projectIconBox}>
+            <Text style={s.projectIconText}>{typeLabel}</Text>
+          </View>
           <Text style={s.projectTitle}>{type}</Text>
         </View>
         <Text style={s.projectSubtitle}>{project.judul}</Text>
@@ -683,24 +844,24 @@ function ProjectPage({
           {project.screenshot ? (
             <Image src={project.screenshot} style={s.screenshotImg} />
           ) : (
-            <Text style={s.screenshotPlaceholder}>📷 [ Screenshot Karya ]</Text>
+            <Text style={s.screenshotPlaceholder}>[ Screenshot Karya ]</Text>
           )}
         </View>
 
         <View style={s.infoRow}>
           <View style={s.infoBox}>
-            <Text style={s.infoTitle}>🎓 Student Competence</Text>
+            <Text style={s.infoTitle}>Student Competence</Text>
             <Text style={s.infoText}>{project.kompetensi_siswa || "-"}</Text>
           </View>
           <View style={s.infoBoxWide}>
-            <Text style={s.infoTitle}>📝 Description</Text>
+            <Text style={s.infoTitle}>Description</Text>
             <Text style={s.infoText}>{project.deskripsi || "-"}</Text>
           </View>
         </View>
 
         <View style={{ marginTop: 10 }}>
           <View style={{ ...s.infoBox, width: "100%", marginRight: 0 }}>
-            <Text style={s.infoTitle}>⚙️ Technology</Text>
+            <Text style={s.infoTitle}>Technology</Text>
             <Text style={s.infoText}>{project.teknologi || "-"}</Text>
           </View>
         </View>
@@ -715,7 +876,9 @@ function VideoPage({ video }: { video: ProjectVideo }) {
     <Page size="A4" style={s.page}>
       <View style={s.content}>
         <View style={s.videoHeader}>
-          <Text style={s.videoHeaderIcon}>🎬</Text>
+          <View style={s.videoHeaderIconBox}>
+            <Text style={s.videoHeaderIconText}>YT</Text>
+          </View>
           <Text style={s.videoHeaderText}>Project Video Tutorial</Text>
         </View>
 
@@ -724,7 +887,9 @@ function VideoPage({ video }: { video: ProjectVideo }) {
             <Image src={video.thumbnail} style={{ width: "100%", height: "100%" }} />
           ) : (
             <View style={s.videoPlaceholder}>
-              <Text style={{ fontSize: 40, color: "#dc2626" }}>▶️</Text>
+              <Text style={{ fontSize: 28, color: "#dc2626", fontFamily: "Helvetica-Bold" }}>
+                PLAY
+              </Text>
             </View>
           )}
         </View>
@@ -743,15 +908,14 @@ function VideoPage({ video }: { video: ProjectVideo }) {
         </View>
 
         <View style={s.competenceBox}>
-          <View>
-            <Text style={s.competenceLabel}>💡 COMPETENCE</Text>
-            <Text style={s.competenceText}>
-              Ananda telah membuat 1 video dengan tema tutorial IT untuk membagikan pengetahuan yang telah dikuasai.
-            </Text>
-            {video.deskripsi_video && (
-              <Text style={{ ...s.competenceText, marginTop: 6 }}>{video.deskripsi_video}</Text>
-            )}
-          </View>
+          <Text style={s.competenceLabel}>COMPETENCE</Text>
+          <Text style={s.competenceText}>
+            Ananda telah membuat 1 video dengan tema tutorial IT untuk membagikan
+            pengetahuan yang telah dikuasai.
+          </Text>
+          {video.deskripsi_video ? (
+            <Text style={{ ...s.competenceText, marginTop: 6 }}>{video.deskripsi_video}</Text>
+          ) : null}
         </View>
       </View>
       <FooterBar />
@@ -763,9 +927,11 @@ function MengajarPage({ item }: { item: ProjectMengajar }) {
   return (
     <Page size="A4" style={s.page}>
       <View style={s.content}>
-        <View style={s.mengajarTitle}>
-          <Text style={s.mengajarIcon}>👨‍🏫</Text>
-          <Text>IDN Mengajar</Text>
+        <View style={s.mengajarTitleRow}>
+          <View style={s.mengajarIconBox}>
+            <Text style={s.mengajarIconText}>IDN</Text>
+          </View>
+          <Text style={s.mengajarTitle}>IDN Mengajar</Text>
         </View>
 
         <View style={s.photoRow}>
@@ -775,7 +941,7 @@ function MengajarPage({ item }: { item: ProjectMengajar }) {
                 <Image src={foto} style={{ width: "100%", height: "100%" }} />
               ) : (
                 <View style={{ alignItems: "center", justifyContent: "center", height: "100%" }}>
-                  <Text style={{ color: "#9ca3af", fontSize: 9 }}>📷 [ Foto {i + 1} ]</Text>
+                  <Text style={{ color: "#9ca3af", fontSize: 9 }}>[ Foto {i + 1} ]</Text>
                 </View>
               )}
             </View>
@@ -784,10 +950,10 @@ function MengajarPage({ item }: { item: ProjectMengajar }) {
 
         <View style={s.metaRow}>
           {[
-            { label: "📍", value: item.lokasi },
-            { label: "📅", value: item.tanggal },
-            { label: "🎯", value: item.tema },
-            { label: "👥", value: item.jumlah_peserta ? `${item.jumlah_peserta} Orang` : undefined },
+            { label: "Lokasi",   value: item.lokasi },
+            { label: "Tanggal",  value: item.tanggal },
+            { label: "Tema",     value: item.tema },
+            { label: "Peserta",  value: item.jumlah_peserta ? `${item.jumlah_peserta} Orang` : undefined },
           ]
             .filter((m) => m.value)
             .map((m, i) => (
@@ -800,11 +966,11 @@ function MengajarPage({ item }: { item: ProjectMengajar }) {
 
         <View style={s.storyRow}>
           <View style={s.storyBox}>
-            <Text style={s.storyTitle}>📖 Story</Text>
+            <Text style={s.storyTitle}>Story</Text>
             <Text style={s.storyText}>{item.cerita_siswa || "-"}</Text>
           </View>
           <View style={s.storyBox}>
-            <Text style={s.storyTitle}>💬 Testimoni</Text>
+            <Text style={s.storyTitle}>Testimoni</Text>
             <Text style={s.storyText}>{item.testimoni_peserta || "-"}</Text>
           </View>
         </View>
@@ -825,21 +991,29 @@ function CertificatesPage({ certs }: { certs: ProjectCertificate[] }) {
       {pairs.map((pair, pageIdx) => (
         <Page key={pageIdx} size="A4" style={s.page}>
           <View style={s.content}>
-            <View style={s.certTitle}>
-              <Text style={s.certIcon}>🏅</Text>
-              <Text>Certificates</Text>
+            <View style={s.certTitleRow}>
+              <View style={s.certIconBox}>
+                <Text style={s.certIconText}>CERT</Text>
+              </View>
+              <Text style={s.certTitle}>Certificates</Text>
             </View>
             <View style={s.certGrid}>
               {pair
                 .filter(Boolean)
                 .map((cert, i) =>
                   cert ? (
-                    <View key={i} style={[s.certItem, i === pair.filter(Boolean).length - 1 ? s.certItemLast : null]}>
+                    <View
+                      key={i}
+                      style={[
+                        s.certItem,
+                        i === pair.filter(Boolean).length - 1 ? s.certItemLast : null,
+                      ]}
+                    >
                       <View style={s.certImgBox}>
                         {cert.gambar ? (
                           <Image src={cert.gambar} style={{ width: "100%", height: "100%" }} />
                         ) : (
-                          <Text style={{ color: "#9ca3af", fontSize: 8 }}>📜 [ Sertifikat ]</Text>
+                          <Text style={{ color: "#9ca3af", fontSize: 8 }}>[ Sertifikat ]</Text>
                         )}
                       </View>
                       <Text style={s.certTema}>{cert.tema || "(Tanpa tema)"}</Text>
@@ -865,26 +1039,46 @@ function CertificatesPage({ certs }: { certs: ProjectCertificate[] }) {
 export function ProjectReportPdf({ data }: { data: ProjectReportData }) {
   return (
     <Document>
+      {/* 1. Cover */}
       <CoverPage name={data.summary.nama} />
+
+      {/* 2. Summary */}
       <SummaryPage summary={data.summary} />
 
+      {/* 3. Design Projects */}
       {data.designs.map((d, i) => (
-        <ProjectPage key={`design-${i}`} project={d} type="🎨 Design Project" icon="🎨" />
+        <ProjectPage
+          key={`design-${i}`}
+          project={d}
+          type="Design Project"
+          typeLabel="ART"
+        />
       ))}
 
+      {/* 4. Robotics Projects */}
       {data.robotics.map((r, i) => (
-        <ProjectPage key={`robotik-${i}`} project={r} type="🤖 Robotics Project" icon="🤖" />
+        <ProjectPage
+          key={`robotik-${i}`}
+          project={r}
+          type="Robotics Project"
+          typeLabel="BOT"
+        />
       ))}
 
+      {/* 5. Videos */}
       {data.videos.map((v, i) => (
         <VideoPage key={`video-${i}`} video={v} />
       ))}
 
+      {/* 6. IDN Mengajar */}
       {data.mengajar.map((m, i) => (
         <MengajarPage key={`mengajar-${i}`} item={m} />
       ))}
 
-      {data.certificates.length > 0 && <CertificatesPage certs={data.certificates} />}
+      {/* 7. Certificates */}
+      {data.certificates.length > 0 && (
+        <CertificatesPage certs={data.certificates} />
+      )}
     </Document>
   );
 }
