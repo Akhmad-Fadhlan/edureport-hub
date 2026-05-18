@@ -1146,13 +1146,13 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
             <Text style={s.summaryName}>{summary.nama}</Text>
           </View>
 
-          {/* Stats row: Keterangan | Persen card | Total card */}
+          {/* Stats row: Keterangan (kiri) | Persen + Total menumpuk vertikal (kanan) */}
           <View style={s.statsRow}>
-            {/* Keterangan — sempit, teks besar di tengah */}
-            <View style={s.keteranganBox}>
+            {/* Keterangan — lebih tinggi karena Persen+Total dua baris */}
+            <View style={[s.keteranganBox, { alignSelf: "stretch" }]}>
               <Text style={s.keteranganLabel}>Keterangan Project :</Text>
               {isSemua ? (
-                <Text style={{ fontSize: 28, fontFamily: "Helvetica-Bold", color: C.text, textAlign: "center" }}>
+                <Text style={{ fontSize: 26, fontFamily: "Helvetica-Bold", color: C.text, textAlign: "center" }}>
                   Tuntas
                 </Text>
               ) : (
@@ -1165,42 +1165,45 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
               )}
             </View>
 
-            {/* Persen teal card — kalkulasi otomatis */}
-            <TealCard3D style={{ flex: 1, marginRight: 10 }}>
-              <Text style={s.persenTitle}>Persen</Text>
-              <View style={s.persenRow}>
-                <View style={s.persenItem}>
-                  <Text style={s.persenLabel}>Tercapai</Text>
-                  <Text style={s.persenValue}>{pctTercapai}%</Text>
+            {/* Persen + Total menumpuk vertikal */}
+            <View style={{ flex: 1, flexDirection: "column" }}>
+              {/* Persen teal card */}
+              <TealCard3D style={{ marginBottom: 8 }}>
+                <Text style={s.persenTitle}>Persen</Text>
+                <View style={s.persenRow}>
+                  <View style={s.persenItem}>
+                    <Text style={s.persenLabel}>Tercapai</Text>
+                    <Text style={s.persenValue}>{pctTercapai}%</Text>
+                  </View>
+                  <View style={s.persenItem}>
+                    <Text style={s.persenLabel}>Belum</Text>
+                    <Text style={s.persenValue}>{pctBelum}%</Text>
+                  </View>
                 </View>
-                <View style={s.persenItem}>
-                  <Text style={s.persenLabel}>Belum</Text>
-                  <Text style={s.persenValue}>{pctBelum}%</Text>
-                </View>
-              </View>
-            </TealCard3D>
+              </TealCard3D>
 
-            {/* Total dark card */}
-            <DarkCard3D style={{ flex: 1 }}>
-              <Text style={s.totalTitle}>Total</Text>
-              <View style={s.totalRow}>
-                <View style={s.totalItem}>
-                  <Text style={s.totalLabel}>Selesai</Text>
-                  <Text style={s.totalValue}>{summary.itsl}</Text>
+              {/* Total dark card */}
+              <DarkCard3D style={{}}>
+                <Text style={s.totalTitle}>Total</Text>
+                <View style={s.totalRow}>
+                  <View style={s.totalItem}>
+                    <Text style={s.totalLabel}>Selesai</Text>
+                    <Text style={s.totalValue}>{summary.itsl}</Text>
+                  </View>
+                  <View style={s.totalItem}>
+                    <Text style={s.totalLabel}>Belum</Text>
+                    <Text style={s.totalValue}>{summary.itbl}</Text>
+                  </View>
                 </View>
-                <View style={s.totalItem}>
-                  <Text style={s.totalLabel}>Belum</Text>
-                  <Text style={s.totalValue}>{summary.itbl}</Text>
-                </View>
-              </View>
-            </DarkCard3D>
+              </DarkCard3D>
+            </View>
           </View>
 
-          {/* Badge grid — card abu muda flex:1 hampir setinggi card biru, badge individual 3D putih */}
+          {/* Badge grid — card abu muda flex:1, badge 3D putih memenuhi per baris */}
           <View style={{
             backgroundColor: "#eef0f8",
             borderRadius: 12,
-            padding: 8,
+            padding: 6,
             marginTop: 10,
             flex: 1,
             borderBottomWidth: 4,
@@ -1212,29 +1215,85 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
             borderTopColor: "rgba(255,255,255,0.95)",
             borderLeftColor: "rgba(255,255,255,0.95)",
           }}>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-              {badges.map((b, i) => (
+            {/* Baris 1: 4 badge */}
+            <View style={{ flexDirection: "row", marginBottom: 6 }}>
+              {badges.slice(0, 4).map((b, i) => (
                 <View key={i} style={{
-                  width: "18.4%",
+                  flex: 1,
                   alignItems: "center",
                   backgroundColor: C.white,
                   borderRadius: 10,
                   paddingVertical: 10,
-                  paddingHorizontal: 4,
+                  paddingHorizontal: 2,
+                  marginRight: i < 3 ? 6 : 0,
                   borderBottomWidth: 4,
                   borderRightWidth: 3,
                   borderBottomColor: "#d0d0e8",
                   borderRightColor: "#d0d0e8",
                   borderTopWidth: 1,
                   borderLeftWidth: 1,
-                  borderTopColor: "rgba(255,255,255,1)",
-                  borderLeftColor: "rgba(255,255,255,1)",
+                  borderTopColor: C.white,
+                  borderLeftColor: C.white,
                 }}>
                   <b.Icon n={28} />
                   <Text style={s.badgeLabel}>{b.label}</Text>
                   <Text style={pillStyle(b.pill)}>{b.value}</Text>
                 </View>
               ))}
+            </View>
+            {/* Baris 2: 4 badge */}
+            <View style={{ flexDirection: "row", marginBottom: 6 }}>
+              {badges.slice(4, 8).map((b, i) => (
+                <View key={i} style={{
+                  flex: 1,
+                  alignItems: "center",
+                  backgroundColor: C.white,
+                  borderRadius: 10,
+                  paddingVertical: 10,
+                  paddingHorizontal: 2,
+                  marginRight: i < 3 ? 6 : 0,
+                  borderBottomWidth: 4,
+                  borderRightWidth: 3,
+                  borderBottomColor: "#d0d0e8",
+                  borderRightColor: "#d0d0e8",
+                  borderTopWidth: 1,
+                  borderLeftWidth: 1,
+                  borderTopColor: C.white,
+                  borderLeftColor: C.white,
+                }}>
+                  <b.Icon n={28} />
+                  <Text style={s.badgeLabel}>{b.label}</Text>
+                  <Text style={pillStyle(b.pill)}>{b.value}</Text>
+                </View>
+              ))}
+            </View>
+            {/* Baris 3: 2 badge + spacer */}
+            <View style={{ flexDirection: "row" }}>
+              {badges.slice(8, 10).map((b, i) => (
+                <View key={i} style={{
+                  flex: 1,
+                  alignItems: "center",
+                  backgroundColor: C.white,
+                  borderRadius: 10,
+                  paddingVertical: 10,
+                  paddingHorizontal: 2,
+                  marginRight: i < 1 ? 6 : 0,
+                  borderBottomWidth: 4,
+                  borderRightWidth: 3,
+                  borderBottomColor: "#d0d0e8",
+                  borderRightColor: "#d0d0e8",
+                  borderTopWidth: 1,
+                  borderLeftWidth: 1,
+                  borderTopColor: C.white,
+                  borderLeftColor: C.white,
+                }}>
+                  <b.Icon n={28} />
+                  <Text style={s.badgeLabel}>{b.label}</Text>
+                  <Text style={pillStyle(b.pill)}>{b.value}</Text>
+                </View>
+              ))}
+              {/* Spacer 2 kolom kosong agar baris 3 rata kiri */}
+              <View style={{ flex: 2, marginLeft: 6 }} />
             </View>
           </View>
 
