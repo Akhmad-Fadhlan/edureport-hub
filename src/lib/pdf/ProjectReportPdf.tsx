@@ -634,7 +634,7 @@ const s = StyleSheet.create({
   // Pill colors
   pillRed: {
     backgroundColor: "#ef4444",
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
     paddingVertical: 3,
     borderRadius: 10,
     color: C.white,
@@ -649,7 +649,7 @@ const s = StyleSheet.create({
   },
   pillOrange: {
     backgroundColor: C.orange,
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
     paddingVertical: 3,
     borderRadius: 10,
     color: C.white,
@@ -664,7 +664,7 @@ const s = StyleSheet.create({
   },
   pillPurple: {
     backgroundColor: "#7c3aed",
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
     paddingVertical: 3,
     borderRadius: 10,
     color: C.white,
@@ -679,7 +679,7 @@ const s = StyleSheet.create({
   },
   pillBlue: {
     backgroundColor: "#3b82f6",
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
     paddingVertical: 3,
     borderRadius: 10,
     color: C.white,
@@ -694,7 +694,7 @@ const s = StyleSheet.create({
   },
   pillPink: {
     backgroundColor: C.pink,
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
     paddingVertical: 3,
     borderRadius: 10,
     color: C.white,
@@ -709,7 +709,7 @@ const s = StyleSheet.create({
   },
   pillBlueIndigo: {
     backgroundColor: C.blue,
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
     paddingVertical: 3,
     borderRadius: 10,
     color: C.white,
@@ -724,7 +724,7 @@ const s = StyleSheet.create({
   },
   pillGreen: {
     backgroundColor: "#10b981",
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
     paddingVertical: 3,
     borderRadius: 10,
     color: C.white,
@@ -739,7 +739,7 @@ const s = StyleSheet.create({
   },
   pillGray: {
     backgroundColor: "#9ca3af",
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
     paddingVertical: 3,
     borderRadius: 10,
     color: C.white,
