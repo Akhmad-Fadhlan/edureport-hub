@@ -14,6 +14,8 @@ import {
   StickyNote,
   LogOut,
   Menu,
+  FolderKanban,
+  Briefcase,
 } from "lucide-react";
 import { useAuth, type Role } from "@/stores/auth-store";
 import { Button } from "@/components/ui/button";
