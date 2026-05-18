@@ -42,7 +42,9 @@ const NAV: NavItem[] = [
   { to: "/indicators", label: "Indikator", icon: <ListChecks className="h-4 w-4" />, roles: ADMIN },
   { to: "/grades", label: "Input Nilai", icon: <ClipboardEdit className="h-4 w-4" />, roles: ALL },
   { to: "/notes", label: "Catatan Siswa", icon: <StickyNote className="h-4 w-4" />, roles: ALL },
+  { to: "/portfolio", label: "Portofolio", icon: <FolderKanban className="h-4 w-4" />, roles: ALL },
   { to: "/reports", label: "Rapor PDF", icon: <FileText className="h-4 w-4" />, roles: ALL },
+  { to: "/project-reports", label: "Rapor Project", icon: <Briefcase className="h-4 w-4" />, roles: ALL },
 ];
 
 export function AppLayout() {
