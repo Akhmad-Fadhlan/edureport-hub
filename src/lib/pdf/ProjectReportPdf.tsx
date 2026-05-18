@@ -5,16 +5,15 @@ import {
   View,
   Image,
   StyleSheet,
-  Link,
 } from "@react-pdf/renderer";
 
 /* ============================================================================
- * TYPES - sesuai template PDF yang diupload
+ * TYPES - Tetap sesuai struktur API
  * ========================================================================== */
 
 export interface ProjectDesign {
   judul: string;
-  screenshot?: string | null; // ssdesain
+  screenshot?: string | null;
   kompetensi_siswa?: string;
   teknologi?: string;
   deskripsi?: string;
@@ -22,23 +21,23 @@ export interface ProjectDesign {
 
 export interface ProjectRobotik {
   judul: string;
-  screenshot?: string | null; // ssiot / ssrobotik
+  screenshot?: string | null;
   kompetensi_siswa?: string;
   teknologi?: string;
   deskripsi?: string;
 }
 
 export interface ProjectVideo {
-  thumbnail?: string | null; // vd1
-  qr?: string | null; // vd1_qr
+  thumbnail?: string | null;
+  qr?: string | null;
   judul_video: string;
   deskripsi_video?: string;
   link_youtube: string;
 }
 
 export interface ProjectMengajar {
-  foto1?: string | null; // ftmgj1
-  foto2?: string | null; // ftmgj2
+  foto1?: string | null;
+  foto2?: string | null;
   lokasi?: string;
   tanggal?: string;
   tema?: string;
@@ -55,20 +54,19 @@ export interface ProjectCertificate {
 }
 
 export interface ProjectSummary {
-  // Summary page vars
   nama: string;
-  itpt: number;     // total_tercapai
-  itpb: number;     // belum_tercapai
-  itsl: number;     // selesai
-  itbl: number;     // belum_selesai
-  ittuntas: number; // tuntas
-  ityt: number;     // total_video_youtube
-  itc: number;      // total_sertifikat
-  itm: number;      // total_mengajar
-  itb: number;      // total_buku
-  itl: number;      // total_lomba_it
-  itr: number;      // total_robotik
-  itd: number;      // total_desain
+  itpt: number;
+  itpb: number;
+  itsl: number;
+  itbl: number;
+  ittuntas: number;
+  ityt: number;
+  itc: number;
+  itm: number;
+  itb: number;
+  itl: number;
+  itr: number;
+  itd: number;
 }
 
 export interface ProjectReportData {
@@ -84,18 +82,18 @@ export interface ProjectReportData {
  * COLORS
  * ========================================================================== */
 
-const BLUE = "#3b3ec6";       // Purple-blue from template header
-const DARK_BLUE = "#1e1e6e";  // Footer dark blue
-const TEAL = "#00b4b4";       // Teal accent (Tercapai)
-const ORANGE = "#f5a623";     // Orange badge
-const PINK = "#e83e8c";       // Pink badge
-const LIGHT_BG = "#f0f0f0";   // Light gray placeholder
+const BLUE = "#3b3ec6";
+const DARK_BLUE = "#1e1e6e";
+const TEAL = "#00b4b4";
+const ORANGE = "#f5a623";
+const PINK = "#e83e8c";
+const LIGHT_BG = "#f0f0f0";
 const WHITE = "#ffffff";
 const TEXT = "#1a1a1a";
 const MUTED = "#666";
 
 /* ============================================================================
- * STYLES
+ * STYLES - Layout diperbaiki sesuai template PDF
  * ========================================================================== */
 
 const s = StyleSheet.create({
@@ -106,7 +104,7 @@ const s = StyleSheet.create({
     position: "relative",
   },
 
-  // Footer bar
+  // Footer
   footer: {
     position: "absolute",
     bottom: 0,
@@ -123,16 +121,81 @@ const s = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // Page content wrapper (leaves room for footer)
   content: {
     padding: 28,
     paddingBottom: 40,
   },
 
+  // ── COVER PAGE ────────────────────────────────────────────────────────────
+
+  coverPage: {
+    backgroundColor: BLUE,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40,
+  },
+  coverLogo: { fontSize: 48, marginBottom: 16 },
+  coverTitle: {
+    fontSize: 28,
+    fontFamily: "Helvetica-Bold",
+    color: WHITE,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  coverSubtitle: {
+    fontSize: 16,
+    color: "rgba(255,255,255,0.9)",
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  coverProfile: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  coverProfileIcon: { fontSize: 40, color: WHITE },
+  coverName: {
+    fontSize: 24,
+    fontFamily: "Helvetica-Bold",
+    color: WHITE,
+    marginBottom: 4,
+  },
+  coverRole: { fontSize: 11, color: "rgba(255,255,255,0.8)" },
+
   // ── SUMMARY PAGE ──────────────────────────────────────────────────────────
 
+  summaryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottom: "1 solid #eee",
+  },
+  summaryAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: BLUE,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  summaryAvatarIcon: { fontSize: 24, color: WHITE },
+  summaryNameBox: { flex: 1 },
+  summaryName: {
+    fontSize: 20,
+    fontFamily: "Helvetica-Bold",
+    color: TEXT,
+    marginBottom: 2,
+  },
+  summaryRole: { fontSize: 10, color: MUTED },
+
   summaryTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontFamily: "Helvetica-Bold",
     color: BLUE,
     marginBottom: 16,
@@ -159,7 +222,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   nameText: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: "Helvetica-Bold",
     color: BLUE,
   },
@@ -177,7 +240,13 @@ const s = StyleSheet.create({
     marginBottom: 6,
   },
   persenRow: { flexDirection: "row", gap: 8 },
-  persenItem: { flex: 1, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 6, padding: 8, alignItems: "center" },
+  persenItem: {
+    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 6,
+    padding: 8,
+    alignItems: "center",
+  },
   persenLabel: { color: WHITE, fontSize: 8 },
   persenValue: { color: WHITE, fontSize: 20, fontFamily: "Helvetica-Bold" },
 
@@ -198,11 +267,17 @@ const s = StyleSheet.create({
   },
   totalTitle: { color: WHITE, fontSize: 11, fontFamily: "Helvetica-Bold", marginBottom: 6 },
   totalRow: { flexDirection: "row", gap: 8 },
-  totalItem: { flex: 1, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 6, padding: 8, alignItems: "center" },
+  totalItem: {
+    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 6,
+    padding: 8,
+    alignItems: "center",
+  },
   totalLabel: { color: "#aaa", fontSize: 8 },
   totalValue: { color: WHITE, fontSize: 18, fontFamily: "Helvetica-Bold" },
 
-  // Grid of project type badges
+  // Badges Grid - ICONS & LAYOUT FIX
   badgesGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -215,31 +290,44 @@ const s = StyleSheet.create({
     backgroundColor: WHITE,
     borderRadius: 8,
     border: "1 solid #ddd",
-    padding: 8,
+    padding: 10,
   },
-  badgeEmoji: { fontSize: 16, marginBottom: 4 },
-  badgeLabel: { fontSize: 7, color: MUTED, marginBottom: 4, textAlign: "center" },
+  badgeEmoji: { fontSize: 20, marginBottom: 4 }, // ✅ Icon lebih besar
+  badgeLabel: {
+    fontSize: 7,
+    color: MUTED,
+    marginBottom: 4,
+    textAlign: "center",
+    lineHeight: 1.2,
+  },
   badgeValue: {
     backgroundColor: ORANGE,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
     color: WHITE,
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: "Helvetica-Bold",
   },
   badgeValuePink: {
     backgroundColor: PINK,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
     color: WHITE,
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: "Helvetica-Bold",
   },
 
   // ── IT PROJECT PAGE ────────────────────────────────────────────────────────
 
+  projectHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
+  projectIcon: { fontSize: 20 },
   projectTitle: {
     fontSize: 24,
     fontFamily: "Helvetica-Bold",
@@ -285,8 +373,11 @@ const s = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     color: TEXT,
     marginBottom: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
-  infoText: { fontSize: 9, color: TEXT },
+  infoText: { fontSize: 9, color: TEXT, lineHeight: 1.4 },
 
   // ── VIDEO PAGE ────────────────────────────────────────────────────────────
 
@@ -299,6 +390,7 @@ const s = StyleSheet.create({
     padding: 10,
     marginBottom: 12,
   },
+  videoHeaderIcon: { fontSize: 16 },
   videoHeaderText: { fontSize: 12, fontFamily: "Helvetica-Bold", color: BLUE },
 
   videoThumb: {
@@ -323,7 +415,6 @@ const s = StyleSheet.create({
     padding: 6,
     alignItems: "center",
   },
-  ytLogoText: { fontSize: 7, color: MUTED },
   ytTitleBox: { flex: 1 },
   ytLabel: { fontSize: 8, fontFamily: "Helvetica-Bold", color: ORANGE },
   ytTitle: { fontSize: 11, fontFamily: "Helvetica-Bold", color: TEXT },
@@ -336,7 +427,15 @@ const s = StyleSheet.create({
     borderRadius: 6,
     padding: 10,
   },
-  competenceLabel: { fontSize: 9, fontFamily: "Helvetica-Bold", color: ORANGE, marginBottom: 4 },
+  competenceLabel: {
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    color: ORANGE,
+    marginBottom: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
   competenceText: { fontSize: 9, color: TEXT, lineHeight: 1.5 },
 
   // ── MENGAJAR PAGE ─────────────────────────────────────────────────────────
@@ -346,6 +445,9 @@ const s = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     color: BLUE,
     marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 
   photoRow: { flexDirection: "row", gap: 10, marginBottom: 12 },
@@ -368,6 +470,9 @@ const s = StyleSheet.create({
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   metaLabel: { fontSize: 7, fontFamily: "Helvetica-Bold", color: MUTED },
   metaValue: { fontSize: 9, color: TEXT },
@@ -380,7 +485,15 @@ const s = StyleSheet.create({
     padding: 10,
     minHeight: 80,
   },
-  storyTitle: { fontSize: 9, fontFamily: "Helvetica-Bold", color: TEXT, marginBottom: 4 },
+  storyTitle: {
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    color: TEXT,
+    marginBottom: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
   storyText: { fontSize: 9, color: TEXT, lineHeight: 1.5 },
 
   // ── CERTIFICATE PAGE ──────────────────────────────────────────────────────
@@ -390,12 +503,12 @@ const s = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     color: BLUE,
     marginBottom: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   certGrid: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
-  certItem: {
-    width: "47%",
-    marginBottom: 16,
-  },
+  certItem: { width: "47%", marginBottom: 16 },
   certImgBox: {
     width: "100%",
     height: 180,
@@ -422,34 +535,66 @@ function FooterBar() {
   );
 }
 
-// ── Page 1: Summary ───────────────────────────────────────────────────────────
+// ── Cover Page ──────────────────────────────────────────────────────────────
+
+function CoverPage({ name }: { name: string }) {
+  return (
+    <Page size="A4" style={{ ...s.page, backgroundColor: BLUE }}>
+      <View style={s.coverPage}>
+        <Text style={s.coverLogo}>🎓</Text>
+        <Text style={s.coverTitle}>PORTFOLIO REPORT</Text>
+        <Text style={s.coverSubtitle}>Talent Achievement - IT & Robotics</Text>
+        <View style={s.coverProfile}>
+          <Text style={s.coverProfileIcon}>👤</Text>
+        </View>
+        <Text style={s.coverName}>{name}</Text>
+        <Text style={s.coverRole}>Student Developer & Designer</Text>
+      </View>
+      <FooterBar />
+    </Page>
+  );
+}
+
+// ── Summary Page ────────────────────────────────────────────────────────────
 
 function SummaryPage({ summary }: { summary: ProjectSummary }) {
+  // ✅ ICONS diperbaiki sesuai kategori
   const badges = [
-    { emoji: "▶", label: "Youtube", value: summary.ityt, color: "orange" },
-    { emoji: "🏅", label: "Certificates", value: summary.itc, color: "orange" },
-    { emoji: "🎮", label: "Game", value: 13, color: "gray" },
+    { emoji: "🎬", label: "Video Tutorial", value: summary.ityt, color: "orange" },
+    { emoji: "🏅", label: "Sertifikat", value: summary.itc, color: "orange" },
+    { emoji: "🎮", label: "Game Dev", value: 13, color: "gray" },
     { emoji: "🌐", label: "Website", value: 3, color: "gray" },
     { emoji: "👨‍🏫", label: "IDN Mengajar", value: summary.itm, color: "pink" },
     { emoji: "📚", label: "Karya Buku", value: summary.itb, color: "pink" },
-    { emoji: "🤖", label: "Robotic", value: summary.itr, color: "orange" },
-    { emoji: "💡", label: "IoT", value: 0, color: "gray" },
-    { emoji: "🏆", label: "Competitions", value: summary.itl, color: "orange" },
-    { emoji: "🎨", label: "Design", value: summary.itd, color: "orange" },
+    { emoji: "🤖", label: "Robotik", value: summary.itr, color: "orange" },
+    { emoji: "💡", label: "IoT Project", value: 0, color: "gray" },
+    { emoji: "🏆", label: "Lomba IT", value: summary.itl, color: "orange" },
+    { emoji: "🎨", label: "Desain Grafis", value: summary.itd, color: "orange" },
   ];
 
   return (
     <Page size="A4" style={s.page}>
       <View style={s.content}>
-        <Text style={s.summaryTitle}>Summary IT</Text>
+        {/* Header dengan Profile */}
+        <View style={s.summaryHeader}>
+          <View style={s.summaryAvatar}>
+            <Text style={s.summaryAvatarIcon}>👤</Text>
+          </View>
+          <View style={s.summaryNameBox}>
+            <Text style={s.summaryName}>{summary.nama}</Text>
+            <Text style={s.summaryRole}>IT & Robotics Student Portfolio</Text>
+          </View>
+        </View>
+
+        <Text style={s.summaryTitle}>📊 Summary IT</Text>
         <View style={s.summaryCard}>
-          {/* Row 1: Name + Persen */}
+          {/* Row 1: Status + Persen */}
           <View style={s.summaryRow}>
             <View style={s.nameBox}>
-              <Text style={s.nameText}>{summary.nama}</Text>
+              <Text style={s.nameText}>Progress Status</Text>
             </View>
             <View style={s.persenBox}>
-              <Text style={s.persenTitle}>Persen</Text>
+              <Text style={s.persenTitle}>Persentase</Text>
               <View style={s.persenRow}>
                 <View style={s.persenItem}>
                   <Text style={s.persenLabel}>Tercapai</Text>
@@ -462,33 +607,43 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
               </View>
             </View>
           </View>
+
           {/* Row 2: Keterangan + Total */}
           <View style={s.summaryRow}>
             <View style={s.keteranganBox}>
               <Text style={s.keteranganLabel}>Keterangan Project :</Text>
-              <Text style={s.keteranganValue}>{summary.ittuntas}</Text>
+              <Text style={s.keteranganValue}>{summary.ittuntas} Tuntas</Text>
             </View>
             <View style={s.totalBox}>
-              <Text style={s.totalTitle}>Total</Text>
+              <Text style={s.totalTitle}>Total Project</Text>
               <View style={s.totalRow}>
                 <View style={s.totalItem}>
                   <Text style={s.totalLabel}>Selesai</Text>
                   <Text style={s.totalValue}>{summary.itsl}</Text>
                 </View>
                 <View style={s.totalItem}>
-                  <Text style={s.totalLabel}>Belum</Text>
+                  <Text style={s.totalLabel}>Proses</Text>
                   <Text style={s.totalValue}>{summary.itbl}</Text>
                 </View>
               </View>
             </View>
           </View>
-          {/* Badge grid */}
+
+          {/* Badge Grid - Layout & Icon Fix */}
           <View style={s.badgesGrid}>
             {badges.map((b, i) => (
               <View key={i} style={s.badgeItem}>
                 <Text style={s.badgeEmoji}>{b.emoji}</Text>
                 <Text style={s.badgeLabel}>{b.label}</Text>
-                <Text style={b.color === "pink" ? s.badgeValuePink : b.color === "orange" ? s.badgeValue : { ...s.badgeValue, backgroundColor: "#888" }}>
+                <Text
+                  style={
+                    b.color === "pink"
+                      ? s.badgeValuePink
+                      : b.color === "orange"
+                      ? s.badgeValue
+                      : { ...s.badgeValue, backgroundColor: "#888" }
+                  }
+                >
                   {b.value}
                 </Text>
               </View>
@@ -503,11 +658,23 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
 
 // ── IT Project Page (Design / Robotics) ─────────────────────────────────────
 
-function ProjectPage({ project, index }: { project: ProjectDesign | ProjectRobotik; index: number }) {
+function ProjectPage({
+  project,
+  type = "IT Project",
+  icon = "💻",
+}: {
+  project: ProjectDesign | ProjectRobotik;
+  type?: string;
+  icon?: string;
+}) {
   return (
     <Page size="A4" style={s.page}>
       <View style={s.content}>
-        <Text style={s.projectTitle}>IT Project</Text>
+        {/* Header dengan Icon */}
+        <View style={s.projectHeader}>
+          <Text style={s.projectIcon}>{icon}</Text>
+          <Text style={s.projectTitle}>{type}</Text>
+        </View>
         <Text style={s.projectSubtitle}>{project.judul}</Text>
 
         {/* Screenshot */}
@@ -515,25 +682,26 @@ function ProjectPage({ project, index }: { project: ProjectDesign | ProjectRobot
           {project.screenshot ? (
             <Image src={project.screenshot} style={s.screenshotImg} />
           ) : (
-            <Text style={s.screenshotPlaceholder}>[ Screenshot Karya ]</Text>
+            <Text style={s.screenshotPlaceholder}>📷 [ Screenshot Karya ]</Text>
           )}
         </View>
 
-        {/* Info row */}
+        {/* Info Row */}
         <View style={s.infoRow}>
           <View style={s.infoBox}>
-            <Text style={s.infoTitle}>Student Competence</Text>
+            <Text style={s.infoTitle}>🎓 Student Competence</Text>
             <Text style={s.infoText}>{project.kompetensi_siswa || "-"}</Text>
           </View>
           <View style={s.infoBoxWide}>
-            <Text style={s.infoTitle}>Description</Text>
+            <Text style={s.infoTitle}>📝 Description</Text>
             <Text style={s.infoText}>{project.deskripsi || "-"}</Text>
           </View>
         </View>
 
+        {/* Technology */}
         <View style={{ marginTop: 10 }}>
-          <View style={{ ...s.infoBox, width: "40%" }}>
-            <Text style={s.infoTitle}>Technology</Text>
+          <View style={{ ...s.infoBox, width: "100%" }}>
+            <Text style={s.infoTitle}>⚙️ Technology</Text>
             <Text style={s.infoText}>{project.teknologi || "-"}</Text>
           </View>
         </View>
@@ -543,7 +711,7 @@ function ProjectPage({ project, index }: { project: ProjectDesign | ProjectRobot
   );
 }
 
-// ── Video Tutorial Page ───────────────────────────────────────────────────────
+// ── Video Tutorial Page ─────────────────────────────────────────────────────
 
 function VideoPage({ video }: { video: ProjectVideo }) {
   return (
@@ -551,7 +719,7 @@ function VideoPage({ video }: { video: ProjectVideo }) {
       <View style={s.content}>
         {/* Header */}
         <View style={s.videoHeader}>
-          <Text style={{ fontSize: 16 }}>🎬</Text>
+          <Text style={s.videoHeaderIcon}>🎬</Text>
           <Text style={s.videoHeaderText}>Project Video Tutorial</Text>
         </View>
 
@@ -561,15 +729,15 @@ function VideoPage({ video }: { video: ProjectVideo }) {
             <Image src={video.thumbnail} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
             <View style={{ alignItems: "center", justifyContent: "center", height: "100%" }}>
-              <Text style={{ fontSize: 32, color: "#cc0000" }}>▶</Text>
+              <Text style={{ fontSize: 48, color: "#cc0000" }}>▶️</Text>
             </View>
           )}
         </View>
 
-        {/* YT row */}
+        {/* YT Row */}
         <View style={s.ytRow}>
           <View style={s.ytLogoBox}>
-            <Text style={{ fontSize: 14, color: "#cc0000", fontFamily: "Helvetica-Bold" }}>You Tube</Text>
+            <Text style={{ fontSize: 10, color: "#cc0000", fontFamily: "Helvetica-Bold" }}>YouTube</Text>
             {video.qr && <Image src={video.qr} style={{ width: 40, height: 40, marginTop: 4 }} />}
           </View>
           <View style={s.ytTitleBox}>
@@ -581,7 +749,7 @@ function VideoPage({ video }: { video: ProjectVideo }) {
         {/* Competence */}
         <View style={s.competenceBox}>
           <View>
-            <Text style={s.competenceLabel}>COMPETENCE</Text>
+            <Text style={s.competenceLabel}>💡 COMPETENCE</Text>
             <Text style={s.competenceText}>
               Ananda telah membuat 1 video dengan tema tutorial IT untuk membagikan pengetahuan yang telah dikuasai.
             </Text>
@@ -596,13 +764,13 @@ function VideoPage({ video }: { video: ProjectVideo }) {
   );
 }
 
-// ── IDN Mengajar Page ─────────────────────────────────────────────────────────
+// ── IDN Mengajar Page ───────────────────────────────────────────────────────
 
 function MengajarPage({ item }: { item: ProjectMengajar }) {
   return (
     <Page size="A4" style={s.page}>
       <View style={s.content}>
-        <Text style={s.mengajarTitle}>IDN Mengajar</Text>
+        <Text style={s.mengajarTitle}>👨‍🏫 IDN Mengajar</Text>
 
         {/* Photos */}
         <View style={s.photoRow}>
@@ -612,36 +780,38 @@ function MengajarPage({ item }: { item: ProjectMengajar }) {
                 <Image src={foto} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               ) : (
                 <View style={{ alignItems: "center", justifyContent: "center", height: "100%" }}>
-                  <Text style={{ color: "#bbb", fontSize: 10 }}>[ Foto {i + 1} ]</Text>
+                  <Text style={{ color: "#bbb", fontSize: 10 }}>📷 [ Foto {i + 1} ]</Text>
                 </View>
               )}
             </View>
           ))}
         </View>
 
-        {/* Meta */}
+        {/* Meta - dengan icon */}
         <View style={s.metaRow}>
           {[
-            { label: "Lokasi", value: item.lokasi },
-            { label: "Tanggal", value: item.tanggal },
-            { label: "Tema", value: item.tema },
-            { label: "Jumlah Peserta", value: item.jumlah_peserta ? String(item.jumlah_peserta) : undefined },
-          ].filter((m) => m.value).map((m, i) => (
-            <View key={i} style={s.metaItem}>
-              <Text style={s.metaLabel}>{m.label}</Text>
-              <Text style={s.metaValue}>{m.value}</Text>
-            </View>
-          ))}
+            { label: "📍", value: item.lokasi },
+            { label: "📅", value: item.tanggal },
+            { label: "🎯", value: item.tema },
+            { label: "👥", value: item.jumlah_peserta ? `${item.jumlah_peserta} Orang` : undefined },
+          ]
+            .filter((m) => m.value)
+            .map((m, i) => (
+              <View key={i} style={s.metaItem}>
+                <Text style={s.metaLabel}>{m.label}</Text>
+                <Text style={s.metaValue}>{m.value}</Text>
+              </View>
+            ))}
         </View>
 
         {/* Story & Testimoni */}
         <View style={s.storyRow}>
           <View style={s.storyBox}>
-            <Text style={s.storyTitle}>Story</Text>
+            <Text style={s.storyTitle}>📖 Story</Text>
             <Text style={s.storyText}>{item.cerita_siswa || "-"}</Text>
           </View>
           <View style={s.storyBox}>
-            <Text style={s.storyTitle}>Testimoni</Text>
+            <Text style={s.storyTitle}>💬 Testimoni</Text>
             <Text style={s.storyText}>{item.testimoni_peserta || "-"}</Text>
           </View>
         </View>
@@ -651,10 +821,9 @@ function MengajarPage({ item }: { item: ProjectMengajar }) {
   );
 }
 
-// ── Certificates Page (2 per page) ───────────────────────────────────────────
+// ── Certificates Page (2 per page) ──────────────────────────────────────────
 
 function CertificatesPage({ certs }: { certs: ProjectCertificate[] }) {
-  // Group certs in pairs
   const pairs: [ProjectCertificate, ProjectCertificate | null][] = [];
   for (let i = 0; i < certs.length; i += 2) {
     pairs.push([certs[i], certs[i + 1] ?? null]);
@@ -665,21 +834,27 @@ function CertificatesPage({ certs }: { certs: ProjectCertificate[] }) {
       {pairs.map((pair, pageIdx) => (
         <Page key={pageIdx} size="A4" style={s.page}>
           <View style={s.content}>
-            <Text style={s.certTitle}>Certificates</Text>
+            <Text style={s.certTitle}>🏅 Certificates</Text>
             <View style={s.certGrid}>
-              {pair.filter(Boolean).map((cert, i) => cert && (
-                <View key={i} style={s.certItem}>
-                  <View style={s.certImgBox}>
-                    {cert.gambar ? (
-                      <Image src={cert.gambar} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                      <Text style={{ color: "#bbb", fontSize: 9 }}>[ Sertifikat ]</Text>
-                    )}
-                  </View>
-                  <Text style={s.certTema}>{cert.tema || "(Tanpa tema)"}</Text>
-                  <Text style={s.certMeta}>{[cert.lingkup, cert.tanggal].filter(Boolean).join(" • ")}</Text>
-                </View>
-              ))}
+              {pair
+                .filter(Boolean)
+                .map((cert, i) =>
+                  cert ? (
+                    <View key={i} style={s.certItem}>
+                      <View style={s.certImgBox}>
+                        {cert.gambar ? (
+                          <Image src={cert.gambar} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          <Text style={{ color: "#bbb", fontSize: 9 }}>📜 [ Sertifikat ]</Text>
+                        )}
+                      </View>
+                      <Text style={s.certTema}>{cert.tema || "(Tanpa tema)"}</Text>
+                      <Text style={s.certMeta}>
+                        {[cert.lingkup, cert.tanggal].filter(Boolean).join(" • ")}
+                      </Text>
+                    </View>
+                  ) : null
+                )}
             </View>
           </View>
           <FooterBar />
@@ -690,39 +865,40 @@ function CertificatesPage({ certs }: { certs: ProjectCertificate[] }) {
 }
 
 /* ============================================================================
- * MAIN DOCUMENT
+ * MAIN DOCUMENT - Tetap ambil data dari API
  * ========================================================================== */
 
 export function ProjectReportPdf({ data }: { data: ProjectReportData }) {
   return (
     <Document>
-      {/* Page 1: Summary */}
+      {/* Cover Page */}
+      <CoverPage name={data.summary.nama} />
+
+      {/* Summary Page */}
       <SummaryPage summary={data.summary} />
 
-      {/* Design pages */}
+      {/* Design Projects - ✅ Icon 🎨 */}
       {data.designs.map((d, i) => (
-        <ProjectPage key={`design-${i}`} project={d} index={i} />
+        <ProjectPage key={`design-${i}`} project={d} type="🎨 Design Project" icon="🎨" />
       ))}
 
-      {/* Robotics pages */}
+      {/* Robotics Projects - ✅ Icon 🤖 */}
       {data.robotics.map((r, i) => (
-        <ProjectPage key={`robotik-${i}`} project={r} index={i} />
+        <ProjectPage key={`robotik-${i}`} project={r} type="🤖 Robotics Project" icon="🤖" />
       ))}
 
-      {/* Video pages */}
+      {/* Video Pages */}
       {data.videos.map((v, i) => (
         <VideoPage key={`video-${i}`} video={v} />
       ))}
 
-      {/* Mengajar pages */}
+      {/* Mengajar Pages */}
       {data.mengajar.map((m, i) => (
         <MengajarPage key={`mengajar-${i}`} item={m} />
       ))}
 
-      {/* Certificates - 2 per page */}
-      {data.certificates.length > 0 && (
-        <CertificatesPage certs={data.certificates} />
-      )}
+      {/* Certificates */}
+      {data.certificates.length > 0 && <CertificatesPage certs={data.certificates} />}
     </Document>
   );
 }
