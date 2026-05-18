@@ -469,9 +469,9 @@ const s = StyleSheet.create({
     textAlign: "center",
   },
 
-  // SUMMARY — outer page bg with blue watermark feel
+  // SUMMARY — outer page bg WHITE, inner blue card
   summaryPage: {
-    backgroundColor: "#3b3ec6",
+    backgroundColor: C.white,
     fontFamily: "Helvetica",
     color: C.text,
     position: "relative",
@@ -483,13 +483,13 @@ const s = StyleSheet.create({
   summaryPageTitle: {
     fontSize: 24,
     fontFamily: "Helvetica-Bold",
-    color: C.white,
+    color: C.blue,
     marginBottom: 14,
   },
 
-  // Inner white card that holds everything
+  // Inner BLUE card that holds everything
   summaryInnerCard: {
-    backgroundColor: C.white,
+    backgroundColor: C.blue,
     borderRadius: 14,
     padding: 16,
     borderBottomWidth: 6,
@@ -498,8 +498,8 @@ const s = StyleSheet.create({
     borderRightColor: "#1e1e6e",
     borderTopWidth: 2,
     borderLeftWidth: 2,
-    borderTopColor: "rgba(255,255,255,0.9)",
-    borderLeftColor: "rgba(255,255,255,0.9)",
+    borderTopColor: "rgba(255,255,255,0.25)",
+    borderLeftColor: "rgba(255,255,255,0.25)",
   },
 
   // Name row inside card
@@ -512,7 +512,7 @@ const s = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: C.blue,
+    backgroundColor: C.blueDark,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
@@ -522,11 +522,11 @@ const s = StyleSheet.create({
     borderLeftColor: "rgba(255,255,255,0.3)",
     borderBottomWidth: 3,
     borderRightWidth: 3,
-    borderBottomColor: C.blueDark,
-    borderRightColor: C.blueDark,
+    borderBottomColor: C.blueDeep,
+    borderRightColor: C.blueDeep,
   },
   summaryAvatarInitial: { fontSize: 16, fontFamily: "Helvetica-Bold", color: C.white },
-  summaryName: { fontSize: 16, fontFamily: "Helvetica-Bold", color: C.text },
+  summaryName: { fontSize: 16, fontFamily: "Helvetica-Bold", color: C.white },
 
   // Persen + Total row
   statsRow: {
@@ -534,14 +534,15 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
 
-  // Keterangan box (left)
+  // Keterangan box (left) — lebih sempit
   keteranganBox: {
-    width: "42%",
+    width: "32%",
     backgroundColor: C.white,
     borderRadius: 10,
     padding: 10,
     marginRight: 10,
     justifyContent: "center",
+    alignItems: "center",
     borderBottomWidth: 3,
     borderRightWidth: 3,
     borderBottomColor: C.shadow,
@@ -551,8 +552,8 @@ const s = StyleSheet.create({
     borderTopColor: "rgba(255,255,255,0.9)",
     borderLeftColor: "rgba(255,255,255,0.9)",
   },
-  keteranganLabel: { fontSize: 7, color: C.muted, marginBottom: 4 },
-  keteranganValue: { fontSize: 24, fontFamily: "Helvetica-Bold", color: C.text },
+  keteranganLabel: { fontSize: 7, color: C.muted, marginBottom: 6, textAlign: "center" },
+  keteranganValue: { fontSize: 30, fontFamily: "Helvetica-Bold", color: C.text, textAlign: "center" },
 
   // Inner persen items
   persenRow: { flexDirection: "row", gap: 6 },
@@ -595,14 +596,15 @@ const s = StyleSheet.create({
   totalValue: { color: C.white, fontSize: 18, fontFamily: "Helvetica-Bold" },
   totalTitle: { color: C.white, fontSize: 9, fontFamily: "Helvetica-Bold", marginBottom: 6 },
 
-  // BADGE GRID — 4 column
+  // BADGE GRID — 4 column, inside blue card so cards are white
   badgesGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
   },
   badgeItem: {
-    width: "25%",
-    marginBottom: 8,
+    width: "23%",
+    marginBottom: 6,
+    marginRight: "2.67%",
     alignItems: "center",
     backgroundColor: C.white,
     borderRadius: 10,
@@ -610,8 +612,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 4,
     borderBottomWidth: 4,
     borderRightWidth: 3,
-    borderBottomColor: C.shadow,
-    borderRightColor: C.shadow,
+    borderBottomColor: "#c7c7e8",
+    borderRightColor: "#c7c7e8",
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderTopColor: "rgba(255,255,255,0.95)",
@@ -771,7 +773,7 @@ const s = StyleSheet.create({
 
   screenshotBox: {
     width: "100%",
-    height: 240,
+    height: 320,
     backgroundColor: C.bg,
     borderRadius: 10,
     marginBottom: 14,
@@ -1114,37 +1116,23 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
     return map[p];
   };
 
+  // Hitung persentase: jika belum = 0 maka tercapai = 100%
+  const totalProject = summary.itsl + summary.itbl;
+  const pctTercapai = totalProject > 0
+    ? (summary.itbl === 0 ? 100 : Math.round((summary.itsl / totalProject) * 100))
+    : 0;
+  const pctBelum = 100 - pctTercapai;
+
+  // Keterangan tuntas: jika itbl = 0 hanya tampil "Tuntas" tanpa angka
+  const isSemua = summary.itbl === 0;
+
   return (
     <Page size="A4" style={s.summaryPage}>
-      {/* Watermark dots pattern using repeated small circles */}
-      <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 32, opacity: 0.08 }}>
-        {Array.from({ length: 8 }).map((_, row) =>
-          Array.from({ length: 10 }).map((_, col) => (
-            <View
-              key={`${row}-${col}`}
-              style={{
-                position: "absolute",
-                top: row * 55 + 20,
-                left: col * 56 + 10,
-                width: 28,
-                height: 28,
-              }}
-            >
-              <Svg width={28} height={28} viewBox="0 0 28 28">
-                <Text style={{ fontSize: 18, color: "#ffffff", fontFamily: "Helvetica-Bold" }}>
-                  ih
-                </Text>
-              </Svg>
-            </View>
-          ))
-        )}
-      </View>
-
       <View style={s.summaryOuterContent}>
-        {/* Page title */}
+        {/* Page title — biru karena background halaman putih */}
         <Text style={s.summaryPageTitle}>Summary IT</Text>
 
-        {/* Main white inner card */}
+        {/* Main BLUE inner card */}
         <View style={s.summaryInnerCard}>
 
           {/* Name row */}
@@ -1157,24 +1145,34 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
 
           {/* Stats row: Keterangan | Persen card | Total card */}
           <View style={s.statsRow}>
-            {/* Keterangan */}
+            {/* Keterangan — sempit, teks besar di tengah */}
             <View style={s.keteranganBox}>
               <Text style={s.keteranganLabel}>Keterangan Project :</Text>
-              <Text style={s.keteranganValue}>{summary.ittuntas}</Text>
-              <Text style={{ fontSize: 13, fontFamily: "Helvetica-Bold", color: C.text }}>Tuntas</Text>
+              {isSemua ? (
+                <Text style={{ fontSize: 28, fontFamily: "Helvetica-Bold", color: C.text, textAlign: "center" }}>
+                  Tuntas
+                </Text>
+              ) : (
+                <>
+                  <Text style={s.keteranganValue}>{summary.ittuntas}</Text>
+                  <Text style={{ fontSize: 14, fontFamily: "Helvetica-Bold", color: C.text, textAlign: "center" }}>
+                    Tuntas
+                  </Text>
+                </>
+              )}
             </View>
 
-            {/* Persen teal card */}
+            {/* Persen teal card — kalkulasi otomatis */}
             <TealCard3D style={{ flex: 1, marginRight: 10 }}>
               <Text style={s.persenTitle}>Persen</Text>
               <View style={s.persenRow}>
                 <View style={s.persenItem}>
                   <Text style={s.persenLabel}>Tercapai</Text>
-                  <Text style={s.persenValue}>{summary.itpt}%</Text>
+                  <Text style={s.persenValue}>{pctTercapai}%</Text>
                 </View>
                 <View style={s.persenItem}>
                   <Text style={s.persenLabel}>Belum</Text>
-                  <Text style={s.persenValue}>{summary.itpb}%</Text>
+                  <Text style={s.persenValue}>{pctBelum}%</Text>
                 </View>
               </View>
             </TealCard3D>
@@ -1195,7 +1193,7 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
             </DarkCard3D>
           </View>
 
-          {/* Badge grid — 4 columns, icons ~32px, sesuai referensi */}
+          {/* Badge grid — 4 columns */}
           <View style={s.badgesGrid}>
             {badges.map((b, i) => (
               <View key={i} style={s.badgeItem}>
