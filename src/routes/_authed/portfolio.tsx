@@ -41,7 +41,6 @@ import {
   GraduationCap,
   BarChart3,
   ExternalLink,
-  ImageIcon,
 } from "lucide-react";
 import {
   getStudentSummary,
@@ -65,6 +64,7 @@ import {
   createCertificate,
   updateCertificate,
   deleteCertificate,
+  upsertStudentSummary,
   getYoutubeVideoId,
   resolveUploadUrl,
   type StudentSummary,
@@ -79,56 +79,276 @@ export const Route = createFileRoute("/_authed/portfolio")({
   component: PortfolioPage,
 });
 
+// ── SUMMARY FORM FIELDS ───────────────────────────────────────────────────────
+
+const SUMMARY_FIELDS: { key: keyof Omit<StudentSummary, "id" | "student_id" | "semester_id" | "persentase" | "tuntas">; label: string }[] = [
+  { key: "total_tercapai",      label: "Total Tercapai" },
+  { key: "belum_tercapai",      label: "Belum Tercapai" },
+  { key: "selesai",             label: "Selesai" },
+  { key: "belum_selesai",       label: "Belum Selesai" },
+  { key: "total_desain",        label: "Desain" },
+  { key: "total_robotik",       label: "Robotik" },
+  { key: "total_video_youtube", label: "Video YouTube" },
+  { key: "total_sertifikat",    label: "Sertifikat" },
+  { key: "total_mengajar",      label: "Mengajar" },
+  { key: "total_buku",          label: "Buku" },
+  { key: "total_lomba_it",      label: "Lomba IT" },
+];
+
+function buildEmptySummaryForm() {
+  return {
+    tuntas: "",
+    persentase: "",
+    total_tercapai: "",
+    belum_tercapai: "",
+    selesai: "",
+    belum_selesai: "",
+    total_desain: "",
+    total_robotik: "",
+    total_video_youtube: "",
+    total_sertifikat: "",
+    total_mengajar: "",
+    total_buku: "",
+    total_lomba_it: "",
+  } as Record<string, string>;
+}
+
+function summaryToForm(s: StudentSummary): Record<string, string> {
+  return {
+    tuntas:               String(s.tuntas ?? ""),
+    persentase:           String(s.persentase ?? ""),
+    total_tercapai:       String(s.total_tercapai ?? ""),
+    belum_tercapai:       String(s.belum_tercapai ?? ""),
+    selesai:              String(s.selesai ?? ""),
+    belum_selesai:        String(s.belum_selesai ?? ""),
+    total_desain:         String(s.total_desain ?? ""),
+    total_robotik:        String(s.total_robotik ?? ""),
+    total_video_youtube:  String(s.total_video_youtube ?? ""),
+    total_sertifikat:     String(s.total_sertifikat ?? ""),
+    total_mengajar:       String(s.total_mengajar ?? ""),
+    total_buku:           String(s.total_buku ?? ""),
+    total_lomba_it:       String(s.total_lomba_it ?? ""),
+  };
+}
+
 // ── SUMMARY CARD ─────────────────────────────────────────────────────────────
 
-function SummaryCard({ summary }: { summary: StudentSummary | null }) {
-  if (!summary) {
-    return (
-      <Card className="p-6 text-center text-muted-foreground">
-        Belum ada data ringkasan portofolio.
-      </Card>
-    );
+function SummaryCard({
+  summary,
+  studentId,
+  semesterId,
+  onRefresh,
+}: {
+  summary: StudentSummary | null;
+  studentId: number;
+  semesterId: number;
+  onRefresh: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<Record<string, string>>(buildEmptySummaryForm());
+
+  function openEdit() {
+    setForm(summary ? summaryToForm(summary) : buildEmptySummaryForm());
+    setOpen(true);
   }
-  const stats = [
-    { label: "Total Tercapai", value: summary.total_tercapai, color: "text-green-600" },
-    { label: "Belum Tercapai", value: summary.belum_tercapai, color: "text-red-500" },
-    { label: "Selesai", value: summary.selesai, color: "text-blue-600" },
-    { label: "Belum Selesai", value: summary.belum_selesai, color: "text-orange-500" },
-    { label: "Desain", value: summary.total_desain, color: "text-purple-600" },
-    { label: "Robotik", value: summary.total_robotik, color: "text-cyan-600" },
-    { label: "Video YT", value: summary.total_video_youtube, color: "text-red-600" },
-    { label: "Sertifikat", value: summary.total_sertifikat, color: "text-yellow-600" },
-    { label: "Mengajar", value: summary.total_mengajar, color: "text-indigo-600" },
-    { label: "Buku", value: summary.total_buku, color: "text-teal-600" },
-    { label: "Lomba IT", value: summary.total_lomba_it, color: "text-pink-600" },
-  ];
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await upsertStudentSummary({
+        student_id:           studentId,
+        semester_id:          semesterId,
+        tuntas:               Number(form.tuntas) || 0,
+        persentase:           parseFloat(form.persentase) || 0,
+        total_tercapai:       Number(form.total_tercapai) || 0,
+        belum_tercapai:       Number(form.belum_tercapai) || 0,
+        selesai:              Number(form.selesai) || 0,
+        belum_selesai:        Number(form.belum_selesai) || 0,
+        total_desain:         Number(form.total_desain) || 0,
+        total_robotik:        Number(form.total_robotik) || 0,
+        total_video_youtube:  Number(form.total_video_youtube) || 0,
+        total_sertifikat:     Number(form.total_sertifikat) || 0,
+        total_mengajar:       Number(form.total_mengajar) || 0,
+        total_buku:           Number(form.total_buku) || 0,
+        total_lomba_it:       Number(form.total_lomba_it) || 0,
+      });
+      toast.success(summary ? "Ringkasan diperbarui" : "Ringkasan dibuat");
+      setOpen(false);
+      onRefresh();
+    } catch {
+      toast.error("Gagal menyimpan ringkasan");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const stats = summary
+    ? [
+        { label: "Total Tercapai",  value: summary.total_tercapai,      color: "text-green-600" },
+        { label: "Belum Tercapai",  value: summary.belum_tercapai,      color: "text-red-500" },
+        { label: "Selesai",         value: summary.selesai,             color: "text-blue-600" },
+        { label: "Belum Selesai",   value: summary.belum_selesai,       color: "text-orange-500" },
+        { label: "Desain",          value: summary.total_desain,        color: "text-purple-600" },
+        { label: "Robotik",         value: summary.total_robotik,       color: "text-cyan-600" },
+        { label: "Video YT",        value: summary.total_video_youtube, color: "text-red-600" },
+        { label: "Sertifikat",      value: summary.total_sertifikat,    color: "text-yellow-600" },
+        { label: "Mengajar",        value: summary.total_mengajar,      color: "text-indigo-600" },
+        { label: "Buku",            value: summary.total_buku,          color: "text-teal-600" },
+        { label: "Lomba IT",        value: summary.total_lomba_it,      color: "text-pink-600" },
+      ]
+    : [];
+
   return (
-    <Card className="p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-primary" />
-          <h2 className="font-semibold text-lg">Ringkasan Portofolio</h2>
+    <>
+      <Card className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            <h2 className="font-semibold text-lg">Ringkasan Portofolio</h2>
+          </div>
+          <div className="flex items-center gap-3">
+            {summary && (
+              <>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">{summary.persentase.toFixed(1)}%</div>
+                  <div className="text-xs text-muted-foreground">Persentase</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{summary.tuntas}</div>
+                  <div className="text-xs text-muted-foreground">Tuntas</div>
+                </div>
+              </>
+            )}
+            <Button size="sm" variant={summary ? "outline" : "default"} onClick={openEdit}>
+              {summary ? (
+                <><Pencil className="h-3.5 w-3.5 mr-1" /> Edit</>
+              ) : (
+                <><Plus className="h-3.5 w-3.5 mr-1" /> Isi Ringkasan</>
+              )}
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-primary">{summary.persentase.toFixed(1)}%</div>
-            <div className="text-xs text-muted-foreground">Persentase</div>
+
+        {summary ? (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+            {stats.map((s) => (
+              <div key={s.label} className="bg-muted/40 rounded-lg p-2 text-center">
+                <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
+                <div className="text-xs text-muted-foreground leading-tight">{s.label}</div>
+              </div>
+            ))}
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{summary.tuntas}</div>
-            <div className="text-xs text-muted-foreground">Tuntas</div>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-2">
+            Belum ada data ringkasan. Klik <strong>Isi Ringkasan</strong> untuk menambahkan.
+          </p>
+        )}
+      </Card>
+
+      {/* Edit / Create Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{summary ? "Edit Ringkasan Portofolio" : "Isi Ringkasan Portofolio"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {/* Tuntas & Persentase */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Tuntas</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={form.tuntas}
+                  onChange={(e) => setForm({ ...form, tuntas: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Persentase (%)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  value={form.persentase}
+                  onChange={(e) => setForm({ ...form, persentase: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Tercapai / Belum */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Total Tercapai</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={form.total_tercapai}
+                  onChange={(e) => setForm({ ...form, total_tercapai: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Belum Tercapai</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={form.belum_tercapai}
+                  onChange={(e) => setForm({ ...form, belum_tercapai: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Selesai / Belum */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Selesai</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={form.selesai}
+                  onChange={(e) => setForm({ ...form, selesai: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Belum Selesai</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={form.belum_selesai}
+                  onChange={(e) => setForm({ ...form, belum_selesai: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide pt-1">
+              Total Per Kategori
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              {SUMMARY_FIELDS.slice(4).map(({ key, label }) => (
+                <div key={key}>
+                  <Label>{label}</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={form[key] ?? ""}
+                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </div>
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-        {stats.map((s) => (
-          <div key={s.label} className="bg-muted/40 rounded-lg p-2 text-center">
-            <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
-            <div className="text-xs text-muted-foreground leading-tight">{s.label}</div>
-          </div>
-        ))}
-      </div>
-    </Card>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -261,7 +481,7 @@ function TeachingTab({
                       {[item.foto_mengajar_1, item.foto_mengajar_2].filter(Boolean).map((f, i) => {
                         const url = resolveUploadUrl(f);
                         return url ? (
-                          <img key={i} src={url} alt={`foto ${i+1}`} className="h-14 w-14 object-cover rounded border" />
+                          <img key={i} src={url} alt={`foto ${i + 1}`} className="h-14 w-14 object-cover rounded border" />
                         ) : null;
                       })}
                     </div>
@@ -821,17 +1041,18 @@ function PortfolioPage() {
     { class_id: classId, per_page: 200, ...(guruMode && cabangId ? { cabang_id: cabangId } : {}) },
   );
 
-  useEffect(() => {
+  const loadSummary = useCallback(async () => {
     if (!studentId || !semesterId) { setSummary(null); return; }
     setLoadingSummary(true);
-    getStudentSummary(parseInt(studentId), parseInt(semesterId))
-      .then(setSummary)
-      .finally(() => setLoadingSummary(false));
+    try {
+      const data = await getStudentSummary(parseInt(studentId), parseInt(semesterId));
+      setSummary(data);
+    } finally {
+      setLoadingSummary(false);
+    }
   }, [studentId, semesterId]);
 
-  const selectedStudent = (students.data?.items ?? []).find(
-    (s: any) => String(s.id) === studentId,
-  );
+  useEffect(() => { loadSummary(); }, [loadSummary]);
 
   return (
     <div className="space-y-5">
@@ -889,7 +1110,12 @@ function PortfolioPage() {
           {loadingSummary ? (
             <div className="text-center py-4"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></div>
           ) : (
-            <SummaryCard summary={summary} />
+            <SummaryCard
+              summary={summary}
+              studentId={parseInt(studentId)}
+              semesterId={parseInt(semesterId)}
+              onRefresh={loadSummary}
+            />
           )}
 
           {/* Tabs */}
