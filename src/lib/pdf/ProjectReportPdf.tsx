@@ -477,8 +477,8 @@ const s = StyleSheet.create({
     position: "relative",
   },
   summaryOuterContent: {
-    padding: 20,
-    paddingBottom: 52,
+    padding: 28,
+    paddingBottom: 60,
     flex: 1,
     flexDirection: "column",
   },
@@ -1146,9 +1146,9 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
             <Text style={s.summaryName}>{summary.nama}</Text>
           </View>
 
-          {/* Stats row: Keterangan (kiri) | Persen + Total menumpuk vertikal (kanan) */}
+          {/* Stats row: Keterangan (kiri) | card putih berisi Persen+Total vertikal (kanan) */}
           <View style={s.statsRow}>
-            {/* Keterangan — lebih tinggi karena Persen+Total dua baris */}
+            {/* Keterangan — tinggi mengikuti kanan */}
             <View style={[s.keteranganBox, { alignSelf: "stretch" }]}>
               <Text style={s.keteranganLabel}>Keterangan Project :</Text>
               {isSemua ? (
@@ -1165,16 +1165,30 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
               )}
             </View>
 
-            {/* Persen + Total menumpuk vertikal */}
-            <View style={{ flex: 1, flexDirection: "column" }}>
+            {/* Card putih pembungkus Persen + Total */}
+            <View style={{
+              flex: 1,
+              backgroundColor: C.white,
+              borderRadius: 12,
+              padding: 10,
+              borderBottomWidth: 4,
+              borderRightWidth: 3,
+              borderBottomColor: C.shadow,
+              borderRightColor: C.shadow,
+              borderTopWidth: 1,
+              borderLeftWidth: 1,
+              borderTopColor: "rgba(255,255,255,0.9)",
+              borderLeftColor: "rgba(255,255,255,0.9)",
+            }}>
               {/* Persen teal card */}
-              <TealCard3D style={{ marginBottom: 8 }}>
+              <TealCard3D style={{ marginBottom: 10 }}>
                 <Text style={s.persenTitle}>Persen</Text>
                 <View style={s.persenRow}>
                   <View style={s.persenItem}>
                     <Text style={s.persenLabel}>Tercapai</Text>
                     <Text style={s.persenValue}>{pctTercapai}%</Text>
                   </View>
+                  <View style={{ width: 8 }} />
                   <View style={s.persenItem}>
                     <Text style={s.persenLabel}>Belum</Text>
                     <Text style={s.persenValue}>{pctBelum}%</Text>
@@ -1190,6 +1204,7 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
                     <Text style={s.totalLabel}>Selesai</Text>
                     <Text style={s.totalValue}>{summary.itsl}</Text>
                   </View>
+                  <View style={{ width: 8 }} />
                   <View style={s.totalItem}>
                     <Text style={s.totalLabel}>Belum</Text>
                     <Text style={s.totalValue}>{summary.itbl}</Text>
@@ -1199,11 +1214,11 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
             </View>
           </View>
 
-          {/* Badge grid — card abu muda flex:1, badge 3D putih memenuhi per baris */}
+          {/* Badge grid — card abu muda flex:1, tiap baris juga flex:1 agar tinggi memenuhi */}
           <View style={{
             backgroundColor: "#eef0f8",
             borderRadius: 12,
-            padding: 6,
+            padding: 8,
             marginTop: 10,
             flex: 1,
             borderBottomWidth: 4,
@@ -1216,16 +1231,17 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
             borderLeftColor: "rgba(255,255,255,0.95)",
           }}>
             {/* Baris 1: 4 badge */}
-            <View style={{ flexDirection: "row", marginBottom: 6 }}>
+            <View style={{ flexDirection: "row", flex: 1, marginBottom: 8 }}>
               {badges.slice(0, 4).map((b, i) => (
                 <View key={i} style={{
                   flex: 1,
                   alignItems: "center",
+                  justifyContent: "center",
                   backgroundColor: C.white,
                   borderRadius: 10,
-                  paddingVertical: 10,
+                  paddingVertical: 8,
                   paddingHorizontal: 2,
-                  marginRight: i < 3 ? 6 : 0,
+                  marginRight: i < 3 ? 8 : 0,
                   borderBottomWidth: 4,
                   borderRightWidth: 3,
                   borderBottomColor: "#d0d0e8",
@@ -1242,16 +1258,17 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
               ))}
             </View>
             {/* Baris 2: 4 badge */}
-            <View style={{ flexDirection: "row", marginBottom: 6 }}>
+            <View style={{ flexDirection: "row", flex: 1, marginBottom: 8 }}>
               {badges.slice(4, 8).map((b, i) => (
                 <View key={i} style={{
                   flex: 1,
                   alignItems: "center",
+                  justifyContent: "center",
                   backgroundColor: C.white,
                   borderRadius: 10,
-                  paddingVertical: 10,
+                  paddingVertical: 8,
                   paddingHorizontal: 2,
-                  marginRight: i < 3 ? 6 : 0,
+                  marginRight: i < 3 ? 8 : 0,
                   borderBottomWidth: 4,
                   borderRightWidth: 3,
                   borderBottomColor: "#d0d0e8",
@@ -1268,16 +1285,17 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
               ))}
             </View>
             {/* Baris 3: 2 badge + spacer */}
-            <View style={{ flexDirection: "row" }}>
+            <View style={{ flexDirection: "row", flex: 1 }}>
               {badges.slice(8, 10).map((b, i) => (
                 <View key={i} style={{
                   flex: 1,
                   alignItems: "center",
+                  justifyContent: "center",
                   backgroundColor: C.white,
                   borderRadius: 10,
-                  paddingVertical: 10,
+                  paddingVertical: 8,
                   paddingHorizontal: 2,
-                  marginRight: i < 1 ? 6 : 0,
+                  marginRight: i < 1 ? 8 : 0,
                   borderBottomWidth: 4,
                   borderRightWidth: 3,
                   borderBottomColor: "#d0d0e8",
@@ -1292,8 +1310,7 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
                   <Text style={pillStyle(b.pill)}>{b.value}</Text>
                 </View>
               ))}
-              {/* Spacer 2 kolom kosong agar baris 3 rata kiri */}
-              <View style={{ flex: 2, marginLeft: 6 }} />
+              <View style={{ flex: 2, marginLeft: 8 }} />
             </View>
           </View>
 
