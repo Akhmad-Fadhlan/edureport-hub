@@ -24,9 +24,12 @@ interface Student {
   linkedin?: string;
   photo?: string;
   class_id: number;
+  cabang_id?: number;
   nama_kelas?: string;
+  nama_cabang?: string;
 }
 interface Klass { id: number; nama_kelas: string }
+interface Cabang { id: number; nama_cabang: string }
 
 // ── Komponen avatar async: load foto via API (dengan token) ──────────────────
 function StudentAvatar({ photo, nama }: { photo?: string; nama: string }) {
@@ -59,12 +62,17 @@ function StudentsPage() {
 
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
+  const [cabangFilter, setCabangFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
 
   const params: any = { page, per_page: 20 };
   if (search) params.search = search;
   if (classFilter !== "all") params.class_id = classFilter;
-  if (guruMode && cabangId) params.cabang_id = cabangId;
+  if (guruMode && cabangId) {
+    params.cabang_id = cabangId;
+  } else if (cabangFilter !== "all") {
+    params.cabang_id = cabangFilter;
+  }
 
   const { data, loading, reload } = useApiData<{ items: Student[]; pagination?: any }>("/students", params);
 
@@ -72,16 +80,39 @@ function StudentsPage() {
   if (guruMode && cabangId) classParams.cabang_id = cabangId;
   const classes = useApiData<Klass[]>("/classes", classParams);
 
+  // Load semua cabang (hanya untuk non-guru / admin)
+  const cabangs = useApiData<Cabang[]>(!guruMode ? "/cabangs" : null);
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Student | null>(null);
-  const [form, setForm] = useState({ nama: "", email: "", linkedin: "", class_id: "" });
+  const [form, setForm] = useState({
+    nama: "",
+    email: "",
+    linkedin: "",
+    class_id: "",
+    cabang_id: "",
+  });
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Kelas yang difilter berdasarkan cabang yang dipilih di form
+  const formCabangId = guruMode ? String(cabangId ?? "") : form.cabang_id;
+  const filteredClasses = useApiData<Klass[]>(
+    "/classes",
+    formCabangId ? { cabang_id: formCabangId } : {}
+  );
+
   function openNew() {
     setEditing(null);
-    setForm({ nama: "", email: "", linkedin: "", class_id: classes.data?.[0]?.id?.toString() || "" });
+    const defaultCabang = guruMode ? String(cabangId ?? "") : (cabangs.data?.[0]?.id?.toString() ?? "");
+    setForm({
+      nama: "",
+      email: "",
+      linkedin: "",
+      class_id: "",
+      cabang_id: defaultCabang,
+    });
     setPhotoFile(null);
     setPhotoPreview(null);
     setOpen(true);
@@ -89,10 +120,15 @@ function StudentsPage() {
 
   function openEdit(s: Student) {
     setEditing(s);
-    setForm({ nama: s.nama, email: s.email, linkedin: s.linkedin || "", class_id: String(s.class_id) });
+    setForm({
+      nama: s.nama,
+      email: s.email,
+      linkedin: s.linkedin || "",
+      class_id: String(s.class_id),
+      cabang_id: s.cabang_id ? String(s.cabang_id) : (guruMode ? String(cabangId ?? "") : ""),
+    });
     setPhotoFile(null);
     setPhotoPreview(null);
-    // Load foto existing via API (authenticated)
     if (s.photo) {
       getStudentPhoto(s.photo).then(setPhotoPreview);
     }
@@ -110,6 +146,7 @@ function StudentsPage() {
 
   async function save() {
     if (saving) return;
+    if (!form.cabang_id && !guruMode) { toast.error("Pilih cabang terlebih dahulu"); return; }
     setSaving(true);
     try {
       const fd = new FormData();
@@ -117,7 +154,9 @@ function StudentsPage() {
       fd.append("email", form.email);
       fd.append("linkedin", form.linkedin);
       fd.append("class_id", form.class_id);
-      if (guruMode && cabangId) fd.append("cabang_id", String(cabangId));
+      // Cabang: pakai pilihan dari form (admin) atau dari auth (guru)
+      const finalCabangId = guruMode ? String(cabangId ?? "") : form.cabang_id;
+      if (finalCabangId) fd.append("cabang_id", finalCabangId);
       if (photoFile) fd.append("photo", photoFile);
       if (editing) {
         await api.post(`/students/${editing.id}?_method=PUT`, fd);
@@ -155,6 +194,7 @@ function StudentsPage() {
         <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Tambah Siswa</Button>
       </div>
 
+      {/* Filter bar */}
       <Card className="p-4 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -165,6 +205,20 @@ function StudentsPage() {
             className="pl-9"
           />
         </div>
+
+        {/* Filter cabang (hanya tampil untuk non-guru/admin) */}
+        {!guruMode && (
+          <Select value={cabangFilter} onValueChange={(v) => { setCabangFilter(v); setClassFilter("all"); setPage(1); }}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Filter Cabang" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Cabang</SelectItem>
+              {(cabangs.data || []).map((c) => (
+                <SelectItem key={c.id} value={String(c.id)}>{c.nama_cabang}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
         <Select value={classFilter} onValueChange={(v) => { setClassFilter(v); setPage(1); }}>
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="Filter Kelas" /></SelectTrigger>
           <SelectContent>
@@ -176,6 +230,7 @@ function StudentsPage() {
         </Select>
       </Card>
 
+      {/* Tabel */}
       <Card className="p-0 overflow-hidden">
         <Table>
           <TableHeader>
@@ -184,6 +239,7 @@ function StudentsPage() {
               <TableHead>Nama</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Kelas</TableHead>
+              {!guruMode && <TableHead>Cabang</TableHead>}
               <TableHead>LinkedIn</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
@@ -191,7 +247,9 @@ function StudentsPage() {
           <TableBody>
             {loading && Array.from({ length: 4 }).map((_, i) => (
               <TableRow key={i}>
-                <TableCell colSpan={6}><div className="h-8 bg-muted animate-pulse rounded" /></TableCell>
+                <TableCell colSpan={guruMode ? 6 : 7}>
+                  <div className="h-8 bg-muted animate-pulse rounded" />
+                </TableCell>
               </TableRow>
             ))}
             {!loading && (data?.items || []).map((s) => (
@@ -202,6 +260,9 @@ function StudentsPage() {
                 <TableCell className="font-medium capitalize">{s.nama}</TableCell>
                 <TableCell className="text-sm">{s.email}</TableCell>
                 <TableCell>{s.nama_kelas || s.class_id}</TableCell>
+                {!guruMode && (
+                  <TableCell className="text-sm">{s.nama_cabang || s.cabang_id || "—"}</TableCell>
+                )}
                 <TableCell className="text-sm">
                   {s.linkedin
                     ? <a href={s.linkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline"><Linkedin className="h-3 w-3" />Profile</a>
@@ -215,11 +276,14 @@ function StudentsPage() {
             ))}
             {!loading && (!data?.items || data.items.length === 0) && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Tidak ada data</TableCell>
+                <TableCell colSpan={guruMode ? 6 : 7} className="text-center py-8 text-muted-foreground">
+                  Tidak ada data
+                </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
+
         {data?.pagination && data.pagination.last_page > 1 && (
           <div className="flex items-center justify-between p-3 border-t text-sm">
             <div className="text-muted-foreground">
@@ -233,12 +297,17 @@ function StudentsPage() {
         )}
       </Card>
 
+      {/* Dialog tambah / edit */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{editing ? "Edit Siswa" : "Tambah Siswa"}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit Siswa" : "Tambah Siswa"}</DialogTitle>
+          </DialogHeader>
+
           <div className="space-y-4">
+            {/* Foto */}
             <div className="flex items-center gap-4">
-              <div className="h-20 w-20 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+              <div className="h-20 w-20 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
                 {photoPreview
                   ? <img src={photoPreview} alt="" className="h-full w-full object-cover" />
                   : <Upload className="h-6 w-6 text-muted-foreground" />}
@@ -251,24 +320,72 @@ function StudentsPage() {
                 <div className="text-xs text-muted-foreground mt-1">JPG/PNG/WEBP, maks 2MB</div>
               </div>
             </div>
-            <div className="space-y-2"><Label>Nama Lengkap</Label><Input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-            <div className="space-y-2"><Label>LinkedIn</Label><Input value={form.linkedin} onChange={(e) => setForm({ ...form, linkedin: e.target.value })} placeholder="https://linkedin.com/in/..." /></div>
+
+            {/* Nama */}
+            <div className="space-y-2">
+              <Label>Nama Lengkap</Label>
+              <Input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} />
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            </div>
+
+            {/* LinkedIn */}
+            <div className="space-y-2">
+              <Label>LinkedIn</Label>
+              <Input
+                value={form.linkedin}
+                onChange={(e) => setForm({ ...form, linkedin: e.target.value })}
+                placeholder="https://linkedin.com/in/..."
+              />
+            </div>
+
+            {/* Cabang — hanya tampil untuk admin (non-guru) */}
+            {!guruMode && (
+              <div className="space-y-2">
+                <Label>Cabang</Label>
+                <Select
+                  value={form.cabang_id}
+                  onValueChange={(v) => setForm({ ...form, cabang_id: v, class_id: "" })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Pilih cabang" /></SelectTrigger>
+                  <SelectContent>
+                    {(cabangs.data || []).map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>{c.nama_cabang}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Kelas — difilter berdasarkan cabang */}
             <div className="space-y-2">
               <Label>Kelas</Label>
-              <Select value={form.class_id} onValueChange={(v) => setForm({ ...form, class_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Pilih kelas" /></SelectTrigger>
+              <Select
+                value={form.class_id}
+                onValueChange={(v) => setForm({ ...form, class_id: v })}
+                disabled={!guruMode && !form.cabang_id}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={!guruMode && !form.cabang_id ? "Pilih cabang dulu" : "Pilih kelas"} />
+                </SelectTrigger>
                 <SelectContent>
-                  {(classes.data || []).map((k) => (
+                  {(filteredClasses.data || []).map((k) => (
                     <SelectItem key={k.id} value={String(k.id)}>{k.nama_kelas}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-            <Button onClick={save} disabled={saving}>{saving ? "Menyimpan..." : "Simpan"}</Button>
+            <Button onClick={save} disabled={saving}>
+              {saving ? "Menyimpan..." : "Simpan"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
