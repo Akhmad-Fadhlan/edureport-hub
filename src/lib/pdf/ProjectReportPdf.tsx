@@ -469,7 +469,7 @@ const s = StyleSheet.create({
     textAlign: "center",
   },
 
-  // SUMMARY — outer page bg WHITE, inner blue card
+  // SUMMARY
   summaryPage: {
     backgroundColor: C.white,
     fontFamily: "Helvetica",
@@ -488,8 +488,6 @@ const s = StyleSheet.create({
     color: C.blue,
     marginBottom: 14,
   },
-
-  // Inner BLUE card that holds everything — memanjang ke bawah
   summaryInnerCard: {
     backgroundColor: C.blue,
     borderRadius: 14,
@@ -504,8 +502,6 @@ const s = StyleSheet.create({
     borderTopColor: "rgba(255,255,255,0.25)",
     borderLeftColor: "rgba(255,255,255,0.25)",
   },
-
-  // Name row inside card
   summaryNameRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -530,14 +526,7 @@ const s = StyleSheet.create({
   },
   summaryAvatarInitial: { fontSize: 16, fontFamily: "Helvetica-Bold", color: C.white },
   summaryName: { fontSize: 16, fontFamily: "Helvetica-Bold", color: C.white },
-
-  // Persen + Total row
-  statsRow: {
-    flexDirection: "row",
-    marginBottom: 12,
-  },
-
-  // Keterangan box (left) — lebih sempit
+  statsRow: { flexDirection: "row", marginBottom: 12 },
   keteranganBox: {
     width: "32%",
     backgroundColor: C.white,
@@ -557,8 +546,6 @@ const s = StyleSheet.create({
   },
   keteranganLabel: { fontSize: 7, color: C.muted, marginBottom: 6, textAlign: "center" },
   keteranganValue: { fontSize: 30, fontFamily: "Helvetica-Bold", color: C.text, textAlign: "center" },
-
-  // Inner persen items
   persenRow: { flexDirection: "row", gap: 6 },
   persenItem: {
     flex: 1,
@@ -578,7 +565,6 @@ const s = StyleSheet.create({
   persenLabel: { color: C.white, fontSize: 10 },
   persenValue: { color: C.white, fontSize: 17, fontFamily: "Helvetica-Bold" },
   persenTitle: { color: C.white, fontSize: 12, fontFamily: "Helvetica-Bold", marginBottom: 6 },
-
   totalRow: { flexDirection: "row", gap: 6 },
   totalItem: {
     flex: 1,
@@ -598,12 +584,7 @@ const s = StyleSheet.create({
   totalLabel: { color: "#9ca3af", fontSize: 10 },
   totalValue: { color: C.white, fontSize: 17, fontFamily: "Helvetica-Bold" },
   totalTitle: { color: C.white, fontSize: 12, fontFamily: "Helvetica-Bold", marginBottom: 6 },
-
-  // BADGE GRID — 4 column, inside blue card so cards are white
-  badgesGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
+  badgesGrid: { flexDirection: "row", flexWrap: "wrap" },
   badgeItem: {
     width: "23%",
     marginBottom: 6,
@@ -630,8 +611,6 @@ const s = StyleSheet.create({
     textAlign: "center",
     lineHeight: 1.3,
   },
-
-  // Pill colors
   pillRed: {
     backgroundColor: "#ef4444",
     paddingHorizontal: 20,
@@ -753,7 +732,7 @@ const s = StyleSheet.create({
     borderRightColor: "#6b7280",
   },
 
-  // PROJECT PAGE
+  /* ── PROJECT PAGE ────────────────────────────────────── */
   projectHeaderRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
   projectTypeBadge: {
     backgroundColor: C.blue,
@@ -771,15 +750,16 @@ const s = StyleSheet.create({
     borderLeftColor: "rgba(255,255,255,0.2)",
   },
   projectTypeLabel: { fontSize: 10, fontFamily: "Helvetica-Bold", color: C.white },
-  projectTitle: { fontSize: 20, fontFamily: "Helvetica-Bold", color: C.blue },
-  projectSubtitle: { fontSize: 13, fontFamily: "Helvetica-Bold", color: C.text, marginBottom: 14 },
+  projectTitle:    { fontSize: 20, fontFamily: "Helvetica-Bold", color: C.blue },
+  projectSubtitle: { fontSize: 14, fontFamily: "Helvetica-Bold", color: C.text, marginBottom: 12 },
 
+  /* Screenshot box — gambar di tengah, ukuran asli (contain) */
   screenshotBox: {
     width: "100%",
-    height: 320,
+    height: 290,
     backgroundColor: C.bg,
     borderRadius: 10,
-    marginBottom: 14,
+    marginBottom: 12,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
@@ -792,18 +772,43 @@ const s = StyleSheet.create({
     borderTopColor: C.white,
     borderLeftColor: C.white,
   },
-  screenshotImg: { width: "100%", height: "100%" },
-  screenshotPlaceholder: { color: "#9ca3af", fontSize: 10, textAlign: "center" },
+  /* Gambar: objectFit contain agar proporsional & terpusat */
+  screenshotImg: {
+    width: "100%",
+    height: "100%",
+    objectFit: "contain",
+  },
+  screenshotPlaceholder: { color: "#9ca3af", fontSize: 12, textAlign: "center" },
 
-  infoRow: { flexDirection: "row", marginRight: -10 },
-  infoBox: {
+  /* Row bawah: [Student Competence | Description] berdampingan, tinggi sama */
+  bottomRow: {
+    flexDirection: "row",
+    marginBottom: 10,
+  },
+
+  /* Card Student Competence — lebar tetap, tinggi stretch */
+  competenceCard: {
+    width: "34%",
+    backgroundColor: C.bg,
+    borderRadius: 8,
+    padding: 12,
+    marginRight: 10,
+    borderBottomWidth: 4,
+    borderRightWidth: 3,
+    borderBottomColor: C.shadow,
+    borderRightColor: C.shadow,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: C.white,
+    borderLeftColor: C.white,
+  },
+
+  /* Card Description — flex:1 agar lebar mengisi sisa, tinggi stretch */
+  descriptionCard: {
     flex: 1,
     backgroundColor: C.bg,
     borderRadius: 8,
-    padding: 10,
-    minHeight: 60,
-    marginRight: 10,
-    minWidth: 0,
+    padding: 12,
     borderBottomWidth: 4,
     borderRightWidth: 3,
     borderBottomColor: C.shadow,
@@ -813,14 +818,13 @@ const s = StyleSheet.create({
     borderTopColor: C.white,
     borderLeftColor: C.white,
   },
-  infoBoxWide: {
-    flex: 2,
+
+  /* Card Technology — lebar hanya sampai card Student Competence (width: 34%) */
+  technologyCard: {
+    width: "34%",
     backgroundColor: C.bg,
     borderRadius: 8,
-    padding: 10,
-    minHeight: 60,
-    marginRight: 10,
-    minWidth: 0,
+    padding: 12,
     borderBottomWidth: 4,
     borderRightWidth: 3,
     borderBottomColor: C.shadow,
@@ -830,10 +834,22 @@ const s = StyleSheet.create({
     borderTopColor: C.white,
     borderLeftColor: C.white,
   },
-  infoTitle: { fontSize: 8, fontFamily: "Helvetica-Bold", color: C.blue, marginBottom: 6 },
-  infoText: { fontSize: 8, color: C.text, lineHeight: 1.5 },
 
-  // VIDEO PAGE
+  /* Label judul card — minimal 12pt */
+  cardTitle: {
+    fontSize: 12,
+    fontFamily: "Helvetica-Bold",
+    color: C.blue,
+    marginBottom: 6,
+  },
+  /* Teks isi card — minimal 12pt */
+  cardText: {
+    fontSize: 12,
+    color: C.text,
+    lineHeight: 1.55,
+  },
+
+  /* ── VIDEO PAGE ─────────────────────────────────────── */
   videoHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -850,7 +866,7 @@ const s = StyleSheet.create({
     borderTopColor: C.white,
     borderLeftColor: C.white,
   },
-  videoHeaderText: { fontSize: 11, fontFamily: "Helvetica-Bold", color: C.blue, marginLeft: 8 },
+  videoHeaderText: { fontSize: 13, fontFamily: "Helvetica-Bold", color: C.blue, marginLeft: 8 },
   videoThumb: {
     width: "100%",
     height: 200,
@@ -858,6 +874,8 @@ const s = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 12,
     overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
     borderBottomWidth: 6,
     borderRightWidth: 5,
     borderBottomColor: C.shadowDrk,
@@ -867,6 +885,12 @@ const s = StyleSheet.create({
     borderTopColor: C.white,
     borderLeftColor: C.white,
   },
+  /* Thumbnail video: contain agar tidak terpotong */
+  videoThumbImg: {
+    width: "100%",
+    height: "100%",
+    objectFit: "contain",
+  },
   videoPlaceholder: {
     width: "100%",
     height: "100%",
@@ -875,7 +899,7 @@ const s = StyleSheet.create({
   },
   ytRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   ytLogoBox: {
-    width: 54,
+    width: 60,
     backgroundColor: C.bg,
     borderRadius: 8,
     padding: 8,
@@ -890,10 +914,10 @@ const s = StyleSheet.create({
     borderTopColor: C.white,
     borderLeftColor: C.white,
   },
-  ytLogoText: { fontSize: 7, color: "#dc2626", fontFamily: "Helvetica-Bold" },
+  ytLogoText: { fontSize: 8, color: "#dc2626", fontFamily: "Helvetica-Bold" },
   ytTitleBox: { flex: 1, minWidth: 0 },
-  ytLabel: { fontSize: 7, fontFamily: "Helvetica-Bold", color: C.orange },
-  ytTitle: { fontSize: 10, fontFamily: "Helvetica-Bold", color: C.text },
+  ytLabel: { fontSize: 10, fontFamily: "Helvetica-Bold", color: C.orange },
+  ytTitle: { fontSize: 13, fontFamily: "Helvetica-Bold", color: C.text },
   competenceBox: {
     backgroundColor: C.bg,
     borderRadius: 8,
@@ -907,10 +931,10 @@ const s = StyleSheet.create({
     borderTopColor: C.white,
     borderLeftColor: C.white,
   },
-  competenceLabel: { fontSize: 8, fontFamily: "Helvetica-Bold", color: C.orange, marginBottom: 4 },
-  competenceText: { fontSize: 8, color: C.text, lineHeight: 1.5 },
+  competenceLabel: { fontSize: 12, fontFamily: "Helvetica-Bold", color: C.orange, marginBottom: 6 },
+  competenceText:  { fontSize: 12, color: C.text, lineHeight: 1.55 },
 
-  // MENGAJAR PAGE
+  /* ── MENGAJAR PAGE ──────────────────────────────────── */
   mengajarTitleRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   mengajarTypeBadge: {
     backgroundColor: "#fef3c7",
@@ -937,6 +961,8 @@ const s = StyleSheet.create({
     borderRadius: 10,
     overflow: "hidden",
     marginRight: 10,
+    alignItems: "center",
+    justifyContent: "center",
     borderBottomWidth: 6,
     borderRightWidth: 5,
     borderBottomColor: C.shadowDrk,
@@ -946,12 +972,18 @@ const s = StyleSheet.create({
     borderTopColor: C.white,
     borderLeftColor: C.white,
   },
+  /* Foto mengajar: contain */
+  photoImg: {
+    width: "100%",
+    height: "100%",
+    objectFit: "contain",
+  },
   metaRow: { flexDirection: "row", flexWrap: "wrap", marginBottom: 10 },
   metaItem: {
     backgroundColor: C.bg,
     borderRadius: 6,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 5,
     marginRight: 8,
     marginBottom: 6,
     flexDirection: "row",
@@ -965,15 +997,15 @@ const s = StyleSheet.create({
     borderTopColor: C.white,
     borderLeftColor: C.white,
   },
-  metaLabel: { fontSize: 7, fontFamily: "Helvetica-Bold", color: C.muted, marginRight: 4 },
-  metaValue: { fontSize: 8, color: C.text },
+  metaLabel: { fontSize: 10, fontFamily: "Helvetica-Bold", color: C.muted, marginRight: 4 },
+  metaValue: { fontSize: 12, color: C.text },
   storyRow: { flexDirection: "row", marginRight: -10 },
   storyBox: {
     flex: 1,
     backgroundColor: C.bg,
     borderRadius: 8,
-    padding: 10,
-    minHeight: 70,
+    padding: 12,
+    minHeight: 80,
     marginRight: 10,
     minWidth: 0,
     borderBottomWidth: 4,
@@ -985,10 +1017,10 @@ const s = StyleSheet.create({
     borderTopColor: C.white,
     borderLeftColor: C.white,
   },
-  storyTitle: { fontSize: 8, fontFamily: "Helvetica-Bold", color: C.blue, marginBottom: 4 },
-  storyText: { fontSize: 8, color: C.text, lineHeight: 1.5 },
+  storyTitle: { fontSize: 12, fontFamily: "Helvetica-Bold", color: C.blue, marginBottom: 5 },
+  storyText:  { fontSize: 12, color: C.text, lineHeight: 1.55 },
 
-  // CERTIFICATES PAGE
+  /* ── CERTIFICATES PAGE ──────────────────────────────── */
   certTitleRow: { flexDirection: "row", alignItems: "center", marginBottom: 14 },
   certTypeBadge: {
     backgroundColor: "#fef9c3",
@@ -1016,7 +1048,7 @@ const s = StyleSheet.create({
     backgroundColor: C.bg,
     borderRadius: 10,
     overflow: "hidden",
-    marginBottom: 6,
+    marginBottom: 8,
     alignItems: "center",
     justifyContent: "center",
     borderBottomWidth: 6,
@@ -1028,8 +1060,14 @@ const s = StyleSheet.create({
     borderTopColor: C.white,
     borderLeftColor: C.white,
   },
-  certMeta: { fontSize: 7, color: C.muted },
-  certTema: { fontSize: 9, fontFamily: "Helvetica-Bold", color: C.text, marginBottom: 2 },
+  /* Gambar sertifikat: contain */
+  certImg: {
+    width: "100%",
+    height: "100%",
+    objectFit: "contain",
+  },
+  certMeta: { fontSize: 10, color: C.muted },
+  certTema: { fontSize: 12, fontFamily: "Helvetica-Bold", color: C.text, marginBottom: 3 },
 });
 
 /* ============================================================================
@@ -1082,7 +1120,7 @@ function CoverPage({ name }: { name: string }) {
 }
 
 /* ============================================================================
- * SUMMARY PAGE — layout sesuai referensi gambar
+ * SUMMARY PAGE
  * ========================================================================== */
 function SummaryPage({ summary }: { summary: ProjectSummary }) {
   type PillKey = "red" | "orange" | "purple" | "blue" | "pink" | "indigoBlue" | "green" | "gray";
@@ -1119,26 +1157,18 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
     return map[p];
   };
 
-  // Hitung persentase: jika belum = 0 maka tercapai = 100%
   const totalProject = summary.itsl + summary.itbl;
   const pctTercapai = totalProject > 0
     ? (summary.itbl === 0 ? 100 : Math.round((summary.itsl / totalProject) * 100))
     : 0;
   const pctBelum = 100 - pctTercapai;
-
-  // Keterangan tuntas: jika itbl = 0 hanya tampil "Tuntas" tanpa angka
   const isSemua = summary.itbl === 0;
 
   return (
     <Page size="A4" style={s.summaryPage}>
       <View style={s.summaryOuterContent}>
-        {/* Page title — biru karena background halaman putih */}
         <Text style={s.summaryPageTitle}>Summary IT</Text>
-
-        {/* Main BLUE inner card */}
         <View style={s.summaryInnerCard}>
-
-          {/* Name row */}
           <View style={s.summaryNameRow}>
             <View style={s.summaryAvatar}>
               <Text style={s.summaryAvatarInitial}>{getInitials(summary.nama)}</Text>
@@ -1146,9 +1176,7 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
             <Text style={s.summaryName}>{summary.nama}</Text>
           </View>
 
-          {/* Stats row: Keterangan (kiri) | card putih berisi Persen+Total vertikal (kanan) */}
           <View style={s.statsRow}>
-            {/* Keterangan — tinggi mengikuti kanan */}
             <View style={[s.keteranganBox, { alignSelf: "stretch" }]}>
               <Text style={s.keteranganLabel}>Keterangan Project :</Text>
               {isSemua ? (
@@ -1165,7 +1193,6 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
               )}
             </View>
 
-            {/* Card putih pembungkus Persen + Total */}
             <View style={{
               flex: 1,
               backgroundColor: C.white,
@@ -1180,7 +1207,6 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
               borderTopColor: "rgba(255,255,255,0.9)",
               borderLeftColor: "rgba(255,255,255,0.9)",
             }}>
-              {/* Persen teal card */}
               <TealCard3D style={{ marginBottom: 10 }}>
                 <Text style={s.persenTitle}>Persen</Text>
                 <View style={s.persenRow}>
@@ -1195,9 +1221,7 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
                   </View>
                 </View>
               </TealCard3D>
-
-              {/* Total dark card */}
-              <DarkCard3D style={{}}>
+              <DarkCard3D>
                 <Text style={s.totalTitle}>Total</Text>
                 <View style={s.totalRow}>
                   <View style={s.totalItem}>
@@ -1214,7 +1238,7 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
             </View>
           </View>
 
-          {/* Badge grid — card abu muda flex:1, tiap baris juga flex:1 agar tinggi memenuhi */}
+          {/* Badge grid */}
           <View style={{
             backgroundColor: "#eef0f8",
             borderRadius: 12,
@@ -1230,90 +1254,37 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
             borderTopColor: "rgba(255,255,255,0.95)",
             borderLeftColor: "rgba(255,255,255,0.95)",
           }}>
-            {/* Baris 1: 4 badge */}
-            <View style={{ flexDirection: "row", flex: 1, marginBottom: 8 }}>
-              {badges.slice(0, 4).map((b, i) => (
-                <View key={i} style={{
-                  flex: 1,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: C.white,
-                  borderRadius: 10,
-                  paddingVertical: 8,
-                  paddingHorizontal: 2,
-                  marginRight: i < 3 ? 8 : 0,
-                  borderBottomWidth: 4,
-                  borderRightWidth: 3,
-                  borderBottomColor: "#d0d0e8",
-                  borderRightColor: "#d0d0e8",
-                  borderTopWidth: 1,
-                  borderLeftWidth: 1,
-                  borderTopColor: C.white,
-                  borderLeftColor: C.white,
-                }}>
-                  <b.Icon n={28} />
-                  <Text style={s.badgeLabel}>{b.label}</Text>
-                  <Text style={pillStyle(b.pill)}>{b.value}</Text>
-                </View>
-              ))}
-            </View>
-            {/* Baris 2: 4 badge */}
-            <View style={{ flexDirection: "row", flex: 1, marginBottom: 8 }}>
-              {badges.slice(4, 8).map((b, i) => (
-                <View key={i} style={{
-                  flex: 1,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: C.white,
-                  borderRadius: 10,
-                  paddingVertical: 8,
-                  paddingHorizontal: 2,
-                  marginRight: i < 3 ? 8 : 0,
-                  borderBottomWidth: 4,
-                  borderRightWidth: 3,
-                  borderBottomColor: "#d0d0e8",
-                  borderRightColor: "#d0d0e8",
-                  borderTopWidth: 1,
-                  borderLeftWidth: 1,
-                  borderTopColor: C.white,
-                  borderLeftColor: C.white,
-                }}>
-                  <b.Icon n={28} />
-                  <Text style={s.badgeLabel}>{b.label}</Text>
-                  <Text style={pillStyle(b.pill)}>{b.value}</Text>
-                </View>
-              ))}
-            </View>
-            {/* Baris 3: 2 badge + spacer */}
-            <View style={{ flexDirection: "row", flex: 1 }}>
-              {badges.slice(8, 10).map((b, i) => (
-                <View key={i} style={{
-                  flex: 1,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: C.white,
-                  borderRadius: 10,
-                  paddingVertical: 8,
-                  paddingHorizontal: 2,
-                  marginRight: i < 1 ? 8 : 0,
-                  borderBottomWidth: 4,
-                  borderRightWidth: 3,
-                  borderBottomColor: "#d0d0e8",
-                  borderRightColor: "#d0d0e8",
-                  borderTopWidth: 1,
-                  borderLeftWidth: 1,
-                  borderTopColor: C.white,
-                  borderLeftColor: C.white,
-                }}>
-                  <b.Icon n={28} />
-                  <Text style={s.badgeLabel}>{b.label}</Text>
-                  <Text style={pillStyle(b.pill)}>{b.value}</Text>
-                </View>
-              ))}
-              <View style={{ flex: 2, marginLeft: 8 }} />
-            </View>
+            {[badges.slice(0, 4), badges.slice(4, 8), badges.slice(8, 10)].map((row, rowIdx) => (
+              <View key={rowIdx} style={{ flexDirection: "row", flex: 1, marginBottom: rowIdx < 2 ? 8 : 0 }}>
+                {row.map((b, i) => (
+                  <View key={i} style={{
+                    flex: 1,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: C.white,
+                    borderRadius: 10,
+                    paddingVertical: 8,
+                    paddingHorizontal: 2,
+                    marginRight: i < row.length - 1 ? 8 : 0,
+                    borderBottomWidth: 4,
+                    borderRightWidth: 3,
+                    borderBottomColor: "#d0d0e8",
+                    borderRightColor: "#d0d0e8",
+                    borderTopWidth: 1,
+                    borderLeftWidth: 1,
+                    borderTopColor: C.white,
+                    borderLeftColor: C.white,
+                  }}>
+                    <b.Icon n={28} />
+                    <Text style={s.badgeLabel}>{b.label}</Text>
+                    <Text style={pillStyle(b.pill)}>{b.value}</Text>
+                  </View>
+                ))}
+                {/* spacer untuk baris terakhir yang hanya 2 item */}
+                {rowIdx === 2 && <View style={{ flex: 2, marginLeft: 8 }} />}
+              </View>
+            ))}
           </View>
-
         </View>
       </View>
       <FooterBar />
@@ -1321,6 +1292,25 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
   );
 }
 
+/* ============================================================================
+ * PROJECT PAGE — layout baru
+ *
+ * Susunan card:
+ *
+ *   ┌─────────────────────────────────────────┐
+ *   │           Screenshot (contain)          │
+ *   └─────────────────────────────────────────┘
+ *   ┌──────────────────┐  ┌───────────────────┐
+ *   │ Student          │  │                   │
+ *   │ Competence       │  │   Description     │
+ *   ├──────────────────┤  │                   │
+ *   │ Technology       │  │                   │
+ *   └──────────────────┘  └───────────────────┘
+ *
+ *  • Lebar kolom kiri (Competence + Technology) = 34%
+ *  • Description mengisi sisa lebar (flex:1)
+ *  • Tinggi Description = tinggi gabungan Competence + Technology (alignItems:"stretch")
+ * ========================================================================== */
 function ProjectPage({
   project,
   type = "IT Project",
@@ -1333,6 +1323,7 @@ function ProjectPage({
   return (
     <Page size="A4" style={s.page}>
       <View style={s.content}>
+        {/* Header */}
         <View style={s.projectHeaderRow}>
           <View style={s.projectTypeBadge}>
             <Text style={s.projectTypeLabel}>{typeLabel}</Text>
@@ -1341,6 +1332,7 @@ function ProjectPage({
         </View>
         <Text style={s.projectSubtitle}>{project.judul}</Text>
 
+        {/* Screenshot — gambar di tengah, proporsional */}
         <View style={s.screenshotBox}>
           {project.screenshot ? (
             <Image src={project.screenshot} style={s.screenshotImg} />
@@ -1349,22 +1341,29 @@ function ProjectPage({
           )}
         </View>
 
-        <View style={s.infoRow}>
-          <View style={s.infoBox}>
-            <Text style={s.infoTitle}>Student Competence</Text>
-            <Text style={s.infoText}>{project.kompetensi_siswa || "-"}</Text>
-          </View>
-          <View style={s.infoBoxWide}>
-            <Text style={s.infoTitle}>Description</Text>
-            <Text style={s.infoText}>{project.deskripsi || "-"}</Text>
-          </View>
-        </View>
+        {/* Bottom: kolom kiri (Competence + Technology) | kolom kanan (Description) */}
+        <View style={{ flexDirection: "row", alignItems: "stretch" }}>
 
-        <View style={{ marginTop: 10 }}>
-          <View style={{ ...s.infoBox, width: "100%", marginRight: 0 }}>
-            <Text style={s.infoTitle}>Technology</Text>
-            <Text style={s.infoText}>{project.teknologi || "-"}</Text>
+          {/* Kolom kiri */}
+          <View style={{ width: "34%", marginRight: 10 }}>
+            {/* Student Competence */}
+            <View style={[s.competenceCard, { marginBottom: 10, flex: 1 }]}>
+              <Text style={s.cardTitle}>Student Competence</Text>
+              <Text style={s.cardText}>{project.kompetensi_siswa || "-"}</Text>
+            </View>
+            {/* Technology */}
+            <View style={s.technologyCard}>
+              <Text style={s.cardTitle}>Technology</Text>
+              <Text style={s.cardText}>{project.teknologi || "-"}</Text>
+            </View>
           </View>
+
+          {/* Description — tinggi stretch mengikuti kolom kiri */}
+          <View style={[s.descriptionCard, { alignSelf: "stretch" }]}>
+            <Text style={s.cardTitle}>Description</Text>
+            <Text style={s.cardText}>{project.deskripsi || "-"}</Text>
+          </View>
+
         </View>
       </View>
       <FooterBar />
@@ -1372,6 +1371,9 @@ function ProjectPage({
   );
 }
 
+/* ============================================================================
+ * VIDEO PAGE
+ * ========================================================================== */
 function VideoPage({ video }: { video: ProjectVideo }) {
   return (
     <Page size="A4" style={s.page}>
@@ -1383,7 +1385,7 @@ function VideoPage({ video }: { video: ProjectVideo }) {
 
         <View style={s.videoThumb}>
           {video.thumbnail ? (
-            <Image src={video.thumbnail} style={{ width: "100%", height: "100%" }} />
+            <Image src={video.thumbnail} style={s.videoThumbImg} />
           ) : (
             <View style={s.videoPlaceholder}>
               <IcoPlay n={48} />
@@ -1395,7 +1397,7 @@ function VideoPage({ video }: { video: ProjectVideo }) {
           <View style={s.ytLogoBox}>
             <Text style={s.ytLogoText}>YouTube</Text>
             {video.qr && (
-              <Image src={video.qr} style={{ width: 36, height: 36, marginTop: 4 }} />
+              <Image src={video.qr} style={{ width: 40, height: 40, marginTop: 4 }} />
             )}
           </View>
           <View style={s.ytTitleBox}>
@@ -1420,6 +1422,9 @@ function VideoPage({ video }: { video: ProjectVideo }) {
   );
 }
 
+/* ============================================================================
+ * MENGAJAR PAGE
+ * ========================================================================== */
 function MengajarPage({ item }: { item: ProjectMengajar }) {
   return (
     <Page size="A4" style={s.page}>
@@ -1435,11 +1440,9 @@ function MengajarPage({ item }: { item: ProjectMengajar }) {
           {[item.foto1, item.foto2].map((foto, i) => (
             <View key={i} style={s.photoBox}>
               {foto ? (
-                <Image src={foto} style={{ width: "100%", height: "100%" }} />
+                <Image src={foto} style={s.photoImg} />
               ) : (
-                <View style={{ alignItems: "center", justifyContent: "center", height: "100%" }}>
-                  <Text style={{ color: "#9ca3af", fontSize: 9 }}>[ Foto {i + 1} ]</Text>
-                </View>
+                <Text style={{ color: "#9ca3af", fontSize: 12 }}>[ Foto {i + 1} ]</Text>
               )}
             </View>
           ))}
@@ -1477,6 +1480,9 @@ function MengajarPage({ item }: { item: ProjectMengajar }) {
   );
 }
 
+/* ============================================================================
+ * CERTIFICATES PAGE
+ * ========================================================================== */
 function CertificatesPage({ certs }: { certs: ProjectCertificate[] }) {
   const pairs: [ProjectCertificate, ProjectCertificate | null][] = [];
   for (let i = 0; i < certs.length; i += 2) {
@@ -1503,7 +1509,7 @@ function CertificatesPage({ certs }: { certs: ProjectCertificate[] }) {
                   >
                     <View style={s.certImgBox}>
                       {cert.gambar ? (
-                        <Image src={cert.gambar} style={{ width: "100%", height: "100%" }} />
+                        <Image src={cert.gambar} style={s.certImg} />
                       ) : (
                         <IcoStar n={40} />
                       )}
