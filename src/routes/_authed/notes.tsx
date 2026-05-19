@@ -55,28 +55,37 @@ interface Student {
   nama: string;
   class_id: number;
   nama_kelas?: string;
+  cabang?: string;
 }
 
 function NotesPage() {
-  const { user } = useAuth();
-  const isGuru = user?.role === "guru";
-  const guruCabang = isGuru ? (user?.cabang ?? null) : null;
-  const baseParams: any = guruCabang ? { cabang: guruCabang } : {};
+  const { user, isGuru, getCabangId } = useAuth();
+  const guruMode = isGuru();
+  const userCabang = getCabangId();
+  
+  // Base params untuk filter cabang
+  const baseParams: any = {};
+  if (guruMode && userCabang) {
+    baseParams.cabang = userCabang;
+  }
 
   const [semesterId, setSemesterId] = useState<string>("all");
   const [classId, setClassId] = useState<string>("all");
   const [teacherId, setTeacherId] = useState<number | null>(null);
 
-  // Load data
+  // Load data dengan filter cabang
   const semesters = useApiData<any[]>("/semesters");
+  
+  // ✅ FIX: Load classes dengan filter cabang
   const classes = useApiData<any[]>("/classes", baseParams);
 
-  // ✅ FIX 1: Gunakan per_page (bukan limit) sesuai parameter yang dibaca BE
+  // ✅ FIX: Load students dengan filter cabang
   const studentsData = useApiData<{ items: Student[]; pagination?: any }>(
     "/students",
-    { per_page: 200, ...baseParams }
+    { per_page: 500, ...baseParams }
   );
 
+  // ✅ FIX: Load notes dengan filter cabang via semester
   const queryParams: any = { ...baseParams };
   if (semesterId !== "all") queryParams.semester_id = semesterId;
 
@@ -89,14 +98,26 @@ function NotesPage() {
     return [];
   }, [rawNotesData]);
 
-  // Load teacher ID
+  // Load teacher ID berdasarkan user yang login
   useEffect(() => {
     (async () => {
       if (!user) return;
       try {
-        const res = await apiGet<any[]>("/teachers");
+        const params: any = {};
+        if (guruMode && userCabang) {
+          params.cabang = userCabang;
+        }
+        const res = await apiGet<any[]>("/teachers", params);
         const rows = Array.isArray(res) ? res : [];
-        const teacher = rows.find((t: any) => Number(t.user_id) === Number(user.id));
+        
+        // Cari teacher berdasarkan user_id
+        let teacher = rows.find((t: any) => Number(t.user_id) === Number(user.id));
+        
+        // Jika tidak ditemukan, cari berdasarkan cabang untuk guru
+        if (!teacher && guruMode && userCabang) {
+          teacher = rows.find((t: any) => t.cabang === userCabang);
+        }
+        
         if (teacher?.id) {
           setTeacherId(Number(teacher.id));
         } else if (rows.length > 0) {
@@ -106,9 +127,9 @@ function NotesPage() {
         console.error("Failed to fetch teacher:", error);
       }
     })();
-  }, [user]);
+  }, [user, guruMode, userCabang]);
 
-  // ✅ FIX 2: Ambil dari .items karena response BE adalah paginated object
+  // Ambil semua students dari response
   const allStudents = useMemo<Student[]>(() => {
     const raw = studentsData.data;
     if (!raw) return [];
@@ -123,6 +144,7 @@ function NotesPage() {
     return m;
   }, [allStudents]);
 
+  // ✅ FIX: Filter notes berdasarkan class yang dipilih
   const filtered = useMemo(() => {
     let rows = notesData;
     if (!Array.isArray(rows)) return [];
@@ -181,7 +203,6 @@ function NotesPage() {
       };
 
       if (editing) {
-        // ✅ FIX 3: Kirim semua field saat update, bukan hanya catatan
         await apiPut(`/notes/${editing.id}`, payload);
         toast.success("Catatan berhasil diupdate");
       } else {
@@ -211,7 +232,7 @@ function NotesPage() {
     }
   }
 
-  // ✅ FIX 4: Filter siswa untuk form dari allStudents (bukan studentsData.data langsung)
+  // Filter siswa untuk form (hanya dari cabang yang sama)
   const filteredStudentsForForm = useMemo(() => {
     if (classId === "all") return allStudents;
     return allStudents.filter((s) => String(s.class_id) === classId);
@@ -263,7 +284,9 @@ function NotesPage() {
         <div>
           <h1 className="text-2xl font-bold">Catatan Siswa</h1>
           <p className="text-sm text-muted-foreground">
-            Kelola catatan perkembangan siswa per semester
+            {guruMode && userCabang 
+              ? `Kelola catatan siswa - Cabang: ${userCabang}`
+              : "Kelola catatan perkembangan siswa per semester"}
           </p>
         </div>
         <Button onClick={openNew}>
@@ -373,7 +396,6 @@ function NotesPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Siswa *</Label>
-              {/* ✅ FIX 5: Tidak di-disable saat edit agar bisa diubah */}
               <Select
                 value={form.student_id}
                 onValueChange={(v) => setForm({ ...form, student_id: v })}
@@ -398,7 +420,6 @@ function NotesPage() {
 
             <div className="space-y-2">
               <Label>Semester *</Label>
-              {/* ✅ FIX 5: Tidak di-disable saat edit agar bisa diubah */}
               <Select
                 value={form.semester_id}
                 onValueChange={(v) => setForm({ ...form, semester_id: v })}
