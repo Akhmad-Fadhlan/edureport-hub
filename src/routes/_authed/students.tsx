@@ -11,7 +11,7 @@ import { useApiData } from "@/hooks/use-api-data";
 import { api, apiDelete, getStudentPhoto } from "@/lib/api";
 import { useAuth } from "@/stores/auth-store";
 import { toast } from "sonner";
-import { Pencil, Plus, Search, Trash2, Upload, Linkedin } from "lucide-react";
+import { Pencil, Plus, Search, Trash2, Upload, Linkedin, X } from "lucide-react";
 
 export const Route = createFileRoute("/_authed/students")({
   component: StudentsPage,
@@ -34,17 +34,31 @@ interface Cabang { id: number; nama_cabang: string }
 // ── Komponen avatar async: load foto via API (dengan token) ──────────────────
 function StudentAvatar({ photo, nama }: { photo?: string; nama: string }) {
   const [src, setSrc] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!photo) { setSrc(null); return; }
+    if (!photo) { 
+      setSrc(null); 
+      return; 
+    }
     let cancelled = false;
-    getStudentPhoto(photo).then((url) => {
-      if (!cancelled) setSrc(url);
-    });
+    setError(false);
+    
+    getStudentPhoto(photo)
+      .then((url) => {
+        if (!cancelled && url) {
+          setSrc(url);
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading photo:", err);
+        if (!cancelled) setError(true);
+      });
+      
     return () => { cancelled = true; };
   }, [photo]);
 
-  if (src) {
+  if (src && !error) {
     return <img src={src} alt={nama} className="h-10 w-10 rounded-full object-cover" />;
   }
   return (
@@ -70,7 +84,6 @@ function StudentsPage() {
   if (search) params.search = search;
   if (classFilter !== "all") params.class_id = classFilter;
   
-  // PERBAIKAN 1: Filter berdasarkan cabang user yang login
   if (guruMode && cabangId) {
     params.cabang_id = cabangId;
   } else if (!guruMode && cabangFilter !== "all") {
@@ -103,8 +116,9 @@ function StudentsPage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  // PERBAIKAN 2: Reset kelas ketika cabang berubah di form
+  // Reset kelas ketika cabang berubah di form
   useEffect(() => {
     if (!guruMode && form.cabang_id) {
       setForm(prev => ({ ...prev, class_id: "" }));
@@ -113,7 +127,6 @@ function StudentsPage() {
 
   function openNew() {
     setEditing(null);
-    // PERBAIKAN 3: Set default cabang berdasarkan user yang login
     const defaultCabang = guruMode 
       ? String(cabangId ?? "") 
       : (cabangs.data?.[0]?.id?.toString() ?? "");
@@ -126,6 +139,7 @@ function StudentsPage() {
     });
     setPhotoFile(null);
     setPhotoPreview(null);
+    setUploadProgress(0);
     setOpen(true);
   }
 
@@ -140,8 +154,9 @@ function StudentsPage() {
     });
     setPhotoFile(null);
     setPhotoPreview(null);
+    setUploadProgress(0);
     if (s.photo) {
-      getStudentPhoto(s.photo).then(setPhotoPreview);
+      getStudentPhoto(s.photo).then(setPhotoPreview).catch(() => setPhotoPreview(null));
     }
     setOpen(true);
   }
@@ -149,61 +164,154 @@ function StudentsPage() {
   function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (f.size > 2 * 1024 * 1024) { toast.error("Maksimal 2MB"); return; }
-    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) { toast.error("Hanya JPG/PNG/WEBP"); return; }
+    
+    // Validasi file
+    if (f.size > 2 * 1024 * 1024) { 
+      toast.error("Ukuran foto maksimal 2MB"); 
+      return; 
+    }
+    if (!["image/jpeg", "image/png", "image/webp", "image/jpg"].includes(f.type)) { 
+      toast.error("Format foto harus JPG, JPEG, PNG, atau WEBP"); 
+      return; 
+    }
+    
     setPhotoFile(f);
-    setPhotoPreview(URL.createObjectURL(f));
+    // Buat preview lokal
+    const previewUrl = URL.createObjectURL(f);
+    setPhotoPreview(previewUrl);
+    
+    // Cleanup preview URL saat komponen unmount
+    return () => URL.revokeObjectURL(previewUrl);
+  }
+
+  function removePhoto() {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    if (editing?.photo) {
+      // Untuk edit, kita akan hapus foto di server nanti
+      setPhotoFile(new File([], "delete")); // Special flag untuk delete
+    }
   }
 
   async function save() {
     if (saving) return;
     
-    // PERBAIKAN 4: Validasi cabang untuk admin
+    // Validasi
+    if (!form.nama.trim()) { 
+      toast.error("Nama siswa harus diisi"); 
+      return; 
+    }
+    if (!form.email.trim()) { 
+      toast.error("Email siswa harus diisi"); 
+      return; 
+    }
+    if (!form.class_id) { 
+      toast.error("Pilih kelas terlebih dahulu"); 
+      return; 
+    }
     if (!guruMode && !form.cabang_id) { 
       toast.error("Pilih cabang terlebih dahulu"); 
       return; 
     }
     
     setSaving(true);
+    setUploadProgress(0);
+    
     try {
       const fd = new FormData();
-      fd.append("nama", form.nama);
-      fd.append("email", form.email);
-      fd.append("linkedin", form.linkedin);
+      fd.append("nama", form.nama.trim());
+      fd.append("email", form.email.trim().toLowerCase());
+      fd.append("linkedin", form.linkedin?.trim() || "");
       fd.append("class_id", form.class_id);
       
-      // PERBAIKAN 5: Tentukan cabang (dari form untuk admin, dari auth untuk guru)
+      // Tentukan cabang
       const finalCabangId = guruMode ? String(cabangId ?? "") : form.cabang_id;
       if (finalCabangId) fd.append("cabang_id", finalCabangId);
-      if (photoFile) fd.append("photo", photoFile);
       
-      if (editing) {
-        await api.post(`/students/${editing.id}?_method=PUT`, fd);
-      } else {
-        await api.post(`/students`, fd);
+      // PERBAIKAN PENTING: Handle foto dengan benar
+      if (photoFile) {
+        // Cek apakah ini flag untuk delete
+        if (photoFile.name === "delete" && photoFile.size === 0) {
+          fd.append("delete_photo", "1");
+        } 
+        // Upload foto baru
+        else if (photoFile.size > 0) {
+          fd.append("photo", photoFile);
+        }
       }
-      toast.success("Tersimpan");
+      
+      // Log untuk debugging
+      console.log("Sending data:", {
+        nama: form.nama,
+        email: form.email,
+        class_id: form.class_id,
+        cabang_id: finalCabangId,
+        hasPhoto: !!photoFile,
+        photoName: photoFile?.name,
+        isEditing: !!editing
+      });
+      
+      let response;
+      if (editing) {
+        // Untuk edit, gunakan POST dengan method override
+        response = await api.post(`/students/${editing.id}?_method=PUT`, fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              setUploadProgress(percentCompleted);
+            }
+          }
+        });
+      } else {
+        response = await api.post(`/students`, fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              setUploadProgress(percentCompleted);
+            }
+          }
+        });
+      }
+      
+      toast.success(editing ? "Data siswa berhasil diupdate" : "Siswa berhasil ditambahkan");
       setOpen(false);
-      reload();
+      reload(); // Refresh data
+      
+      // Reset form
+      setPhotoFile(null);
+      setPhotoPreview(null);
+      setUploadProgress(0);
+      
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Gagal menyimpan");
+      console.error("Save error:", e);
+      const errorMessage = e?.response?.data?.message || e?.message || "Gagal menyimpan data";
+      toast.error(errorMessage);
+      
+      // Tampilkan detail error untuk debugging
+      if (e?.response?.data?.errors) {
+        Object.values(e.response.data.errors).forEach((err: any) => {
+          toast.error(err[0]);
+        });
+      }
     } finally {
       setSaving(false);
     }
   }
 
   async function del(id: number) {
-    if (!confirm("Hapus siswa ini?")) return;
+    if (!confirm("Yakin ingin menghapus siswa ini?")) return;
     try {
       await apiDelete(`/students/${id}`);
-      toast.success("Dihapus");
+      toast.success("Siswa berhasil dihapus");
       reload();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Gagal");
+      toast.error(e?.response?.data?.message || "Gagal menghapus");
     }
   }
 
-  // PERBAIKAN 6: Get kelas berdasarkan cabang yang dipilih di form
+  // Get kelas berdasarkan cabang yang dipilih di form
   const kelasParams = form.cabang_id ? { cabang_id: form.cabang_id } : {};
   const filteredClasses = useApiData<Klass[]>("/classes", kelasParams);
 
@@ -219,7 +327,7 @@ function StudentsPage() {
         <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Tambah Siswa</Button>
       </div>
 
-      {/* PERBAIKAN 7: Filter bar dengan informasi cabang aktif */}
+      {/* Filter bar */}
       <Card className="p-4 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -231,7 +339,6 @@ function StudentsPage() {
           />
         </div>
 
-        {/* PERBAIKAN 8: Filter cabang untuk admin (non-guru) */}
         {!guruMode && cabangs.data && cabangs.data.length > 0 && (
           <Select value={cabangFilter} onValueChange={(v) => { setCabangFilter(v); setClassFilter("all"); setPage(1); }}>
             <SelectTrigger className="w-[180px]">
@@ -246,7 +353,6 @@ function StudentsPage() {
           </Select>
         )}
 
-        {/* PERBAIKAN 9: Tampilkan informasi cabang untuk guru */}
         {guruMode && (
           <div className="px-3 py-2 bg-blue-50 rounded-md text-sm text-blue-700">
             Cabang: {user?.cabang_nama || cabangId}
@@ -337,7 +443,7 @@ function StudentsPage() {
         )}
       </Card>
 
-      {/* PERBAIKAN 10: Dialog tambah/edit dengan pilihan cabang */}
+      {/* Dialog tambah / edit dengan upload foto */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -345,19 +451,50 @@ function StudentsPage() {
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Foto */}
-            <div className="flex items-center gap-4">
-              <div className="h-20 w-20 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
-                {photoPreview
-                  ? <img src={photoPreview} alt="" className="h-full w-full object-cover" />
-                  : <Upload className="h-6 w-6 text-muted-foreground" />}
-              </div>
-              <div>
-                <Label className="cursor-pointer inline-flex items-center gap-2 text-sm font-medium">
-                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onPickPhoto} />
-                  <span className="px-3 py-1.5 border rounded-md hover:bg-secondary">Pilih Foto</span>
-                </Label>
-                <div className="text-xs text-muted-foreground mt-1">JPG/PNG/WEBP, maks 2MB</div>
+            {/* Upload Foto dengan Preview */}
+            <div className="space-y-2">
+              <Label>Foto Siswa</Label>
+              <div className="flex items-center gap-4">
+                <div className="h-24 w-24 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0 border-2 border-dashed border-gray-300">
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <Label 
+                    htmlFor="photo-upload" 
+                    className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-secondary"
+                  >
+                    <Upload className="h-4 w-4" />
+                    <span>Pilih Foto</span>
+                  </Label>
+                  <input
+                    id="photo-upload"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/jpg"
+                    className="hidden"
+                    onChange={onPickPhoto}
+                    disabled={saving}
+                  />
+                  {photoPreview && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={removePhoto}
+                      className="ml-2"
+                      disabled={saving}
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="ml-1">Hapus</span>
+                    </Button>
+                  )}
+                  <div className="text-xs text-muted-foreground mt-2">
+                    Format: JPG, JPEG, PNG, WEBP (Max: 2MB)
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -368,6 +505,7 @@ function StudentsPage() {
                 value={form.nama} 
                 onChange={(e) => setForm({ ...form, nama: e.target.value })} 
                 placeholder="Masukkan nama lengkap"
+                disabled={saving}
               />
             </div>
 
@@ -379,6 +517,7 @@ function StudentsPage() {
                 value={form.email} 
                 onChange={(e) => setForm({ ...form, email: e.target.value })} 
                 placeholder="email@example.com"
+                disabled={saving}
               />
             </div>
 
@@ -389,16 +528,18 @@ function StudentsPage() {
                 value={form.linkedin}
                 onChange={(e) => setForm({ ...form, linkedin: e.target.value })}
                 placeholder="https://linkedin.com/in/..."
+                disabled={saving}
               />
             </div>
 
-            {/* PERBAIKAN 11: Pilihan Cabang - muncul untuk admin */}
+            {/* Pilihan Cabang untuk Admin */}
             {!guruMode && cabangs.data && cabangs.data.length > 0 && (
               <div className="space-y-2">
                 <Label>Cabang *</Label>
                 <Select
                   value={form.cabang_id}
                   onValueChange={(v) => setForm({ ...form, cabang_id: v, class_id: "" })}
+                  disabled={saving}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih cabang" />
@@ -409,13 +550,10 @@ function StudentsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  Pilih cabang tempat siswa berada
-                </p>
               </div>
             )}
 
-            {/* PERBAIKAN 12: Tampilkan cabang untuk guru (readonly) */}
+            {/* Cabang untuk Guru (readonly) */}
             {guruMode && (
               <div className="space-y-2">
                 <Label>Cabang</Label>
@@ -424,19 +562,16 @@ function StudentsPage() {
                   disabled 
                   className="bg-gray-100"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Cabang ditentukan berdasarkan akun Anda
-                </p>
               </div>
             )}
 
-            {/* Kelas — difilter berdasarkan cabang */}
+            {/* Kelas */}
             <div className="space-y-2">
               <Label>Kelas *</Label>
               <Select
                 value={form.class_id}
                 onValueChange={(v) => setForm({ ...form, class_id: v })}
-                disabled={(!guruMode && !form.cabang_id) || (filteredClasses.data?.length === 0)}
+                disabled={saving || (!guruMode && !form.cabang_id) || (filteredClasses.data?.length === 0)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={
@@ -451,18 +586,30 @@ function StudentsPage() {
                   ))}
                 </SelectContent>
               </Select>
-              {!guruMode && form.cabang_id && filteredClasses.data?.length === 0 && (
-                <p className="text-xs text-orange-600">
-                  Belum ada kelas di cabang ini. Silakan tambah kelas terlebih dahulu.
-                </p>
-              )}
             </div>
+
+            {/* Upload Progress */}
+            {saving && uploadProgress > 0 && uploadProgress < 100 && (
+              <div className="space-y-2">
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-600 transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs text-center text-muted-foreground">
+                  Mengupload foto: {uploadProgress}%
+                </p>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
+              Batal
+            </Button>
             <Button onClick={save} disabled={saving || !form.nama || !form.email || !form.class_id || (!guruMode && !form.cabang_id)}>
-              {saving ? "Menyimpan..." : "Simpan"}
+              {saving ? (uploadProgress > 0 ? `Upload ${uploadProgress}%` : "Menyimpan...") : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>
