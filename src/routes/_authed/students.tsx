@@ -31,7 +31,7 @@ interface Student {
 interface Klass { id: number; nama_kelas: string }
 interface Cabang { id: number; nama_cabang: string }
 
-// ── Komponen avatar async: load foto via API (dengan token) ──────────────────
+// ── Komponen avatar async ────────────────────────────────────────────────────
 function StudentAvatar({ photo, nama }: { photo?: string; nama: string }) {
   const [src, setSrc] = useState<string | null>(null);
 
@@ -80,8 +80,13 @@ function StudentsPage() {
   if (guruMode && cabangId) classParams.cabang_id = cabangId;
   const classes = useApiData<Klass[]>("/classes", classParams);
 
-  // Load semua cabang (hanya untuk non-guru / admin)
-  const cabangs = useApiData<Cabang[]>(!guruMode ? "/cabangs" : null);
+  // Load semua cabang (hanya untuk admin / non-guru)
+  const cabangsRaw = useApiData<{ items: Cabang[] } | Cabang[]>(!guruMode ? "/cabangs" : null);
+
+  // Normalisasi — handle respons { items: [] } maupun array langsung
+  const cabangList: Cabang[] = Array.isArray(cabangsRaw.data)
+    ? cabangsRaw.data
+    : (cabangsRaw.data as any)?.items ?? [];
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Student | null>(null);
@@ -96,7 +101,7 @@ function StudentsPage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Kelas yang difilter berdasarkan cabang yang dipilih di form
+  // Kelas difilter berdasarkan cabang yang dipilih di form
   const formCabangId = guruMode ? String(cabangId ?? "") : form.cabang_id;
   const filteredClasses = useApiData<Klass[]>(
     "/classes",
@@ -105,7 +110,9 @@ function StudentsPage() {
 
   function openNew() {
     setEditing(null);
-    const defaultCabang = guruMode ? String(cabangId ?? "") : (cabangs.data?.[0]?.id?.toString() ?? "");
+    const defaultCabang = guruMode
+      ? String(cabangId ?? "")
+      : (cabangList[0]?.id?.toString() ?? "");
     setForm({
       nama: "",
       email: "",
@@ -125,7 +132,11 @@ function StudentsPage() {
       email: s.email,
       linkedin: s.linkedin || "",
       class_id: String(s.class_id),
-      cabang_id: s.cabang_id ? String(s.cabang_id) : (guruMode ? String(cabangId ?? "") : ""),
+      cabang_id: s.cabang_id
+        ? String(s.cabang_id)
+        : guruMode
+        ? String(cabangId ?? "")
+        : "",
     });
     setPhotoFile(null);
     setPhotoPreview(null);
@@ -139,14 +150,21 @@ function StudentsPage() {
     const f = e.target.files?.[0];
     if (!f) return;
     if (f.size > 2 * 1024 * 1024) { toast.error("Maksimal 2MB"); return; }
-    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) { toast.error("Hanya JPG/PNG/WEBP"); return; }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
+      toast.error("Hanya JPG/PNG/WEBP");
+      return;
+    }
     setPhotoFile(f);
     setPhotoPreview(URL.createObjectURL(f));
   }
 
   async function save() {
     if (saving) return;
-    if (!form.cabang_id && !guruMode) { toast.error("Pilih cabang terlebih dahulu"); return; }
+    if (!form.nama.trim()) { toast.error("Nama wajib diisi"); return; }
+    if (!form.email.trim()) { toast.error("Email wajib diisi"); return; }
+    if (!form.class_id) { toast.error("Pilih kelas terlebih dahulu"); return; }
+    if (!guruMode && !form.cabang_id) { toast.error("Pilih cabang terlebih dahulu"); return; }
+
     setSaving(true);
     try {
       const fd = new FormData();
@@ -154,10 +172,11 @@ function StudentsPage() {
       fd.append("email", form.email);
       fd.append("linkedin", form.linkedin);
       fd.append("class_id", form.class_id);
-      // Cabang: pakai pilihan dari form (admin) atau dari auth (guru)
+
       const finalCabangId = guruMode ? String(cabangId ?? "") : form.cabang_id;
       if (finalCabangId) fd.append("cabang_id", finalCabangId);
       if (photoFile) fd.append("photo", photoFile);
+
       if (editing) {
         await api.post(`/students/${editing.id}?_method=PUT`, fd);
       } else {
@@ -191,7 +210,9 @@ function StudentsPage() {
           <h1 className="text-2xl font-bold">Data Siswa</h1>
           <p className="text-sm text-muted-foreground">Kelola data siswa, foto, dan kelas.</p>
         </div>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Tambah Siswa</Button>
+        <Button onClick={openNew}>
+          <Plus className="h-4 w-4 mr-2" />Tambah Siswa
+        </Button>
       </div>
 
       {/* Filter bar */}
@@ -206,21 +227,31 @@ function StudentsPage() {
           />
         </div>
 
-        {/* Filter cabang (hanya tampil untuk non-guru/admin) */}
+        {/* Filter cabang — hanya admin */}
         {!guruMode && (
-          <Select value={cabangFilter} onValueChange={(v) => { setCabangFilter(v); setClassFilter("all"); setPage(1); }}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Filter Cabang" /></SelectTrigger>
+          <Select
+            value={cabangFilter}
+            onValueChange={(v) => { setCabangFilter(v); setClassFilter("all"); setPage(1); }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter Cabang" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Semua Cabang</SelectItem>
-              {(cabangs.data || []).map((c) => (
+              {cabangList.map((c) => (
                 <SelectItem key={c.id} value={String(c.id)}>{c.nama_cabang}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         )}
 
-        <Select value={classFilter} onValueChange={(v) => { setClassFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Filter Kelas" /></SelectTrigger>
+        <Select
+          value={classFilter}
+          onValueChange={(v) => { setClassFilter(v); setPage(1); }}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter Kelas" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Kelas</SelectItem>
             {(classes.data || []).map((k) => (
@@ -261,22 +292,40 @@ function StudentsPage() {
                 <TableCell className="text-sm">{s.email}</TableCell>
                 <TableCell>{s.nama_kelas || s.class_id}</TableCell>
                 {!guruMode && (
-                  <TableCell className="text-sm">{s.nama_cabang || s.cabang_id || "—"}</TableCell>
+                  <TableCell className="text-sm">
+                    {s.nama_cabang || s.cabang_id || "—"}
+                  </TableCell>
                 )}
                 <TableCell className="text-sm">
                   {s.linkedin
-                    ? <a href={s.linkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline"><Linkedin className="h-3 w-3" />Profile</a>
+                    ? (
+                      
+                        href={s.linkedin}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                      >
+                        <Linkedin className="h-3 w-3" />Profile
+                      </a>
+                    )
                     : "—"}
                 </TableCell>
                 <TableCell className="text-right space-x-2">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(s)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => del(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => del(s.id)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
             {!loading && (!data?.items || data.items.length === 0) && (
               <TableRow>
-                <TableCell colSpan={guruMode ? 6 : 7} className="text-center py-8 text-muted-foreground">
+                <TableCell
+                  colSpan={guruMode ? 6 : 7}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   Tidak ada data
                 </TableCell>
               </TableRow>
@@ -290,8 +339,22 @@ function StudentsPage() {
               Halaman {data.pagination.current_page} dari {data.pagination.last_page} • Total {data.pagination.total}
             </div>
             <div className="space-x-2">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Sebelumnya</Button>
-              <Button variant="outline" size="sm" disabled={page >= data.pagination.last_page} onClick={() => setPage(page + 1)}>Berikutnya</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage(page - 1)}
+              >
+                Sebelumnya
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= data.pagination.last_page}
+                onClick={() => setPage(page + 1)}
+              >
+                Berikutnya
+              </Button>
             </div>
           </div>
         )}
@@ -314,8 +377,15 @@ function StudentsPage() {
               </div>
               <div>
                 <Label className="cursor-pointer inline-flex items-center gap-2 text-sm font-medium">
-                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onPickPhoto} />
-                  <span className="px-3 py-1.5 border rounded-md hover:bg-secondary">Pilih Foto</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={onPickPhoto}
+                  />
+                  <span className="px-3 py-1.5 border rounded-md hover:bg-secondary">
+                    Pilih Foto
+                  </span>
                 </Label>
                 <div className="text-xs text-muted-foreground mt-1">JPG/PNG/WEBP, maks 2MB</div>
               </div>
@@ -324,18 +394,27 @@ function StudentsPage() {
             {/* Nama */}
             <div className="space-y-2">
               <Label>Nama Lengkap</Label>
-              <Input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} />
+              <Input
+                value={form.nama}
+                onChange={(e) => setForm({ ...form, nama: e.target.value })}
+                placeholder="Nama lengkap siswa"
+              />
             </div>
 
             {/* Email */}
             <div className="space-y-2">
               <Label>Email</Label>
-              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <Input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="email@example.com"
+              />
             </div>
 
             {/* LinkedIn */}
             <div className="space-y-2">
-              <Label>LinkedIn</Label>
+              <Label>LinkedIn <span className="text-muted-foreground font-normal">(opsional)</span></Label>
               <Input
                 value={form.linkedin}
                 onChange={(e) => setForm({ ...form, linkedin: e.target.value })}
@@ -343,7 +422,7 @@ function StudentsPage() {
               />
             </div>
 
-            {/* Cabang — hanya tampil untuk admin (non-guru) */}
+            {/* Cabang — hanya admin */}
             {!guruMode && (
               <div className="space-y-2">
                 <Label>Cabang</Label>
@@ -351,10 +430,24 @@ function StudentsPage() {
                   value={form.cabang_id}
                   onValueChange={(v) => setForm({ ...form, cabang_id: v, class_id: "" })}
                 >
-                  <SelectTrigger><SelectValue placeholder="Pilih cabang" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder={
+                      cabangsRaw.loading ? "Memuat cabang..." : "Pilih cabang"
+                    } />
+                  </SelectTrigger>
                   <SelectContent>
-                    {(cabangs.data || []).map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)}>{c.nama_cabang}</SelectItem>
+                    {cabangsRaw.loading && (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">Memuat...</div>
+                    )}
+                    {!cabangsRaw.loading && cabangList.length === 0 && (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        Tidak ada cabang tersedia
+                      </div>
+                    )}
+                    {cabangList.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>
+                        {c.nama_cabang}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -370,11 +463,27 @@ function StudentsPage() {
                 disabled={!guruMode && !form.cabang_id}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={!guruMode && !form.cabang_id ? "Pilih cabang dulu" : "Pilih kelas"} />
+                  <SelectValue placeholder={
+                    !guruMode && !form.cabang_id
+                      ? "Pilih cabang dulu"
+                      : filteredClasses.loading
+                      ? "Memuat kelas..."
+                      : "Pilih kelas"
+                  } />
                 </SelectTrigger>
                 <SelectContent>
+                  {filteredClasses.loading && (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">Memuat...</div>
+                  )}
+                  {!filteredClasses.loading && (filteredClasses.data || []).length === 0 && (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      Tidak ada kelas tersedia
+                    </div>
+                  )}
                   {(filteredClasses.data || []).map((k) => (
-                    <SelectItem key={k.id} value={String(k.id)}>{k.nama_kelas}</SelectItem>
+                    <SelectItem key={k.id} value={String(k.id)}>
+                      {k.nama_kelas}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
