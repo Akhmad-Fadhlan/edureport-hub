@@ -753,46 +753,28 @@ const s = StyleSheet.create({
   projectTitle:    { fontSize: 20, fontFamily: "Helvetica-Bold", color: C.blue },
   projectSubtitle: { fontSize: 14, fontFamily: "Helvetica-Bold", color: C.text, marginBottom: 12 },
 
-  /* Screenshot box — gambar di tengah, ukuran asli (contain) */
-  screenshotBox: {
-    width: "100%",
-    height: 290,
-    backgroundColor: C.bg,
-    borderRadius: 10,
-    marginBottom: 12,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-    borderBottomWidth: 6,
-    borderRightWidth: 5,
-    borderBottomColor: C.shadowDrk,
-    borderRightColor: C.shadowDrk,
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
-    borderTopColor: C.white,
-    borderLeftColor: C.white,
-  },
-  /* Gambar: objectFit contain agar proporsional & terpusat */
+  /* Screenshot — gambar langsung tanpa card wrapper */
   screenshotImg: {
     width: "100%",
-    height: "100%",
+    height: 290,
     objectFit: "contain",
+    marginBottom: 12,
   },
-  screenshotPlaceholder: { color: "#9ca3af", fontSize: 12, textAlign: "center" },
-
-  /* Row bawah: [Student Competence | Description] berdampingan, tinggi sama */
-  bottomRow: {
-    flexDirection: "row",
-    marginBottom: 10,
+  screenshotPlaceholder: {
+    color: "#9ca3af",
+    fontSize: 12,
+    textAlign: "center",
+    paddingVertical: 130,
+    marginBottom: 12,
   },
 
-  /* Card Student Competence — lebar tetap, tinggi stretch */
+  /* Card Student Competence — lebar mengikuti konten */
   competenceCard: {
-    width: "34%",
     backgroundColor: C.bg,
     borderRadius: 8,
     padding: 12,
-    marginRight: 10,
+    marginBottom: 10,
+    flexShrink: 0,
     borderBottomWidth: 4,
     borderRightWidth: 3,
     borderBottomColor: C.shadow,
@@ -803,7 +785,7 @@ const s = StyleSheet.create({
     borderLeftColor: C.white,
   },
 
-  /* Card Description — flex:1 agar lebar mengisi sisa, tinggi stretch */
+  /* Card Description — flex:1 mengisi sisa lebar */
   descriptionCard: {
     flex: 1,
     backgroundColor: C.bg,
@@ -819,12 +801,12 @@ const s = StyleSheet.create({
     borderLeftColor: C.white,
   },
 
-  /* Card Technology — lebar hanya sampai card Student Competence (width: 34%) */
+  /* Card Technology — lebar mengikuti konten */
   technologyCard: {
-    width: "34%",
     backgroundColor: C.bg,
     borderRadius: 8,
     padding: 12,
+    flexShrink: 0,
     borderBottomWidth: 4,
     borderRightWidth: 3,
     borderBottomColor: C.shadow,
@@ -835,14 +817,14 @@ const s = StyleSheet.create({
     borderLeftColor: C.white,
   },
 
-  /* Label judul card — minimal 12pt */
+  /* Label judul card */
   cardTitle: {
     fontSize: 12,
     fontFamily: "Helvetica-Bold",
     color: C.blue,
     marginBottom: 6,
   },
-  /* Teks isi card — minimal 12pt */
+  /* Teks isi card */
   cardText: {
     fontSize: 12,
     color: C.text,
@@ -885,7 +867,6 @@ const s = StyleSheet.create({
     borderTopColor: C.white,
     borderLeftColor: C.white,
   },
-  /* Thumbnail video: contain agar tidak terpotong */
   videoThumbImg: {
     width: "100%",
     height: "100%",
@@ -972,7 +953,6 @@ const s = StyleSheet.create({
     borderTopColor: C.white,
     borderLeftColor: C.white,
   },
-  /* Foto mengajar: contain */
   photoImg: {
     width: "100%",
     height: "100%",
@@ -1060,7 +1040,6 @@ const s = StyleSheet.create({
     borderTopColor: C.white,
     borderLeftColor: C.white,
   },
-  /* Gambar sertifikat: contain */
   certImg: {
     width: "100%",
     height: "100%",
@@ -1293,23 +1272,24 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
 }
 
 /* ============================================================================
- * PROJECT PAGE — layout baru
+ * PROJECT PAGE
  *
- * Susunan card:
+ * Susunan layout:
  *
  *   ┌─────────────────────────────────────────┐
- *   │           Screenshot (contain)          │
+ *   │     Screenshot (gambar langsung,        │
+ *   │     tanpa card wrapper, contain)        │
  *   └─────────────────────────────────────────┘
  *   ┌──────────────────┐  ┌───────────────────┐
  *   │ Student          │  │                   │
  *   │ Competence       │  │   Description     │
- *   ├──────────────────┤  │                   │
- *   │ Technology       │  │                   │
+ *   ├──────────────────┤  │  (flex:1, mengisi │
+ *   │ Technology       │  │   sisa lebar)     │
  *   └──────────────────┘  └───────────────────┘
  *
- *  • Lebar kolom kiri (Competence + Technology) = 34%
- *  • Description mengisi sisa lebar (flex:1)
- *  • Tinggi Description = tinggi gabungan Competence + Technology (alignItems:"stretch")
+ *  • Kolom kiri (Competence + Technology): lebar mengikuti konten (flexShrink:0)
+ *  • Description: flex:1, mengisi seluruh sisa lebar (tidak ada ruang kosong)
+ *  • Gambar screenshot: langsung dirender tanpa View pembungkus
  * ========================================================================== */
 function ProjectPage({
   project,
@@ -1332,22 +1312,20 @@ function ProjectPage({
         </View>
         <Text style={s.projectSubtitle}>{project.judul}</Text>
 
-        {/* Screenshot — gambar di tengah, proporsional */}
-        <View style={s.screenshotBox}>
-          {project.screenshot ? (
-            <Image src={project.screenshot} style={s.screenshotImg} />
-          ) : (
-            <Text style={s.screenshotPlaceholder}>[ Screenshot Karya ]</Text>
-          )}
-        </View>
+        {/* Screenshot — gambar langsung, tanpa card/View pembungkus */}
+        {project.screenshot ? (
+          <Image src={project.screenshot} style={s.screenshotImg} />
+        ) : (
+          <Text style={s.screenshotPlaceholder}>[ Screenshot Karya ]</Text>
+        )}
 
         {/* Bottom: kolom kiri (Competence + Technology) | kolom kanan (Description) */}
         <View style={{ flexDirection: "row", alignItems: "stretch" }}>
 
-          {/* Kolom kiri */}
-          <View style={{ width: "34%", marginRight: 10 }}>
+          {/* Kolom kiri — lebar mengikuti konten terpanjang di antara 2 card */}
+          <View style={{ marginRight: 10, flexShrink: 0 }}>
             {/* Student Competence */}
-            <View style={[s.competenceCard, { marginBottom: 10, flex: 1 }]}>
+            <View style={s.competenceCard}>
               <Text style={s.cardTitle}>Student Competence</Text>
               <Text style={s.cardText}>{project.kompetensi_siswa || "-"}</Text>
             </View>
@@ -1358,7 +1336,7 @@ function ProjectPage({
             </View>
           </View>
 
-          {/* Description — tinggi stretch mengikuti kolom kiri */}
+          {/* Description — flex:1 mengisi seluruh sisa lebar, tinggi stretch */}
           <View style={[s.descriptionCard, { alignSelf: "stretch" }]}>
             <Text style={s.cardTitle}>Description</Text>
             <Text style={s.cardText}>{project.deskripsi || "-"}</Text>
