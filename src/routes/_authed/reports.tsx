@@ -59,15 +59,17 @@ async function fetchViaProxy(
   try {
     const proxyUrl = `${proxyBase}?url=${encodeURIComponent(rawUrl)}&format=jpeg`;
     console.log("Fetching via proxy:", proxyUrl);
+
     const res = await fetch(proxyUrl);
     if (!res.ok) return null;
-    const blob = await res.blob();
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+
+    // Proxy returns JSON: { success: true, data: "data:image/png;base64,..." }
+    const json = await res.json();
+    if (json?.success && typeof json?.data === "string") {
+      return json.data; // sudah berupa data URL, langsung pakai
+    }
+
+    return null;
   } catch (err) {
     console.error("fetchViaProxy error:", err);
     return null;
