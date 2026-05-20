@@ -59,7 +59,7 @@ async function fetchViaProxy(
   try {
     const proxyUrl = `${proxyBase}?url=${encodeURIComponent(rawUrl)}&format=jpeg`;
     console.log("Fetching via proxy:", proxyUrl);
-    const res = await fetch(proxyUrl, { credentials: "include" });
+    const res = await fetch(proxyUrl);
     if (!res.ok) return null;
     const blob = await res.blob();
     return await new Promise<string>((resolve, reject) => {
