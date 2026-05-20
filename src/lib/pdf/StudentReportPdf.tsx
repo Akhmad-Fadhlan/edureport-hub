@@ -92,10 +92,6 @@ const styles = StyleSheet.create({
     position: "relative",
   },
 
-  /* ==========================================================================
-   * COVER
-   * ======================================================================== */
-
   coverContent: {
     position: "relative",
     width: "100%",
@@ -182,10 +178,6 @@ const styles = StyleSheet.create({
     marginTop: -1,
   },
 
-  /* ==========================================================================
-   * FOREWORD
-   * ======================================================================== */
-
   forewordPage: {
     paddingTop: 70,
     paddingHorizontal: 60,
@@ -222,10 +214,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-  /* ==========================================================================
-   * REPORT BODY
-   * ======================================================================== */
-
   reportBody: {
     paddingTop: 55,
     paddingHorizontal: 42,
@@ -239,10 +227,6 @@ const styles = StyleSheet.create({
   reportBodyLast: {
     paddingBottom: 20,
   },
-
-  /* ==========================================================================
-   * STUDENT CARD
-   * ======================================================================== */
 
   studentCard: {
     flexDirection: "row",
@@ -342,10 +326,6 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
   },
 
-  /* ==========================================================================
-   * MATERIALS
-   * ======================================================================== */
-
   compSection: {
     backgroundColor: "#ffffff",
     borderRadius: 10,
@@ -412,10 +392,6 @@ const styles = StyleSheet.create({
     marginRight: 24,
   },
 
-  /* ==========================================================================
-   * PROGRESS
-   * ======================================================================== */
-
   progressWrapper: {
     width: 130,
     flexShrink: 0,
@@ -461,10 +437,6 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
 
-  /* ==========================================================================
-   * COMMENT BOX
-   * ======================================================================== */
-
   commentOuter: {
     borderRadius: 8,
     borderWidth: 1,
@@ -497,10 +469,6 @@ const styles = StyleSheet.create({
     color: "#475569",
     lineHeight: 1.6,
   },
-
-  /* ==========================================================================
-   * BOTTOM SECTION
-   * ======================================================================== */
 
   bottomSection: {
     flexDirection: "row",
@@ -642,15 +610,17 @@ const styles = StyleSheet.create({
  * ========================================================================== */
 
 /**
- * Konversi URL Google Drive share link ke direct image URL.
- * react-pdf butuh URL yang bisa langsung di-fetch sebagai gambar.
+ * Konversi Google Drive share URL ke direct image URL yang bisa di-fetch
+ * oleh react-pdf (tidak kena CORS).
  *
  * Format yang didukung:
  * - https://drive.google.com/file/d/FILE_ID/view
  * - https://drive.google.com/file/d/FILE_ID/view?usp=sharing
  * - https://drive.google.com/open?id=FILE_ID
  * - https://drive.google.com/uc?id=FILE_ID
- * - URL biasa (dikembalikan apa adanya)
+ *
+ * Output: https://lh3.googleusercontent.com/d/FILE_ID
+ * Format lh3 tidak kena CORS dan langsung bisa dirender sebagai gambar.
  */
 function toDirectImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -658,7 +628,6 @@ function toDirectImageUrl(url: string | null | undefined): string | null {
   // Google Drive: /file/d/FILE_ID/...
   const driveFileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
   if (driveFileMatch) {
-    // Gunakan lh3.googleusercontent.com — tidak kena CORS, langsung render
     return `https://lh3.googleusercontent.com/d/${driveFileMatch[1]}`;
   }
 
@@ -669,10 +638,6 @@ function toDirectImageUrl(url: string | null | undefined): string | null {
   }
 
   return url;
-}
-
-function getPhotoSrc(photo?: string | null): string | null {
-  return toDirectImageUrl(photo);
 }
 
 function calculateOverallAverage(materials: PdfMaterial[]) {
@@ -841,7 +806,8 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   const materialPages = chunkMaterials(data.materials, 2);
   const semesterParts = splitSemesterLabel(semesterLabel);
 
-  // Resolve TTD URL — konversi Google Drive link ke direct URL
+  // Resolve semua URL gambar — konversi Google Drive link ke lh3 format
+  const photoUrl = toDirectImageUrl(data.student.photoDataUrl);
   const ttdUrl = toDirectImageUrl(data.teacher?.ttdDataUrl);
 
   return (
@@ -850,7 +816,9 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
        * COVER
        * ================================================================== */}
       <Page size="A4" style={styles.page}>
-        {data.coverBgDataUrl && <Image src={data.coverBgDataUrl} style={styles.absoluteBg} fixed />}
+        {data.coverBgDataUrl && (
+          <Image src={data.coverBgDataUrl} style={styles.absoluteBg} fixed />
+        )}
         <View style={styles.pageContent}>
           <View style={styles.coverContent}>
             <Text style={styles.coverStudentName}>{studentName}</Text>
@@ -921,13 +889,13 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
         const isFirst = pageIndex === 0;
         const isLast = pageIndex === materialPages.length - 1;
 
-        let bgUrl = null;
-        if (isFirst) bgUrl = data.reportFirstBgDataUrl;
-        else if (isLast) bgUrl = data.reportLastBgDataUrl;
+        let bgUrl: string | null = null;
+        if (isFirst) bgUrl = data.reportFirstBgDataUrl ?? null;
+        else if (isLast) bgUrl = data.reportLastBgDataUrl ?? null;
 
         return (
           <Page key={pageIndex} size="A4" style={styles.page} wrap={false}>
-            {bgUrl && <Image src={bgUrl} style={[styles.absoluteBg]} fixed />}
+            {bgUrl && <Image src={bgUrl} style={styles.absoluteBg} fixed />}
 
             <View style={styles.pageContent}>
               <View
@@ -942,11 +910,8 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                   <View style={styles.studentCard}>
                     <View style={styles.scLeft}>
                       <View style={styles.scPhotoWrap}>
-                        {getPhotoSrc(data.student.photoDataUrl) ? (
-                          <Image
-                            src={getPhotoSrc(data.student.photoDataUrl)!}
-                            style={styles.scPhoto}
-                          />
+                        {photoUrl ? (
+                          <Image src={photoUrl} style={styles.scPhoto} />
                         ) : (
                           <View style={styles.avatarPlaceholder}>
                             <Text style={styles.avatarInitials}>{getInitials(studentName)}</Text>
@@ -997,6 +962,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 {/* Halaman terakhir: Comment + Skala Nilai + TTD Guru */}
                 {isLast && (
                   <>
+                    {/* Comment */}
                     <View style={styles.commentOuter}>
                       <View style={styles.commentHeader}>
                         <Text style={styles.commentTitle}>Comment</Text>
@@ -1009,6 +975,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                       </View>
                     </View>
 
+                    {/* Bottom: Skala Nilai + TTD Guru */}
                     <View style={styles.bottomSection}>
                       {/* Kiri: Skala Nilai */}
                       <View style={styles.scaleSection}>
