@@ -32,10 +32,91 @@ export const Route = createFileRoute("/_authed/reports")({
  * HELPERS
  * ========================================================================== */
 
-async function urlToDataUrl(url: string | null | undefined): Promise<string | null> {
-  if (!url) return null;
+/**
+ * Ekstrak Google Drive File ID dari berbagai format URL Google Drive.
+ * Returns null jika bukan URL Google Drive.
+ */
+function extractDriveFileId(url: string): string | null {
+  // Format: /file/d/FILE_ID/...
+  const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
+  if (fileMatch) return fileMatch[1];
+
+  // Format: open?id=FILE_ID atau uc?id=FILE_ID
+  const idMatch = url.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([^&]+)/);
+  if (idMatch) return idMatch[1];
+
+  return null;
+}
+
+/**
+ * Fetch gambar via proxy backend — menghindari CORS Google Drive.
+ * Proxy sudah menangani autentikasi dan konversi ke base64.
+ */
+async function fetchViaProxy(
+  rawUrl: string,
+  proxyBase: string,
+): Promise<string | null> {
   try {
-    const res = await fetch(url, { mode: "cors", credentials: "include" });
+    const proxyUrl = `${proxyBase}?url=${encodeURIComponent(rawUrl)}&format=jpeg`;
+    console.log("Fetching via proxy:", proxyUrl);
+    const res = await fetch(proxyUrl, { credentials: "include" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (err) {
+    console.error("fetchViaProxy error:", err);
+    return null;
+  }
+}
+
+/**
+ * Konversi URL gambar ke base64 data URL.
+ * - Google Drive URL → lewat proxy backend (tidak kena CORS)
+ * - URL biasa → fetch langsung dengan cors mode
+ * - URL proxy (sudah /api/...) → fetch langsung
+ */
+async function urlToDataUrl(
+  url: string | null | undefined,
+  proxyBase = "/api/proxy-image",
+): Promise<string | null> {
+  if (!url) return null;
+
+  // Jika sudah berupa data URL, langsung kembalikan
+  if (url.startsWith("data:")) return url;
+
+  // Jika sudah berupa URL proxy internal, fetch langsung
+  if (url.startsWith("/api/") || url.includes(window.location.hostname)) {
+    try {
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (err) {
+      console.error("urlToDataUrl error:", err);
+      return null;
+    }
+  }
+
+  // Google Drive URL → wajib lewat proxy (kena CORS jika fetch langsung)
+  const driveId = extractDriveFileId(url);
+  if (driveId) {
+    // Kirim original URL ke proxy, bukan URL yang dikonversi
+    return fetchViaProxy(url, proxyBase);
+  }
+
+  // URL lain (non-Drive) → fetch langsung tanpa credentials
+  try {
+    const res = await fetch(url, { mode: "cors" });
     if (!res.ok) return null;
     const blob = await res.blob();
     return await new Promise<string>((resolve, reject) => {
@@ -177,13 +258,21 @@ function ReportsPage() {
       const teacherJabatan: string =
         teacherRecord?.mata_pelajaran ?? teacherRecord?.jabatan ?? "Guru IT";
 
-      // TTD guru: ambil dari field tanda_tangan di data teacher
-      const ttdRawUrl = teacherRecord?.tanda_tangan
+      // TTD guru: ambil dari field tanda_tangan, fetch via proxy agar tidak kena CORS
+      const ttdRawUrl: string | null = teacherRecord?.tanda_tangan
         ? teacherRecord.tanda_tangan.startsWith("http")
           ? teacherRecord.tanda_tangan
           : null
         : null;
+
+      // Google Drive URL wajib lewat proxy — sama seperti foto siswa
       const ttdDataUrl = await urlToDataUrl(ttdRawUrl);
+      console.log(
+        "TTD resolved:",
+        ttdRawUrl,
+        "→",
+        ttdDataUrl ? ttdDataUrl.slice(0, 60) + "..." : null,
+      );
 
       // ── 6. Fetch catatan / comment ─────────────────────────────────────────
       let comment: string | null = null;
@@ -205,21 +294,25 @@ function ReportsPage() {
       }
 
       // ── 7. Convert asset backgrounds ──────────────────────────────────────
-const selectedClass = (classes.data ?? []).find(
-  (k: any) => k.id === parseInt(classId),
-);
-const isAkhwat = selectedClass?.cabang?.toLowerCase() === "akhwat";
-const activeCoverBgUrl = isAkhwat ? coverBgUrlakhwat : coverBgUrlikhwan;
+      const selectedClass = (classes.data ?? []).find(
+        (k: any) => k.id === parseInt(classId),
+      );
+      const isAkhwat = selectedClass?.cabang?.toLowerCase() === "akhwat";
+      const activeCoverBgUrl = isAkhwat ? coverBgUrlakhwat : coverBgUrlikhwan;
 
-const [coverBgDataUrl, reportFirstBgDataUrl, reportLastBgDataUrl] =
-  await Promise.all([
-    urlToDataUrl(activeCoverBgUrl),
-    urlToDataUrl(reportFirstBgUrl),
-    urlToDataUrl(reportLastBgUrl),
-  ]);
-const generatedDate = new Date().toLocaleDateString("id-ID", {
-  day: "numeric", month: "long", year: "numeric",
-});
+      const [coverBgDataUrl, reportFirstBgDataUrl, reportLastBgDataUrl] =
+        await Promise.all([
+          urlToDataUrl(activeCoverBgUrl),
+          urlToDataUrl(reportFirstBgUrl),
+          urlToDataUrl(reportLastBgUrl),
+        ]);
+
+      const generatedDate = new Date().toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+
       // ── 8. Set state ───────────────────────────────────────────────────────
       setPdfData({
         student: {
