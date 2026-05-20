@@ -1019,9 +1019,9 @@ const s = StyleSheet.create({
   },
   certTypeText: { fontSize: 10, fontFamily: "Helvetica-Bold", color: "#854d0e" },
   certTitle: { fontSize: 20, fontFamily: "Helvetica-Bold", color: C.blue },
-  certGrid: { flexDirection: "row", flexWrap: "wrap", marginRight: -12 },
-  certItem: { width: "48%", marginBottom: 12, marginRight: "4%" },
-  certItemLast: { marginRight: 0 },
+  certGrid: { flexDirection: "column", alignItems: "center" },
+  certItem: { width: "70%", marginBottom: 20 },
+  certItemLast: {},
   certImgBox: {
     width: "100%",
     height: 160,
@@ -1461,50 +1461,37 @@ function MengajarPage({ item }: { item: ProjectMengajar }) {
 /* ============================================================================
  * CERTIFICATES PAGE
  * ========================================================================== */
+// SESUDAH — semua cert dalam 1 halaman, vertikal, centered
 function CertificatesPage({ certs }: { certs: ProjectCertificate[] }) {
-  const pairs: [ProjectCertificate, ProjectCertificate | null][] = [];
-  for (let i = 0; i < certs.length; i += 2) {
-    pairs.push([certs[i], certs[i + 1] ?? null]);
-  }
-
   return (
-    <>
-      {pairs.map((pair, pageIdx) => (
-        <Page key={pageIdx} size="A4" style={s.page}>
-          <View style={s.content}>
-            <View style={s.certTitleRow}>
-              <View style={s.certTypeBadge}>
-                <Text style={s.certTypeText}>CERT</Text>
-              </View>
-              <Text style={s.certTitle}>Certificates</Text>
-            </View>
-            <View style={s.certGrid}>
-              {pair.filter(Boolean).map((cert, i) =>
-                cert ? (
-                  <View
-                    key={i}
-                    style={[s.certItem, i === pair.filter(Boolean).length - 1 ? s.certItemLast : null]}
-                  >
-                    <View style={s.certImgBox}>
-                      {cert.gambar ? (
-                        <Image src={cert.gambar} style={s.certImg} />
-                      ) : (
-                        <IcoStar n={40} />
-                      )}
-                    </View>
-                    <Text style={s.certTema}>{cert.tema || "(Tanpa tema)"}</Text>
-                    <Text style={s.certMeta}>
-                      {[cert.lingkup, cert.tanggal].filter(Boolean).join(" • ")}
-                    </Text>
-                  </View>
-                ) : null
-              )}
-            </View>
+    <Page size="A4" style={s.page}>
+      <View style={s.content}>
+        <View style={s.certTitleRow}>
+          <View style={s.certTypeBadge}>
+            <Text style={s.certTypeText}>CERT</Text>
           </View>
-          <FooterBar />
-        </Page>
-      ))}
-    </>
+          <Text style={s.certTitle}>Certificates</Text>
+        </View>
+        <View style={s.certGrid}>
+          {certs.map((cert, i) => (
+            <View key={i} style={s.certItem}>
+              <View style={s.certImgBox}>
+                {cert.gambar ? (
+                  <Image src={cert.gambar} style={s.certImg} />
+                ) : (
+                  <IcoStar n={40} />
+                )}
+              </View>
+              <Text style={s.certTema}>{cert.tema || "(Tanpa tema)"}</Text>
+              <Text style={s.certMeta}>
+                {[cert.lingkup, cert.tanggal].filter(Boolean).join(" • ")}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+      <FooterBar />
+    </Page>
   );
 }
 
