@@ -266,7 +266,10 @@ function ReportsPage() {
         : null;
 
       // Google Drive URL wajib lewat proxy — sama seperti foto siswa
-      const ttdDataUrl = await urlToDataUrl(ttdRawUrl);
+      const ttdDataUrl = await urlToDataUrl(
+        ttdRawUrl,
+        "https://rapor.codestechno.com/api/proxy-image", // ← absolute URL backend
+      );
       console.log(
         "TTD resolved:",
         ttdRawUrl,
