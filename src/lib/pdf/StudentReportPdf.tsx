@@ -658,13 +658,14 @@ function toDirectImageUrl(url: string | null | undefined): string | null {
   // Google Drive: /file/d/FILE_ID/...
   const driveFileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
   if (driveFileMatch) {
-    return `https://drive.google.com/uc?export=view&id=${driveFileMatch[1]}`;
+    // Gunakan lh3.googleusercontent.com — tidak kena CORS, langsung render
+    return `https://lh3.googleusercontent.com/d/${driveFileMatch[1]}`;
   }
 
   // Google Drive: open?id=FILE_ID atau uc?id=FILE_ID
   const driveIdMatch = url.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([^&]+)/);
   if (driveIdMatch) {
-    return `https://drive.google.com/uc?export=view&id=${driveIdMatch[1]}`;
+    return `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}`;
   }
 
   return url;
