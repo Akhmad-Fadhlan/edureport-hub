@@ -262,8 +262,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: "hidden",
     backgroundColor: "#e2e8f0",
-    marginTop: 13,    // ← foto turun 16pt
-    marginLeft: 2, 
+    marginTop: 13,
+    marginLeft: 2,
   },
 
   scPhoto: {
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
   },
 
   /* ==========================================================================
-   * COMMENT BOX — now inside reportBody, below material cards
+   * COMMENT BOX
    * ======================================================================== */
 
   commentOuter: {
@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
   },
 
   /* ==========================================================================
-   * BOTTOM SECTION — Skala Nilai + TTD Guru
+   * BOTTOM SECTION
    * ======================================================================== */
 
   bottomSection: {
@@ -512,7 +512,6 @@ const styles = StyleSheet.create({
     borderTopColor: "#e2e8f0",
   },
 
-  /* Skala Nilai (kiri) */
   scaleSection: {
     flex: 1,
     paddingRight: 20,
@@ -577,7 +576,6 @@ const styles = StyleSheet.create({
     color: "#16a34a",
   },
 
-  /* TTD Guru (kanan) */
   signatureSection: {
     alignItems: "center",
     minWidth: 160,
@@ -643,8 +641,37 @@ const styles = StyleSheet.create({
  * HELPERS
  * ========================================================================== */
 
-function getPhotoSrc(photo?: string | null) {
-  return photo || null;
+/**
+ * Konversi URL Google Drive share link ke direct image URL.
+ * react-pdf butuh URL yang bisa langsung di-fetch sebagai gambar.
+ *
+ * Format yang didukung:
+ * - https://drive.google.com/file/d/FILE_ID/view
+ * - https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+ * - https://drive.google.com/open?id=FILE_ID
+ * - https://drive.google.com/uc?id=FILE_ID
+ * - URL biasa (dikembalikan apa adanya)
+ */
+function toDirectImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+
+  // Google Drive: /file/d/FILE_ID/...
+  const driveFileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
+  if (driveFileMatch) {
+    return `https://drive.google.com/uc?export=view&id=${driveFileMatch[1]}`;
+  }
+
+  // Google Drive: open?id=FILE_ID atau uc?id=FILE_ID
+  const driveIdMatch = url.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([^&]+)/);
+  if (driveIdMatch) {
+    return `https://drive.google.com/uc?export=view&id=${driveIdMatch[1]}`;
+  }
+
+  return url;
+}
+
+function getPhotoSrc(photo?: string | null): string | null {
+  return toDirectImageUrl(photo);
 }
 
 function calculateOverallAverage(materials: PdfMaterial[]) {
@@ -762,7 +789,7 @@ function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
 }
 
 /* ============================================================================
- * SKALA NILAI — komponen keterangan penilaian
+ * SKALA NILAI
  * ========================================================================== */
 
 function SkalaRow({
@@ -800,8 +827,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   const badgeLabel = getBadgeLabel(overallAvg);
   const studentName = data.student.nama || "-";
   const studentClass = data.student.nama_kelas || "-";
-  // Semester label: derive from data.semester.semester (1 → "1st semester", 2 → "2nd semester")
-  // Fallback: parse nama_semester for "ganjil" / "genap" / "gasal".
+
   let semesterLabel = data.semester.nama_semester || "";
   const semNum = data.semester.semester;
   const lower = (data.semester.nama_semester || "").toLowerCase();
@@ -810,8 +836,12 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   } else if (semNum === 2 || lower.includes("genap") || lower.includes("gasal")) {
     semesterLabel = "2nd semester";
   }
+
   const materialPages = chunkMaterials(data.materials, 2);
   const semesterParts = splitSemesterLabel(semesterLabel);
+
+  // Resolve TTD URL — konversi Google Drive link ke direct URL
+  const ttdUrl = toDirectImageUrl(data.teacher?.ttdDataUrl);
 
   return (
     <Document>
@@ -840,11 +870,10 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
       </Page>
 
       {/* ====================================================================
-       * FOREWORD — styled like the image reference
+       * FOREWORD
        * ================================================================== */}
       <Page size="A4" style={styles.page}>
         <View style={styles.forewordPage}>
-          {/* Heading: bold "Foreword" + smaller "Prakata" */}
           <Text style={styles.forewordHeading}>Foreword</Text>
           <Text style={styles.forewordSubheading}>Prakata</Text>
 
@@ -927,7 +956,9 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                         <Text style={styles.scName}>{studentName}</Text>
                         <Text style={styles.detailText}>{data.student.email}</Text>
                         {data.student.linkedin && (
-                          <Text style={styles.detailText}>{shortenLinkedin(data.student.linkedin)}</Text>
+                          <Text style={styles.detailText}>
+                            {shortenLinkedin(data.student.linkedin)}
+                          </Text>
                         )}
                       </View>
                     </View>
@@ -962,12 +993,9 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                   );
                 })}
 
-                {/* ============================================================
-                 * HALAMAN TERAKHIR — Comment + Skala Nilai + TTD Guru
-                 * ========================================================== */}
+                {/* Halaman terakhir: Comment + Skala Nilai + TTD Guru */}
                 {isLast && (
                   <>
-                    {/* Comment box — di bawah material cards, sebelum bottom section */}
                     <View style={styles.commentOuter}>
                       <View style={styles.commentHeader}>
                         <Text style={styles.commentTitle}>Comment</Text>
@@ -980,12 +1008,10 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                       </View>
                     </View>
 
-                    {/* Bottom: Skala Nilai (kiri) + TTD Guru (kanan) */}
                     <View style={styles.bottomSection}>
-                      {/* Kiri: Skala Nilai Rata-rata */}
+                      {/* Kiri: Skala Nilai */}
                       <View style={styles.scaleSection}>
                         <Text style={styles.scaleTitle}>Skala Nilai Rata-rata :</Text>
-
                         <SkalaRow
                           range="0 - 2.4"
                           label="Butuh Perbaikan"
@@ -1018,13 +1044,15 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
                       {/* Kanan: TTD Guru */}
                       <View style={styles.signatureSection}>
-                        <Text style={styles.signatureDate}>{data.generatedDate || "Tanggal"}</Text>
+                        <Text style={styles.signatureDate}>
+                          {data.generatedDate || "Tanggal"}
+                        </Text>
                         <Text style={styles.signatureSubLabel}>
                           {data.teacher?.jabatan || "Guru IT 7 SMP IDN"}
                         </Text>
 
-                        {data.teacher?.ttdDataUrl ? (
-                          <Image src={data.teacher.ttdDataUrl} style={styles.signatureImage} />
+                        {ttdUrl ? (
+                          <Image src={ttdUrl} style={styles.signatureImage} />
                         ) : (
                           <View style={styles.signaturePlaceholder}>
                             <Text style={{ fontSize: 8, color: MUTED }}>TTD Guru</Text>
@@ -1043,7 +1071,11 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 )}
               </View>
 
-              <Text style={styles.pageNumber} render={({ pageNumber }) => `${pageNumber}`} fixed />
+              <Text
+                style={styles.pageNumber}
+                render={({ pageNumber }) => `${pageNumber}`}
+                fixed
+              />
             </View>
           </Page>
         );
