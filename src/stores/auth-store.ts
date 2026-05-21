@@ -8,7 +8,8 @@ export interface AuthUser {
   name: string;
   email: string;
   role: Role;
-  cabang?: string | null; // enum string: 'jonggol' | 'pamijahan' | 'akhwat' | 'solo' | 'sentul'
+  cabang?: string | null;      // ← tambahkan
+  cabang_id?: number | null;   // ← tambahkan
 }
 
 interface AuthState {
@@ -19,8 +20,8 @@ interface AuthState {
   login: (email: string, password: string, remember: boolean) => Promise<void>;
   logout: () => void;
   isAdmin: () => boolean;
-  isGuru: () => boolean;
-  getCabang: () => string | null; // return nama cabang string, bukan ID
+  isGuru: () => boolean;           // ← tambahkan
+  getCabangId: () => number | null; // ← tambahkan
 }
 
 export const useAuth = create<AuthState>((set, get) => ({
@@ -48,6 +49,11 @@ export const useAuth = create<AuthState>((set, get) => ({
     const r = get().user?.role;
     return r === "admin" || r === "superadmin";
   },
-  isGuru: () => get().user?.role === "guru",
-  getCabang: () => get().user?.cabang ?? null, // return string langsung
+  // ↓ Tambahkan dua fungsi ini
+  isGuru: () => {
+    return get().user?.role === "guru";
+  },
+  getCabangId: () => {
+    return get().user?.cabang_id ?? null;
+  },
 }));
