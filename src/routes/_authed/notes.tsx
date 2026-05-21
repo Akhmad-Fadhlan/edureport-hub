@@ -61,13 +61,14 @@ interface Student {
 function NotesPage() {
   const { user, isGuru, getCabangId } = useAuth();
   const guruMode = isGuru();
-  const userCabang = getCabangId();
   
   // Base params untuk filter cabang
-  const baseParams: any = {};
-  if (guruMode && userCabang) {
-    baseParams.cabang = userCabang;
-  }
+const userCabangId = getCabangId(); // pastikan ini return ID (number)
+
+const baseParams: any = {};
+if (guruMode && userCabangId) {
+  baseParams.cabang_id = userCabangId;
+}
 
   const [semesterId, setSemesterId] = useState<string>("all");
   const [classId, setClassId] = useState<string>("all");
@@ -104,8 +105,8 @@ function NotesPage() {
       if (!user) return;
       try {
         const params: any = {};
-        if (guruMode && userCabang) {
-          params.cabang = userCabang;
+        if (guruMode && userCabangId) {
+          params.cabang = userCabangId;
         }
         const res = await apiGet<any[]>("/teachers", params);
         const rows = Array.isArray(res) ? res : [];
@@ -114,8 +115,8 @@ function NotesPage() {
         let teacher = rows.find((t: any) => Number(t.user_id) === Number(user.id));
         
         // Jika tidak ditemukan, cari berdasarkan cabang untuk guru
-        if (!teacher && guruMode && userCabang) {
-          teacher = rows.find((t: any) => t.cabang === userCabang);
+        if (!teacher && guruMode && userCabangId) {
+          teacher = rows.find((t: any) => t.cabang === userCabangId);
         }
         
         if (teacher?.id) {
@@ -127,7 +128,7 @@ function NotesPage() {
         console.error("Failed to fetch teacher:", error);
       }
     })();
-  }, [user, guruMode, userCabang]);
+  }, [user, guruMode, userCabangId]);
 
   // Ambil semua students dari response
   const allStudents = useMemo<Student[]>(() => {
@@ -284,8 +285,8 @@ function NotesPage() {
         <div>
           <h1 className="text-2xl font-bold">Catatan Siswa</h1>
           <p className="text-sm text-muted-foreground">
-            {guruMode && userCabang 
-              ? `Kelola catatan siswa - Cabang: ${userCabang}`
+            {guruMode && userCabangId 
+              ? `Kelola catatan siswa - Cabang: ${userCabangId}`
               : "Kelola catatan perkembangan siswa per semester"}
           </p>
         </div>
