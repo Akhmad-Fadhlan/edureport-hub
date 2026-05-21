@@ -61,34 +61,34 @@ interface Student {
 function NotesPage() {
   const { user, isGuru, getCabangId } = useAuth();
   const guruMode = isGuru();
-  
-  // Base params untuk filter cabang
-const userCabangId = getCabangId(); // pastikan ini return ID (number)
+  const userCabangId = getCabangId(); // harus return number/string ID, bukan nama
 
-const baseParams: any = {};
-if (guruMode && userCabangId) {
-  baseParams.cabang_id = userCabangId;
-}
+  // DEBUG: cek nilai cabangId yang didapat — hapus setelah konfirmasi benar
+  console.log("[NotesPage] guruMode:", guruMode, "| userCabangId:", userCabangId, "| type:", typeof userCabangId);
+
+  // Base params: kirim cabang_id sebagai angka ke backend
+  const baseParams: any = {};
+  if (guruMode && userCabangId) {
+    baseParams.cabang_id = Number(userCabangId); // pastikan angka, bukan string
+  }
 
   const [semesterId, setSemesterId] = useState<string>("all");
   const [classId, setClassId] = useState<string>("all");
   const [teacherId, setTeacherId] = useState<number | null>(null);
 
-  // Load data dengan filter cabang
   const semesters = useApiData<any[]>("/semesters");
-  
-  // ✅ FIX: Load classes dengan filter cabang
   const classes = useApiData<any[]>("/classes", baseParams);
-
-  // ✅ FIX: Load students dengan filter cabang
   const studentsData = useApiData<{ items: Student[]; pagination?: any }>(
     "/students",
     { per_page: 500, ...baseParams }
   );
 
-  // ✅ FIX: Load notes dengan filter cabang via semester
+  // Query notes — cabang_id sudah ada di baseParams
   const queryParams: any = { ...baseParams };
   if (semesterId !== "all") queryParams.semester_id = semesterId;
+
+  // DEBUG: cek queryParams yang dikirim ke /notes
+  console.log("[NotesPage] queryParams ke /notes:", queryParams);
 
   const { data: rawNotesData, loading: notesLoading, reload, error: notesError } = useApiData<any>("/notes", queryParams);
 
@@ -106,19 +106,14 @@ if (guruMode && userCabangId) {
       try {
         const params: any = {};
         if (guruMode && userCabangId) {
-          params.cabang = userCabangId;
+          params.cabang_id = Number(userCabangId);
         }
         const res = await apiGet<any[]>("/teachers", params);
         const rows = Array.isArray(res) ? res : [];
-        
-        // Cari teacher berdasarkan user_id
+
+        // Cari teacher berdasarkan user_id (paling akurat)
         let teacher = rows.find((t: any) => Number(t.user_id) === Number(user.id));
-        
-        // Jika tidak ditemukan, cari berdasarkan cabang untuk guru
-        if (!teacher && guruMode && userCabangId) {
-          teacher = rows.find((t: any) => t.cabang === userCabangId);
-        }
-        
+
         if (teacher?.id) {
           setTeacherId(Number(teacher.id));
         } else if (rows.length > 0) {
@@ -130,7 +125,6 @@ if (guruMode && userCabangId) {
     })();
   }, [user, guruMode, userCabangId]);
 
-  // Ambil semua students dari response
   const allStudents = useMemo<Student[]>(() => {
     const raw = studentsData.data;
     if (!raw) return [];
@@ -145,7 +139,6 @@ if (guruMode && userCabangId) {
     return m;
   }, [allStudents]);
 
-  // ✅ FIX: Filter notes berdasarkan class yang dipilih
   const filtered = useMemo(() => {
     let rows = notesData;
     if (!Array.isArray(rows)) return [];
@@ -188,12 +181,10 @@ if (guruMode && userCabangId) {
       toast.error("Lengkapi siswa, semester, dan catatan");
       return;
     }
-
     if (!teacherId) {
       toast.error("Data guru tidak ditemukan untuk akun ini");
       return;
     }
-
     setSaving(true);
     try {
       const payload = {
@@ -202,7 +193,6 @@ if (guruMode && userCabangId) {
         teacher_id: teacherId,
         catatan: form.catatan.trim(),
       };
-
       if (editing) {
         await apiPut(`/notes/${editing.id}`, payload);
         toast.success("Catatan berhasil diupdate");
@@ -210,7 +200,6 @@ if (guruMode && userCabangId) {
         await apiPost("/notes", payload);
         toast.success("Catatan berhasil ditambahkan");
       }
-
       setOpen(false);
       reload();
     } catch (e: any) {
@@ -233,7 +222,6 @@ if (guruMode && userCabangId) {
     }
   }
 
-  // Filter siswa untuk form (hanya dari cabang yang sama)
   const filteredStudentsForForm = useMemo(() => {
     if (classId === "all") return allStudents;
     return allStudents.filter((s) => String(s.class_id) === classId);
@@ -256,9 +244,7 @@ if (guruMode && userCabangId) {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Catatan Siswa</h1>
-            <p className="text-sm text-muted-foreground">
-              Kelola catatan perkembangan siswa per semester
-            </p>
+            <p className="text-sm text-muted-foreground">Kelola catatan perkembangan siswa per semester</p>
           </div>
         </div>
         <Card className="p-8 text-center">
@@ -285,8 +271,8 @@ if (guruMode && userCabangId) {
         <div>
           <h1 className="text-2xl font-bold">Catatan Siswa</h1>
           <p className="text-sm text-muted-foreground">
-            {guruMode && userCabangId 
-              ? `Kelola catatan siswa - Cabang: ${userCabangId}`
+            {guruMode && userCabangId
+              ? `Kelola catatan siswa - Cabang ID: ${userCabangId}`
               : "Kelola catatan perkembangan siswa per semester"}
           </p>
         </div>
