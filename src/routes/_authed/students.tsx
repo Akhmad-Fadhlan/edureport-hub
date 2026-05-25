@@ -4,14 +4,55 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useApiData } from "@/hooks/use-api-data";
 import { api, apiDelete, getStudentPhoto } from "@/lib/api";
 import { useAuth } from "@/stores/auth-store";
+import { CabangBadge } from "@/components/CabangBadge";
+import { CABANG_LIST, CABANG_LABEL, type Cabang } from "@/lib/cabang";
 import { toast } from "sonner";
-import { Pencil, Plus, Search, Trash2, Upload, Linkedin, X } from "lucide-react";
+import {
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+  Linkedin,
+  X,
+  Loader2,
+  Info,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authed/students")({
   component: StudentsPage,
@@ -24,348 +65,299 @@ interface Student {
   linkedin?: string;
   photo?: string;
   class_id: number;
-  cabang_id?: number;
+  cabang: Cabang | null;
   nama_kelas?: string;
-  nama_cabang?: string;
 }
-interface Klass { id: number; nama_kelas: string; cabang_id: number }
-interface Cabang { id: number; nama_cabang: string }
 
-// ── Komponen avatar async: load foto via API (dengan token) ──────────────────
+interface Klass {
+  id: number;
+  nama_kelas: string;
+  cabang: string;
+}
+
+// ── Avatar async: load foto via API ─────────────────────────────────────────
 function StudentAvatar({ photo, nama }: { photo?: string; nama: string }) {
   const [src, setSrc] = useState<string | null>(null);
-  const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!photo) { 
-      setSrc(null); 
-      return; 
-    }
+    if (!photo) { setSrc(null); return; }
     let cancelled = false;
-    setError(false);
-    
     getStudentPhoto(photo)
-      .then((url) => {
-        if (!cancelled && url) {
-          setSrc(url);
-        }
-      })
-      .catch((err) => {
-        console.error("Error loading photo:", err);
-        if (!cancelled) setError(true);
-      });
-      
+      .then((url) => { if (!cancelled && url) setSrc(url); })
+      .catch(() => {});
     return () => { cancelled = true; };
   }, [photo]);
 
-  if (src && !error) {
+  if (src) {
     return <img src={src} alt={nama} className="h-10 w-10 rounded-full object-cover" />;
   }
   return (
-    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
-      {nama?.[0]?.toUpperCase()}
+    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
+      {nama?.[0]?.toUpperCase() ?? "?"}
     </div>
   );
 }
 
 // ── Halaman Utama ────────────────────────────────────────────────────────────
 function StudentsPage() {
-  const { isGuru, getCabangId, user } = useAuth();
-  const guruMode = isGuru();
-  const cabangId = getCabangId();
+  const { user } = useAuth();
+  const isGuru = user?.role === "guru";
+  // Cabang guru dari token (string seperti "jonggol")
+  const guruCabang = user?.cabang ?? null;
 
-  const [search, setSearch] = useState("");
-  const [classFilter, setClassFilter] = useState<string>("all");
+  // ── State filter & pagination ────────────────────────────────────────────
+  const [search, setSearch]             = useState("");
   const [cabangFilter, setCabangFilter] = useState<string>("all");
-  const [page, setPage] = useState(1);
+  const [classFilter, setClassFilter]   = useState<string>("all");
+  const [page, setPage]                 = useState(1);
 
-  // Build params untuk API
-  const params: any = { page, per_page: 20 };
+  // ── Build params API ─────────────────────────────────────────────────────
+  // Guru: backend sudah enforce cabang dari token, tapi kita juga kirim
+  // cabang di params agar filter kelas yang muncul di FE juga konsisten.
+  const params: Record<string, unknown> = { page, per_page: 20 };
   if (search) params.search = search;
+
+  if (isGuru) {
+    // Backend enforce dari token; parameter ini hanya untuk eksplisit
+    if (guruCabang) params.cabang = guruCabang;
+  } else {
+    if (cabangFilter !== "all") params.cabang = cabangFilter;
+  }
   if (classFilter !== "all") params.class_id = classFilter;
-  
-  if (guruMode && cabangId) {
-    params.cabang_id = cabangId;
-  } else if (!guruMode && cabangFilter !== "all") {
-    params.cabang_id = cabangFilter;
-  }
 
-  const { data, loading, reload } = useApiData<{ items: Student[]; pagination?: any }>("/students", params);
+  const { data, loading, reload } = useApiData<{
+    items: Student[];
+    pagination?: { total: number; per_page: number; current_page: number; last_page: number };
+  }>("/students", params);
 
-  // Load kelas berdasarkan cabang yang difilter
-  const classParams: any = {};
-  if (guruMode && cabangId) {
-    classParams.cabang_id = cabangId;
-  } else if (!guruMode && cabangFilter !== "all") {
-    classParams.cabang_id = cabangFilter;
-  }
-  const classes = useApiData<Klass[]>("/classes", classParams);
+  // ── Kelas: filter sesuai cabang yang sedang aktif ────────────────────────
+  const activeCabang = isGuru ? guruCabang : (cabangFilter !== "all" ? cabangFilter : null);
+  const classParams: Record<string, unknown> = activeCabang ? { cabang: activeCabang } : {};
+  const { data: classesData } = useApiData<Klass[]>("/classes", classParams);
 
-  // Load semua cabang (hanya untuk non-guru / admin)
-  const cabangs = useApiData<Cabang[]>(!guruMode ? "/cabangs" : null);
+  // Reset page saat filter berubah
+  useEffect(() => { setPage(1); }, [search, cabangFilter, classFilter]);
+  // Reset filter kelas saat cabang berubah (hanya admin)
+  useEffect(() => { if (!isGuru) setClassFilter("all"); }, [cabangFilter, isGuru]);
 
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Student | null>(null);
+  // ── State form ───────────────────────────────────────────────────────────
+  const [open, setOpen]           = useState(false);
+  const [editing, setEditing]     = useState<Student | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
+  const [saving, setSaving]       = useState(false);
+  const [deleting, setDeleting]   = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
   const [form, setForm] = useState({
     nama: "",
     email: "",
     linkedin: "",
     class_id: "",
-    cabang_id: "",
+    cabang: "",      // string cabang (enum backend)
   });
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoFile, setPhotoFile]       = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [deletePhoto, setDeletePhoto]   = useState(false);
 
-  // Reset kelas ketika cabang berubah di form
-  useEffect(() => {
-    if (!guruMode && form.cabang_id) {
-      setForm(prev => ({ ...prev, class_id: "" }));
-    }
-  }, [form.cabang_id, guruMode]);
+  // Kelas yang ditampilkan di form (filter by cabang yang dipilih di form)
+  const formCabang = isGuru ? (guruCabang ?? "") : form.cabang;
+  const { data: formClasses } = useApiData<Klass[]>(
+    "/classes",
+    formCabang ? { cabang: formCabang } : {}
+  );
 
+  // ── Buka form tambah ─────────────────────────────────────────────────────
   function openNew() {
     setEditing(null);
-    const defaultCabang = guruMode 
-      ? String(cabangId ?? "") 
-      : (cabangs.data?.[0]?.id?.toString() ?? "");
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setDeletePhoto(false);
     setForm({
       nama: "",
       email: "",
       linkedin: "",
       class_id: "",
-      cabang_id: defaultCabang,
+      cabang: isGuru ? (guruCabang ?? "") : "",
     });
-    setPhotoFile(null);
-    setPhotoPreview(null);
-    setUploadProgress(0);
     setOpen(true);
   }
 
+  // ── Buka form edit ───────────────────────────────────────────────────────
   function openEdit(s: Student) {
     setEditing(s);
+    setPhotoFile(null);
+    setDeletePhoto(false);
     setForm({
       nama: s.nama,
-      email: s.email,
-      linkedin: s.linkedin || "",
+      email: s.email ?? "",
+      linkedin: s.linkedin ?? "",
       class_id: String(s.class_id),
-      cabang_id: s.cabang_id ? String(s.cabang_id) : (guruMode ? String(cabangId ?? "") : ""),
+      cabang: s.cabang ?? (isGuru ? (guruCabang ?? "") : ""),
     });
-    setPhotoFile(null);
-    setPhotoPreview(null);
-    setUploadProgress(0);
+    // Load preview foto
     if (s.photo) {
       getStudentPhoto(s.photo).then(setPhotoPreview).catch(() => setPhotoPreview(null));
+    } else {
+      setPhotoPreview(null);
     }
     setOpen(true);
   }
 
+  // ── Handle pilih foto ────────────────────────────────────────────────────
   function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    
-    // Validasi file
-    if (f.size > 2 * 1024 * 1024) { 
-      toast.error("Ukuran foto maksimal 2MB"); 
-      return; 
+    if (f.size > 2 * 1024 * 1024) { toast.error("Foto maksimal 2MB"); return; }
+    if (!["image/jpeg", "image/png", "image/webp", "image/jpg"].includes(f.type)) {
+      toast.error("Format foto harus JPG, PNG, atau WEBP");
+      return;
     }
-    if (!["image/jpeg", "image/png", "image/webp", "image/jpg"].includes(f.type)) { 
-      toast.error("Format foto harus JPG, JPEG, PNG, atau WEBP"); 
-      return; 
-    }
-    
     setPhotoFile(f);
-    // Buat preview lokal
-    const previewUrl = URL.createObjectURL(f);
-    setPhotoPreview(previewUrl);
-    
-    // Cleanup preview URL saat komponen unmount
-    return () => URL.revokeObjectURL(previewUrl);
+    setDeletePhoto(false);
+    const url = URL.createObjectURL(f);
+    setPhotoPreview(url);
   }
 
   function removePhoto() {
     setPhotoFile(null);
     setPhotoPreview(null);
-    if (editing?.photo) {
-      // Untuk edit, kita akan hapus foto di server nanti
-      setPhotoFile(new File([], "delete")); // Special flag untuk delete
-    }
+    if (editing?.photo) setDeletePhoto(true);
   }
 
+  // ── Simpan ───────────────────────────────────────────────────────────────
   async function save() {
     if (saving) return;
-    
-    // Validasi
-    if (!form.nama.trim()) { 
-      toast.error("Nama siswa harus diisi"); 
-      return; 
-    }
-    if (!form.email.trim()) { 
-      toast.error("Email siswa harus diisi"); 
-      return; 
-    }
-    if (!form.class_id) { 
-      toast.error("Pilih kelas terlebih dahulu"); 
-      return; 
-    }
-    if (!guruMode && !form.cabang_id) { 
-      toast.error("Pilih cabang terlebih dahulu"); 
-      return; 
-    }
-    
+    if (!form.nama.trim())  { toast.error("Nama siswa wajib diisi"); return; }
+    if (!form.class_id)     { toast.error("Pilih kelas terlebih dahulu"); return; }
+    if (!isGuru && !form.cabang) { toast.error("Pilih cabang terlebih dahulu"); return; }
+
     setSaving(true);
     setUploadProgress(0);
-    
     try {
       const fd = new FormData();
-      fd.append("nama", form.nama.trim());
-      fd.append("email", form.email.trim().toLowerCase());
-      fd.append("linkedin", form.linkedin?.trim() || "");
+      fd.append("nama",     form.nama.trim());
+      fd.append("email",    form.email.trim());
+      fd.append("linkedin", form.linkedin.trim());
       fd.append("class_id", form.class_id);
-      
-      // Tentukan cabang
-      const finalCabangId = guruMode ? String(cabangId ?? "") : form.cabang_id;
-      if (finalCabangId) fd.append("cabang_id", finalCabangId);
-      
-      // PERBAIKAN PENTING: Handle foto dengan benar
-      if (photoFile) {
-        // Cek apakah ini flag untuk delete
-        if (photoFile.name === "delete" && photoFile.size === 0) {
-          fd.append("delete_photo", "1");
-        } 
-        // Upload foto baru
-        else if (photoFile.size > 0) {
-          fd.append("photo", photoFile);
-        }
-      }
-      
-      // Log untuk debugging
-      console.log("Sending data:", {
-        nama: form.nama,
-        email: form.email,
-        class_id: form.class_id,
-        cabang_id: finalCabangId,
-        hasPhoto: !!photoFile,
-        photoName: photoFile?.name,
-        isEditing: !!editing
-      });
-      
-      let response;
+      // Guru: backend ambil cabang dari token; admin: kirim eksplisit
+      if (!isGuru && form.cabang) fd.append("cabang", form.cabang);
+      if (deletePhoto) fd.append("delete_photo", "1");
+      if (photoFile && photoFile.size > 0) fd.append("photo", photoFile);
+
+      const onUploadProgress = (e: any) => {
+        if (e.total) setUploadProgress(Math.round((e.loaded * 100) / e.total));
+      };
+
       if (editing) {
-        // Untuk edit, gunakan POST dengan method override
-        response = await api.post(`/students/${editing.id}?_method=PUT`, fd, {
+        await api.put(`/students/${editing.id}`, fd, {
           headers: { "Content-Type": "multipart/form-data" },
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.total) {
-              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              setUploadProgress(percentCompleted);
-            }
-          }
+          onUploadProgress,
         });
       } else {
-        response = await api.post(`/students`, fd, {
+        await api.post("/students", fd, {
           headers: { "Content-Type": "multipart/form-data" },
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.total) {
-              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              setUploadProgress(percentCompleted);
-            }
-          }
+          onUploadProgress,
         });
       }
-      
-      toast.success(editing ? "Data siswa berhasil diupdate" : "Siswa berhasil ditambahkan");
-      setOpen(false);
-      reload(); // Refresh data
-      
-      // Reset form
-      setPhotoFile(null);
-      setPhotoPreview(null);
-      setUploadProgress(0);
-      
-    } catch (e: any) {
-      console.error("Save error:", e);
-      const errorMessage = e?.response?.data?.message || e?.message || "Gagal menyimpan data";
-      toast.error(errorMessage);
-      
-      // Tampilkan detail error untuk debugging
-      if (e?.response?.data?.errors) {
-        Object.values(e.response.data.errors).forEach((err: any) => {
-          toast.error(err[0]);
-        });
-      }
-    } finally {
-      setSaving(false);
-    }
-  }
 
-  async function del(id: number) {
-    if (!confirm("Yakin ingin menghapus siswa ini?")) return;
-    try {
-      await apiDelete(`/students/${id}`);
-      toast.success("Siswa berhasil dihapus");
+      toast.success(editing ? "Data siswa berhasil diperbarui" : "Siswa berhasil ditambahkan");
+      setOpen(false);
       reload();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Gagal menghapus");
+      toast.error(e?.response?.data?.message || "Gagal menyimpan data");
+    } finally {
+      setSaving(false);
+      setUploadProgress(0);
     }
   }
 
-  // Get kelas berdasarkan cabang yang dipilih di form
-  const kelasParams = form.cabang_id ? { cabang_id: form.cabang_id } : {};
-  const filteredClasses = useApiData<Klass[]>("/classes", kelasParams);
+  // ── Hapus ────────────────────────────────────────────────────────────────
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await apiDelete(`/students/${deleteTarget.id}`);
+      toast.success("Siswa berhasil dihapus");
+      setDeleteTarget(null);
+      reload();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Gagal menghapus siswa");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Data Siswa</h1>
           <p className="text-sm text-muted-foreground">
-            {guruMode ? `Menampilkan data cabang: ${user?.cabang_nama || cabangId}` : "Kelola data siswa semua cabang"}
+            {isGuru && guruCabang
+              ? `Menampilkan siswa cabang ${CABANG_LABEL[guruCabang as Cabang] ?? guruCabang}`
+              : "Kelola data siswa semua cabang"}
           </p>
         </div>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Tambah Siswa</Button>
+        <Button onClick={openNew}>
+          <Plus className="h-4 w-4 mr-2" />
+          Tambah Siswa
+        </Button>
       </div>
 
-      {/* Filter bar */}
+      {/* Info banner untuk guru */}
+      {isGuru && guruCabang && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-sm">
+          <Info className="h-4 w-4 flex-shrink-0" />
+          <span>
+            Anda login sebagai <strong>Guru</strong>. Hanya siswa dari cabang{" "}
+            <strong>{CABANG_LABEL[guruCabang as Cabang] ?? guruCabang}</strong> yang ditampilkan.
+          </span>
+        </div>
+      )}
+
+      {/* Filter */}
       <Card className="p-4 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Cari nama / email..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
           />
         </div>
 
-        {!guruMode && cabangs.data && cabangs.data.length > 0 && (
-          <Select value={cabangFilter} onValueChange={(v) => { setCabangFilter(v); setClassFilter("all"); setPage(1); }}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter Cabang" />
+        {/* Filter cabang: hanya admin/superadmin */}
+        {!isGuru && (
+          <Select
+            value={cabangFilter}
+            onValueChange={(v) => { setCabangFilter(v); setClassFilter("all"); }}
+          >
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Semua Cabang" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Semua Cabang</SelectItem>
-              {(cabangs.data || []).map((c) => (
-                <SelectItem key={c.id} value={String(c.id)}>{c.nama_cabang}</SelectItem>
+              {CABANG_LIST.map((c) => (
+                <SelectItem key={c} value={c}>{CABANG_LABEL[c]}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         )}
 
-        {guruMode && (
-          <div className="px-3 py-2 bg-blue-50 rounded-md text-sm text-blue-700">
-            Cabang: {user?.cabang_nama || cabangId}
-          </div>
-        )}
-
-        <Select value={classFilter} onValueChange={(v) => { setClassFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter Kelas" />
+        {/* Filter kelas */}
+        <Select
+          value={classFilter}
+          onValueChange={setClassFilter}
+        >
+          <SelectTrigger className="w-[170px]">
+            <SelectValue placeholder="Semua Kelas" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Kelas</SelectItem>
-            {(classes.data || []).map((k) => (
+            {(classesData || []).map((k) => (
               <SelectItem key={k.id} value={String(k.id)}>{k.nama_kelas}</SelectItem>
             ))}
           </SelectContent>
@@ -377,98 +369,132 @@ function StudentsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Foto</TableHead>
+              <TableHead className="w-14">Foto</TableHead>
               <TableHead>Nama</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Kelas</TableHead>
-              {!guruMode && <TableHead>Cabang</TableHead>}
+              {!isGuru && <TableHead>Cabang</TableHead>}
               <TableHead>LinkedIn</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading && Array.from({ length: 4 }).map((_, i) => (
-              <TableRow key={i}>
-                <TableCell colSpan={guruMode ? 6 : 7}>
-                  <div className="h-8 bg-muted animate-pulse rounded" />
+            {loading && (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={isGuru ? 6 : 7}>
+                    <div className="h-8 bg-muted animate-pulse rounded" />
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+            {!loading && (data?.items || []).length === 0 && (
+              <TableRow>
+                <TableCell colSpan={isGuru ? 6 : 7} className="text-center py-10 text-muted-foreground">
+                  Tidak ada data siswa ditemukan.
                 </TableCell>
               </TableRow>
-            ))}
+            )}
             {!loading && (data?.items || []).map((s) => (
               <TableRow key={s.id}>
                 <TableCell>
                   <StudentAvatar photo={s.photo} nama={s.nama} />
                 </TableCell>
                 <TableCell className="font-medium capitalize">{s.nama}</TableCell>
-                <TableCell className="text-sm">{s.email}</TableCell>
-                <TableCell>{s.nama_kelas || s.class_id}</TableCell>
-                {!guruMode && (
-                  <TableCell className="text-sm">
-                    <span className="px-2 py-1 bg-gray-100 rounded-full text-xs">
-                      {s.nama_cabang || s.cabang_id || "—"}
-                    </span>
+                <TableCell className="text-sm text-muted-foreground">{s.email || "—"}</TableCell>
+                <TableCell className="text-sm">{s.nama_kelas || "—"}</TableCell>
+                {!isGuru && (
+                  <TableCell>
+                    <CabangBadge cabang={s.cabang} />
                   </TableCell>
                 )}
                 <TableCell className="text-sm">
-                  {s.linkedin
-                    ? <a href={s.linkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline"><Linkedin className="h-3 w-3" />Profile</a>
-                    : "—"}
+                  {s.linkedin ? (
+                    <a
+                      href={s.linkedin}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-primary hover:underline"
+                    >
+                      <Linkedin className="h-3 w-3" /> Profile
+                    </a>
+                  ) : "—"}
                 </TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(s)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => del(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setDeleteTarget(s)}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
-            {!loading && (!data?.items || data.items.length === 0) && (
-              <TableRow>
-                <TableCell colSpan={guruMode ? 6 : 7} className="text-center py-8 text-muted-foreground">
-                  Tidak ada data siswa di cabang ini
-                </TableCell>
-              </TableRow>
-            )}
           </TableBody>
         </Table>
 
+        {/* Pagination */}
         {data?.pagination && data.pagination.last_page > 1 && (
           <div className="flex items-center justify-between p-3 border-t text-sm">
-            <div className="text-muted-foreground">
-              Halaman {data.pagination.current_page} dari {data.pagination.last_page} • Total {data.pagination.total}
-            </div>
-            <div className="space-x-2">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Sebelumnya</Button>
-              <Button variant="outline" size="sm" disabled={page >= data.pagination.last_page} onClick={() => setPage(page + 1)}>Berikutnya</Button>
+            <span className="text-muted-foreground">
+              Halaman {data.pagination.current_page} dari {data.pagination.last_page} •{" "}
+              Total {data.pagination.total} siswa
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                Sebelumnya
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= data.pagination.last_page}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Berikutnya
+              </Button>
             </div>
           </div>
         )}
       </Card>
 
-      {/* Dialog tambah / edit dengan upload foto */}
+      {/* ── Dialog Tambah / Edit ── */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit Siswa" : "Tambah Siswa"}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
-            {/* Upload Foto dengan Preview */}
+          <div className="space-y-4 py-1">
+            {/* Upload Foto */}
             <div className="space-y-2">
               <Label>Foto Siswa</Label>
               <div className="flex items-center gap-4">
-                <div className="h-24 w-24 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0 border-2 border-dashed border-gray-300">
+                <div className="h-20 w-20 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0 border-2 border-dashed border-border">
                   {photoPreview ? (
                     <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
                   ) : (
-                    <Upload className="h-8 w-8 text-muted-foreground" />
+                    <Upload className="h-6 w-6 text-muted-foreground" />
                   )}
                 </div>
-                <div className="flex-1">
-                  <Label 
-                    htmlFor="photo-upload" 
-                    className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-secondary"
+                <div className="flex-1 space-y-2">
+                  <Label
+                    htmlFor="photo-upload"
+                    className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 border rounded-md hover:bg-secondary text-sm"
                   >
-                    <Upload className="h-4 w-4" />
-                    <span>Pilih Foto</span>
+                    <Upload className="h-3.5 w-3.5" />
+                    Pilih Foto
                   </Label>
                   <input
                     id="photo-upload"
@@ -479,43 +505,33 @@ function StudentsPage() {
                     disabled={saving}
                   />
                   {photoPreview && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={removePhoto}
-                      className="ml-2"
-                      disabled={saving}
-                    >
-                      <X className="h-4 w-4" />
-                      <span className="ml-1">Hapus</span>
+                    <Button type="button" variant="ghost" size="sm" onClick={removePhoto} disabled={saving}>
+                      <X className="h-3.5 w-3.5 mr-1" /> Hapus
                     </Button>
                   )}
-                  <div className="text-xs text-muted-foreground mt-2">
-                    Format: JPG, JPEG, PNG, WEBP (Max: 2MB)
-                  </div>
+                  <p className="text-xs text-muted-foreground">JPG, PNG, WEBP — maks. 2MB</p>
                 </div>
               </div>
             </div>
 
             {/* Nama */}
             <div className="space-y-2">
-              <Label>Nama Lengkap *</Label>
-              <Input 
-                value={form.nama} 
-                onChange={(e) => setForm({ ...form, nama: e.target.value })} 
-                placeholder="Masukkan nama lengkap"
+              <Label>Nama Lengkap <span className="text-destructive">*</span></Label>
+              <Input
+                value={form.nama}
+                onChange={(e) => setForm({ ...form, nama: e.target.value })}
+                placeholder="Nama siswa"
                 disabled={saving}
               />
             </div>
 
             {/* Email */}
             <div className="space-y-2">
-              <Label>Email *</Label>
-              <Input 
-                type="email" 
-                value={form.email} 
-                onChange={(e) => setForm({ ...form, email: e.target.value })} 
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="email@example.com"
                 disabled={saving}
               />
@@ -532,68 +548,69 @@ function StudentsPage() {
               />
             </div>
 
-            {/* Pilihan Cabang untuk Admin */}
-            {!guruMode && cabangs.data && cabangs.data.length > 0 && (
+            {/* Cabang — hanya admin/superadmin yang bisa memilih */}
+            {isGuru ? (
               <div className="space-y-2">
-                <Label>Cabang *</Label>
+                <Label>Cabang</Label>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted text-sm text-muted-foreground">
+                  <Info className="h-3.5 w-3.5" />
+                  {CABANG_LABEL[guruCabang as Cabang] ?? guruCabang ?? "—"}{" "}
+                  <span className="text-xs">(otomatis dari akun Anda)</span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Cabang <span className="text-destructive">*</span></Label>
                 <Select
-                  value={form.cabang_id}
-                  onValueChange={(v) => setForm({ ...form, cabang_id: v, class_id: "" })}
+                  value={form.cabang}
+                  onValueChange={(v) => setForm({ ...form, cabang: v, class_id: "" })}
                   disabled={saving}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih cabang" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(cabangs.data || []).map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)}>{c.nama_cabang}</SelectItem>
+                    {CABANG_LIST.map((c) => (
+                      <SelectItem key={c} value={c}>{CABANG_LABEL[c]}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             )}
 
-            {/* Cabang untuk Guru (readonly) */}
-            {guruMode && (
-              <div className="space-y-2">
-                <Label>Cabang</Label>
-                <Input 
-                  value={user?.cabang_nama || cabangId || "Cabang Anda"} 
-                  disabled 
-                  className="bg-gray-100"
-                />
-              </div>
-            )}
-
             {/* Kelas */}
             <div className="space-y-2">
-              <Label>Kelas *</Label>
+              <Label>Kelas <span className="text-destructive">*</span></Label>
               <Select
                 value={form.class_id}
                 onValueChange={(v) => setForm({ ...form, class_id: v })}
-                disabled={saving || (!guruMode && !form.cabang_id) || (filteredClasses.data?.length === 0)}
+                disabled={saving || (!isGuru && !form.cabang) || (formClasses ?? []).length === 0}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={
-                    !guruMode && !form.cabang_id 
-                      ? "Pilih cabang dulu" 
-                      : (filteredClasses.data?.length === 0 ? "Tidak ada kelas tersedia" : "Pilih kelas")
-                  } />
+                  <SelectValue
+                    placeholder={
+                      !isGuru && !form.cabang
+                        ? "Pilih cabang dulu"
+                        : (formClasses ?? []).length === 0
+                        ? "Tidak ada kelas tersedia"
+                        : "Pilih kelas"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  {(filteredClasses.data || []).map((k) => (
+                  {(formClasses ?? []).map((k) => (
                     <SelectItem key={k.id} value={String(k.id)}>{k.nama_kelas}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Upload Progress */}
+            {/* Progress upload */}
             {saving && uploadProgress > 0 && uploadProgress < 100 && (
-              <div className="space-y-2">
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-600 transition-all duration-300"
+              <div className="space-y-1">
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
@@ -604,16 +621,45 @@ function StudentsPage() {
             )}
           </div>
 
-          <DialogFooter className="mt-4">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
               Batal
             </Button>
-            <Button onClick={save} disabled={saving || !form.nama || !form.email || !form.class_id || (!guruMode && !form.cabang_id)}>
-              {saving ? (uploadProgress > 0 ? `Upload ${uploadProgress}%` : "Menyimpan...") : "Simpan"}
+            <Button
+              onClick={save}
+              disabled={saving || !form.nama.trim() || !form.class_id || (!isGuru && !form.cabang)}
+            >
+              {saving
+                ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />{uploadProgress > 0 ? `Upload ${uploadProgress}%` : "Menyimpan..."}</>)
+                : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Konfirmasi hapus ── */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Siswa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Siswa <span className="font-semibold text-foreground">{deleteTarget?.nama}</span> akan
+              dihapus dari sistem. Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
