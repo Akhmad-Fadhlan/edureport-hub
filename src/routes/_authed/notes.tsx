@@ -12,6 +12,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -29,8 +39,18 @@ import {
 import { useApiData } from "@/hooks/use-api-data";
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
 import { useAuth } from "@/stores/auth-store";
+import { CabangBadge } from "@/components/CabangBadge";
+import { CABANG_LIST, CABANG_LABEL, type Cabang } from "@/lib/cabang";
 import { toast } from "sonner";
-import { Pencil, Plus, Trash2, AlertCircle, RefreshCw } from "lucide-react";
+import {
+  Pencil,
+  Plus,
+  Trash2,
+  AlertCircle,
+  RefreshCw,
+  Info,
+  Loader2,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authed/notes")({
   component: NotesPage,
@@ -58,72 +78,90 @@ interface Student {
   cabang?: string;
 }
 
+interface Klass {
+  id: number;
+  nama_kelas: string;
+  cabang: string;
+}
+
 function NotesPage() {
-  const { user, isGuru, getCabangId } = useAuth();
-  const guruMode = isGuru();
-  const userCabangId = getCabangId(); // harus return number/string ID, bukan nama
+  const { user } = useAuth();
+  // ── Pola identik dengan students.tsx ────────────────────────────────────
+  const isGuru = user?.role === "guru";
+  const guruCabang = user?.cabang ?? null; // string enum, mis. "jonggol"
 
-  // DEBUG: cek nilai cabangId yang didapat — hapus setelah konfirmasi benar
-  console.log("[NotesPage] guruMode:", guruMode, "| userCabangId:", userCabangId, "| type:", typeof userCabangId);
+  // ── Filter state ─────────────────────────────────────────────────────────
+  const [semesterId, setSemesterId]     = useState<string>("all");
+  const [cabangFilter, setCabangFilter] = useState<string>("all");
+  const [classFilter, setClassFilter]   = useState<string>("all");
 
-  // Base params: kirim cabang_id sebagai angka ke backend
-  const baseParams: any = {};
-  if (guruMode && userCabangId) {
-    baseParams.cabang_id = Number(userCabangId); // pastikan angka, bukan string
-  }
+  // ── Build params API — sama persis pola students.tsx ────────────────────
+  // Untuk /notes, /students, /classes: kirim cabang sebagai string enum
+  const cabangParam: string | null = isGuru
+    ? guruCabang                                      // guru: paksa cabang dari token
+    : (cabangFilter !== "all" ? cabangFilter : null); // admin: opsional dari filter
 
-  const [semesterId, setSemesterId] = useState<string>("all");
-  const [classId, setClassId] = useState<string>("all");
-  const [teacherId, setTeacherId] = useState<number | null>(null);
+  // Params untuk fetch notes
+  const notesParams: Record<string, unknown> = {};
+  if (cabangParam) notesParams.cabang = cabangParam;
+  if (semesterId !== "all") notesParams.semester_id = semesterId;
 
+  // Params untuk fetch students & classes (sama, tanpa semester)
+  const listParams: Record<string, unknown> = {};
+  if (cabangParam) listParams.cabang = cabangParam;
+
+  // ── Data fetch ────────────────────────────────────────────────────────────
   const semesters = useApiData<any[]>("/semesters");
-  const classes = useApiData<any[]>("/classes", baseParams);
+  const classesData = useApiData<Klass[]>("/classes", listParams);
   const studentsData = useApiData<{ items: Student[]; pagination?: any }>(
     "/students",
-    { per_page: 500, ...baseParams }
+    { per_page: 500, ...listParams }
   );
+  const {
+    data: rawNotesData,
+    loading: notesLoading,
+    reload,
+    error: notesError,
+  } = useApiData<any>("/notes", notesParams);
 
-  // Query notes — cabang_id sudah ada di baseParams
-  const queryParams: any = { ...baseParams };
-  if (semesterId !== "all") queryParams.semester_id = semesterId;
+  // Reset filter kelas & page saat cabang berubah (hanya admin)
+  useEffect(() => {
+    if (!isGuru) setClassFilter("all");
+  }, [cabangFilter, isGuru]);
 
-  // DEBUG: cek queryParams yang dikirim ke /notes
-  console.log("[NotesPage] queryParams ke /notes:", queryParams);
+  // Reset semester/class filter saat cabang berubah
+  useEffect(() => {
+    setSemesterId("all");
+  }, [cabangParam]);
 
-  const { data: rawNotesData, loading: notesLoading, reload, error: notesError } = useApiData<any>("/notes", queryParams);
+  // ── Teacher ID dari user login ────────────────────────────────────────────
+  const [teacherId, setTeacherId] = useState<number | null>(null);
 
-  const notesData = useMemo(() => {
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const params: Record<string, unknown> = {};
+        if (cabangParam) params.cabang = cabangParam;
+        const res = await apiGet<any[]>("/teachers", params);
+        const rows = Array.isArray(res) ? res : [];
+        const teacher =
+          rows.find((t: any) => Number(t.user_id) === Number(user.id)) ??
+          (rows.length > 0 ? rows[0] : null);
+        if (teacher?.id) setTeacherId(Number(teacher.id));
+      } catch (err) {
+        console.error("Failed to fetch teacher:", err);
+      }
+    })();
+  }, [user, cabangParam]);
+
+  // ── Normalize data ────────────────────────────────────────────────────────
+  const notesData = useMemo<Note[]>(() => {
     if (!rawNotesData) return [];
     if (Array.isArray(rawNotesData)) return rawNotesData;
     if (rawNotesData.data && Array.isArray(rawNotesData.data)) return rawNotesData.data;
     return [];
   }, [rawNotesData]);
-
-  // Load teacher ID berdasarkan user yang login
-  useEffect(() => {
-    (async () => {
-      if (!user) return;
-      try {
-        const params: any = {};
-        if (guruMode && userCabangId) {
-          params.cabang_id = Number(userCabangId);
-        }
-        const res = await apiGet<any[]>("/teachers", params);
-        const rows = Array.isArray(res) ? res : [];
-
-        // Cari teacher berdasarkan user_id (paling akurat)
-        let teacher = rows.find((t: any) => Number(t.user_id) === Number(user.id));
-
-        if (teacher?.id) {
-          setTeacherId(Number(teacher.id));
-        } else if (rows.length > 0) {
-          setTeacherId(Number(rows[0].id));
-        }
-      } catch (error) {
-        console.error("Failed to fetch teacher:", error);
-      }
-    })();
-  }, [user, guruMode, userCabangId]);
 
   const allStudents = useMemo<Student[]>(() => {
     const raw = studentsData.data;
@@ -139,22 +177,25 @@ function NotesPage() {
     return m;
   }, [allStudents]);
 
+  // ── Filter lokal per kelas ────────────────────────────────────────────────
   const filtered = useMemo(() => {
     let rows = notesData;
-    if (!Array.isArray(rows)) return [];
-    if (classId !== "all") {
+    if (classFilter !== "all") {
       rows = rows.filter((n) => {
         const s = studentMap.get(n.student_id);
-        return s && String(s.class_id) === classId;
+        return s && String(s.class_id) === classFilter;
       });
     }
     return rows;
-  }, [notesData, classId, studentMap]);
+  }, [notesData, classFilter, studentMap]);
 
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Note | null>(null);
-  const [form, setForm] = useState({ student_id: "", semester_id: "", catatan: "" });
-  const [saving, setSaving] = useState(false);
+  // ── Form state ────────────────────────────────────────────────────────────
+  const [open, setOpen]             = useState(false);
+  const [editing, setEditing]       = useState<Note | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Note | null>(null);
+  const [form, setForm]             = useState({ student_id: "", semester_id: "", catatan: "" });
+  const [saving, setSaving]         = useState(false);
+  const [deleting, setDeleting]     = useState(false);
 
   function openNew() {
     setEditing(null);
@@ -175,6 +216,12 @@ function NotesPage() {
     });
     setOpen(true);
   }
+
+  // Siswa yang tampil di dropdown form: filter per kelas aktif
+  const studentsForForm = useMemo(() => {
+    if (classFilter === "all") return allStudents;
+    return allStudents.filter((s) => String(s.class_id) === classFilter);
+  }, [allStudents, classFilter]);
 
   async function save() {
     if (!form.student_id || !form.semester_id || !form.catatan.trim()) {
@@ -203,55 +250,53 @@ function NotesPage() {
       setOpen(false);
       reload();
     } catch (e: any) {
-      const errorMsg = e?.response?.data?.message || e?.message || "Gagal menyimpan catatan";
-      toast.error(errorMsg);
+      toast.error(e?.response?.data?.message || e?.message || "Gagal menyimpan catatan");
     } finally {
       setSaving(false);
     }
   }
 
-  async function del(id: number) {
-    if (!confirm("Apakah Anda yakin ingin menghapus catatan ini?")) return;
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await apiDelete(`/notes/${id}`);
+      await apiDelete(`/notes/${deleteTarget.id}`);
       toast.success("Catatan berhasil dihapus");
+      setDeleteTarget(null);
       reload();
     } catch (e: any) {
-      const errorMsg = e?.response?.data?.message || e?.message || "Gagal menghapus catatan";
-      toast.error(errorMsg);
+      toast.error(e?.response?.data?.message || e?.message || "Gagal menghapus catatan");
+    } finally {
+      setDeleting(false);
     }
   }
 
-  const filteredStudentsForForm = useMemo(() => {
-    if (classId === "all") return allStudents;
-    return allStudents.filter((s) => String(s.class_id) === classId);
-  }, [allStudents, classId]);
-
-  if (semesters.loading || classes.loading || studentsData.loading) {
+  // ── Loading state ─────────────────────────────────────────────────────────
+  if (semesters.loading || classesData.loading || studentsData.loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
           <p className="text-muted-foreground">Memuat data...</p>
         </div>
       </div>
     );
   }
 
+  // ── Error state ───────────────────────────────────────────────────────────
   if (notesError) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Catatan Siswa</h1>
-            <p className="text-sm text-muted-foreground">Kelola catatan perkembangan siswa per semester</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold">Catatan Siswa</h1>
+          <p className="text-sm text-muted-foreground">Kelola catatan perkembangan siswa per semester</p>
         </div>
         <Card className="p-8 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Gagal Memuat Data</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            {(typeof notesError === "string" ? notesError : (notesError as any)?.message) || "Terjadi kesalahan saat menghubungi server"}
+            {(typeof notesError === "string" ? notesError : (notesError as any)?.message) ||
+              "Terjadi kesalahan saat menghubungi server"}
           </p>
           <div className="space-x-2">
             <Button onClick={() => window.location.reload()} variant="outline">
@@ -265,14 +310,16 @@ function NotesPage() {
     );
   }
 
+  // ── Render utama ──────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Catatan Siswa</h1>
           <p className="text-sm text-muted-foreground">
-            {guruMode && userCabangId
-              ? `Kelola catatan siswa - Cabang ID: ${userCabangId}`
+            {isGuru && guruCabang
+              ? `Menampilkan catatan cabang ${CABANG_LABEL[guruCabang as Cabang] ?? guruCabang}`
               : "Kelola catatan perkembangan siswa per semester"}
           </p>
         </div>
@@ -282,7 +329,20 @@ function NotesPage() {
         </Button>
       </div>
 
+      {/* Info banner untuk guru — identik dengan students.tsx */}
+      {isGuru && guruCabang && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-sm">
+          <Info className="h-4 w-4 flex-shrink-0" />
+          <span>
+            Anda login sebagai <strong>Guru</strong>. Hanya catatan siswa dari cabang{" "}
+            <strong>{CABANG_LABEL[guruCabang as Cabang] ?? guruCabang}</strong> yang ditampilkan.
+          </span>
+        </div>
+      )}
+
+      {/* Filter */}
       <Card className="p-4 flex flex-wrap gap-3">
+        {/* Filter Semester */}
         <Select value={semesterId} onValueChange={setSemesterId}>
           <SelectTrigger className="w-[260px]">
             <SelectValue placeholder="Pilih Semester" />
@@ -297,13 +357,37 @@ function NotesPage() {
           </SelectContent>
         </Select>
 
-        <Select value={classId} onValueChange={setClassId}>
+        {/* Filter Cabang — hanya admin/superadmin */}
+        {!isGuru && (
+          <Select
+            value={cabangFilter}
+            onValueChange={(v) => {
+              setCabangFilter(v);
+              setClassFilter("all");
+            }}
+          >
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Semua Cabang" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Cabang</SelectItem>
+              {CABANG_LIST.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {CABANG_LABEL[c]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        {/* Filter Kelas */}
+        <Select value={classFilter} onValueChange={setClassFilter}>
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Pilih Kelas" />
+            <SelectValue placeholder="Semua Kelas" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Kelas</SelectItem>
-            {(Array.isArray(classes.data) ? classes.data : []).map((k) => (
+            {(Array.isArray(classesData.data) ? classesData.data : []).map((k) => (
               <SelectItem key={k.id} value={String(k.id)}>
                 {k.nama_kelas}
               </SelectItem>
@@ -312,12 +396,14 @@ function NotesPage() {
         </Select>
       </Card>
 
+      {/* Tabel */}
       <Card className="p-0 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Siswa</TableHead>
               <TableHead>Kelas</TableHead>
+              {!isGuru && <TableHead>Cabang</TableHead>}
               <TableHead>Semester</TableHead>
               <TableHead>Catatan</TableHead>
               <TableHead>Guru</TableHead>
@@ -326,54 +412,80 @@ function NotesPage() {
           </TableHeader>
           <TableBody>
             {notesLoading && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-6">
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                    <span className="text-muted-foreground">Memuat catatan...</span>
-                  </div>
-                </TableCell>
-              </TableRow>
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={isGuru ? 6 : 7}>
+                    <div className="h-8 bg-muted animate-pulse rounded" />
+                  </TableCell>
+                </TableRow>
+              ))
             )}
             {!notesLoading && filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  Belum ada catatan untuk filter yang dipilih
+                <TableCell
+                  colSpan={isGuru ? 6 : 7}
+                  className="text-center py-10 text-muted-foreground"
+                >
+                  Belum ada catatan untuk filter yang dipilih.
                 </TableCell>
               </TableRow>
             )}
-            {!notesLoading && filtered.map((n: Note) => {
-              const student = studentMap.get(n.student_id);
-              return (
-                <TableRow key={n.id}>
-                  <TableCell className="font-medium capitalize">
-                    {n.student_name || student?.nama || `ID: ${n.student_id}`}
-                  </TableCell>
-                  <TableCell>{student?.nama_kelas || "-"}</TableCell>
-                  <TableCell>
-                    {n.tahun_ajaran && n.semester_number
-                      ? `${n.tahun_ajaran} - Semester ${n.semester_number}`
-                      : `Semester ID: ${n.semester_id}`}
-                  </TableCell>
-                  <TableCell className="max-w-md whitespace-pre-wrap break-words">
-                    {n.catatan}
-                  </TableCell>
-                  <TableCell className="capitalize">{n.teacher_name || `Guru ID: ${n.teacher_id}`}</TableCell>
-                  <TableCell className="text-right space-x-2 whitespace-nowrap">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(n)} title="Edit catatan">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => del(n.id)} title="Hapus catatan">
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {!notesLoading &&
+              filtered.map((n: Note) => {
+                const student = studentMap.get(n.student_id);
+                return (
+                  <TableRow key={n.id}>
+                    <TableCell className="font-medium capitalize">
+                      {n.student_name || student?.nama || `ID: ${n.student_id}`}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {student?.nama_kelas || "—"}
+                    </TableCell>
+                    {!isGuru && (
+                      <TableCell>
+                        <CabangBadge cabang={(student?.cabang as Cabang) ?? null} />
+                      </TableCell>
+                    )}
+                    <TableCell className="text-sm">
+                      {n.tahun_ajaran && n.semester_number
+                        ? `${n.tahun_ajaran} - Semester ${n.semester_number}`
+                        : `Semester ID: ${n.semester_id}`}
+                    </TableCell>
+                    <TableCell className="max-w-xs whitespace-pre-wrap break-words text-sm">
+                      {n.catatan}
+                    </TableCell>
+                    <TableCell className="text-sm capitalize">
+                      {n.teacher_name || `Guru ID: ${n.teacher_id}`}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEdit(n)}
+                          title="Edit catatan"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleteTarget(n)}
+                          title="Hapus catatan"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
           </TableBody>
         </Table>
       </Card>
 
+      {/* ── Dialog Tambah / Edit ── */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -381,22 +493,26 @@ function NotesPage() {
           </DialogHeader>
 
           <div className="space-y-4">
+            {/* Siswa */}
             <div className="space-y-2">
-              <Label>Siswa *</Label>
+              <Label>
+                Siswa <span className="text-destructive">*</span>
+              </Label>
               <Select
                 value={form.student_id}
                 onValueChange={(v) => setForm({ ...form, student_id: v })}
+                disabled={saving}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih siswa" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredStudentsForForm.length === 0 && (
+                  {studentsForForm.length === 0 && (
                     <SelectItem value="_empty" disabled>
                       Tidak ada siswa tersedia
                     </SelectItem>
                   )}
-                  {filteredStudentsForForm.map((s) => (
+                  {studentsForForm.map((s) => (
                     <SelectItem key={s.id} value={String(s.id)}>
                       {s.nama} {s.nama_kelas ? `(${s.nama_kelas})` : ""}
                     </SelectItem>
@@ -405,11 +521,15 @@ function NotesPage() {
               </Select>
             </div>
 
+            {/* Semester */}
             <div className="space-y-2">
-              <Label>Semester *</Label>
+              <Label>
+                Semester <span className="text-destructive">*</span>
+              </Label>
               <Select
                 value={form.semester_id}
                 onValueChange={(v) => setForm({ ...form, semester_id: v })}
+                disabled={saving}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih semester" />
@@ -424,18 +544,20 @@ function NotesPage() {
               </Select>
             </div>
 
+            {/* Catatan */}
             <div className="space-y-2">
-              <Label>Catatan *</Label>
+              <Label>
+                Catatan <span className="text-destructive">*</span>
+              </Label>
               <Textarea
                 rows={6}
                 value={form.catatan}
                 onChange={(e) => setForm({ ...form, catatan: e.target.value })}
                 placeholder="Tulis catatan untuk siswa..."
                 className="resize-none"
+                disabled={saving}
               />
-              <p className="text-xs text-muted-foreground">
-                {form.catatan.length} karakter
-              </p>
+              <p className="text-xs text-muted-foreground">{form.catatan.length} karakter</p>
             </div>
           </div>
 
@@ -445,13 +567,52 @@ function NotesPage() {
             </Button>
             <Button
               onClick={save}
-              disabled={!form.student_id || !form.semester_id || !form.catatan.trim() || saving}
+              disabled={
+                !form.student_id || !form.semester_id || !form.catatan.trim() || saving
+              }
             >
-              {saving ? "Menyimpan..." : "Simpan"}
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Menyimpan...
+                </>
+              ) : (
+                "Simpan"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Konfirmasi Hapus ── */}
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Catatan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Catatan siswa{" "}
+              <span className="font-semibold text-foreground">
+                {deleteTarget?.student_name || `ID: ${deleteTarget?.student_id}`}
+              </span>{" "}
+              akan dihapus dari sistem. Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
