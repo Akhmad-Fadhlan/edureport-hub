@@ -88,9 +88,15 @@ function parseCsvLine(line: string): string[] {
 
 /** Parse full CSV text into a 2-D array of strings */
 function parseCsvText(text: string): string[][] {
-  // Normalize line endings
   const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
   return lines.map(parseCsvLine);
+}
+
+/** Ekstrak tingkat kelas dari nama kelas (misal: "8A" → 8) */
+function parseTingkatKelas(namaKelas: string | undefined | null): number | null {
+  if (!namaKelas) return null;
+  const match = namaKelas.match(/^(\d+)/);
+  return match ? parseInt(match[1]) : null;
 }
 
 /* ─── Download template as CSV ───────────────────────────────────────────── */
@@ -113,7 +119,7 @@ function downloadTemplate(
   }
 
   const csv = toCsv(rows);
-  const bom = "\uFEFF"; // UTF-8 BOM so Excel opens it correctly
+  const bom = "\uFEFF";
   const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -142,11 +148,9 @@ function parseImportFile(
       return;
     }
 
-    // Strip BOM if present
     const text = raw.startsWith("\uFEFF") ? raw.slice(1) : raw;
     const rawRows = parseCsvText(text);
 
-    // Find the header row (the row containing "kode_indikator")
     let headerIdx = -1;
     for (let i = 0; i < rawRows.length; i++) {
       const lower = rawRows[i].map((c) => c.toLowerCase().trim());
@@ -181,7 +185,7 @@ function parseImportFile(
       const nilaiRaw = (row[nilaiIdx] ?? "").trim();
       const deskripsi = deskIdx >= 0 ? (row[deskIdx] ?? "").trim() : undefined;
 
-      if (!kode) continue; // skip blank rows
+      if (!kode) continue;
 
       const ind = indMap.get(kode.toLowerCase());
       if (!ind) {
@@ -304,8 +308,6 @@ function ImportDialog({
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col gap-0 p-0">
-
-        {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-2 text-base">
             <FileSpreadsheet className="h-5 w-5 text-green-600" />
@@ -317,10 +319,7 @@ function ImportDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Body */}
         <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
-
-          {/* Step 1 – Download template */}
           <div className="rounded-lg border bg-card p-4 space-y-2.5">
             <p className="flex items-center gap-2 text-sm font-semibold">
               <StepBadge>1</StepBadge>Download Template
@@ -342,7 +341,6 @@ function ImportDialog({
             </Button>
           </div>
 
-          {/* Step 2 – Upload */}
           <div className="rounded-lg border bg-card p-4 space-y-2.5">
             <p className="flex items-center gap-2 text-sm font-semibold">
               <StepBadge>2</StepBadge>Upload File yang Sudah Diisi
@@ -364,7 +362,6 @@ function ImportDialog({
             />
           </div>
 
-          {/* Step 3 – Preview */}
           {importRows.length > 0 && (
             <div className="rounded-lg border bg-card p-4 space-y-3">
               <p className="flex items-center gap-2 text-sm font-semibold">
@@ -434,7 +431,6 @@ function ImportDialog({
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex justify-end gap-2 px-6 py-4 border-t bg-muted/20">
           <Button variant="outline" onClick={onClose} disabled={importing}>Batal</Button>
           <Button onClick={handleImport} disabled={importing || okCount === 0}>
@@ -443,7 +439,6 @@ function ImportDialog({
               : <><Upload className="h-4 w-4 mr-2" />Import {okCount > 0 ? `${okCount} Nilai` : ""}</>}
           </Button>
         </div>
-
       </DialogContent>
     </Dialog>
   );
@@ -452,19 +447,37 @@ function ImportDialog({
 /* ─── Main Page ──────────────────────────────────────────────────────────── */
 
 function GradesPage() {
-  const { isGuru, getCabangId } = useAuth();
+  const { isGuru, getCabangId, user } = useAuth();
   const guruMode = isGuru();
   const cabangId = getCabangId();
 
   const semesters   = useApiData<any[]>("/semesters");
+  
+  // Mapping cabang_id ke enum cabang
+  const getCabangEnum = (id: number | null): string | null => {
+    const mapping: Record<number, string> = {
+      1: 'jonggol',
+      2: 'pamijahan',
+      3: 'akhwat',
+      4: 'solo',
+      5: 'sentul'
+    };
+    return id ? mapping[id] || null : null;
+  };
+
   const classParams: any = {};
-  if (guruMode && cabangId) classParams.cabang_id = cabangId;
+  if (guruMode && cabangId) {
+    classParams.cabang = getCabangEnum(cabangId);
+  }
   const classes = useApiData<any[]>("/classes", classParams);
 
   const [semesterId, setSemesterId] = useState<string>("");
   const [classId,    setClassId]    = useState<string>("");
   const [studentId,  setStudentId]  = useState<string>("");
   const [showImport, setShowImport] = useState(false);
+  
+  // State untuk menyimpan tingkat kelas yang dipilih
+  const [selectedClassTingkat, setSelectedClassTingkat] = useState<number | null>(null);
 
   // Auto-select active semester
   useEffect(() => {
@@ -474,16 +487,49 @@ function GradesPage() {
     }
   }, [semesters.data, semesterId]);
 
+  // Update tingkat kelas ketika kelas berubah
+  useEffect(() => {
+    if (classId && classes.data) {
+      const selectedClass = classes.data.find((c: any) => String(c.id) === classId);
+      if (selectedClass) {
+        const tingkat = parseTingkatKelas(selectedClass.nama_kelas);
+        setSelectedClassTingkat(tingkat);
+      } else {
+        setSelectedClassTingkat(null);
+      }
+    } else {
+      setSelectedClassTingkat(null);
+    }
+  }, [classId, classes.data]);
+
   const studentParams: any = { per_page: 200 };
   if (classId)              studentParams.class_id  = classId;
-  if (guruMode && cabangId) studentParams.cabang_id = cabangId;
+  if (guruMode && cabangId) studentParams.cabang = getCabangEnum(cabangId);
   const students = useApiData<{ items: any[] }>(classId ? "/students" : null, studentParams);
 
-  const materials = useApiData<any[]>(semesterId ? "/materials" : null, { semester_id: semesterId });
+  // ============================================================
+  // PERBAIKAN UTAMA: Filter materials berdasarkan tingkat kelas
+  // ============================================================
+  const materialsParams = useMemo(() => {
+    if (!semesterId) return null;
+    const params: any = { semester_id: semesterId };
+    // Kirim tingkat_kelas jika ada (7 atau 8)
+    if (selectedClassTingkat !== null && (selectedClassTingkat === 7 || selectedClassTingkat === 8)) {
+      params.tingkat_kelas = String(selectedClassTingkat);
+    }
+    return params;
+  }, [semesterId, selectedClassTingkat]);
+
+  const materials = useApiData<any[]>(
+    materialsParams ? "/materials" : null, 
+    materialsParams || {}
+  );
+
   const materialIds = useMemo(
     () => new Set((materials.data || []).map((m: any) => m.id)),
     [materials.data],
   );
+  
   const indicators = useApiData<Indicator[]>("/indicators");
 
   const visibleIndicators = useMemo(
@@ -565,12 +611,21 @@ function GradesPage() {
       if (!map.has(i.material_id)) map.set(i.material_id, { material: mat, items: [] });
       map.get(i.material_id)!.items.push(i);
     });
-    return Array.from(map.values());
+    // Sort materials by urutan
+    return Array.from(map.values()).sort((a, b) => 
+      (a.material?.urutan || 0) - (b.material?.urutan || 0)
+    );
   }, [visibleIndicators, materials.data]);
 
   const selectedStudent = (students.data?.items || []).find(
     (s: any) => String(s.id) === studentId,
   );
+
+  // Informasi filter yang sedang aktif
+  const filterInfo = useMemo(() => {
+    if (!selectedClassTingkat) return "Menampilkan semua materi (global)";
+    return `Menampilkan materi untuk Kelas ${selectedClassTingkat} + materi global`;
+  }, [selectedClassTingkat]);
 
   return (
     <div className="space-y-6">
@@ -598,40 +653,49 @@ function GradesPage() {
       </div>
 
       {/* Filter bar */}
-      <Card className="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="space-y-2">
-          <Label>Semester</Label>
-          <Select value={semesterId} onValueChange={setSemesterId}>
-            <SelectTrigger><SelectValue placeholder="Pilih semester" /></SelectTrigger>
-            <SelectContent>
-              {(semesters.data || []).map((s: any) => (
-                <SelectItem key={s.id} value={String(s.id)}>{s.nama_semester}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <Card className="p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label>Semester</Label>
+            <Select value={semesterId} onValueChange={setSemesterId}>
+              <SelectTrigger><SelectValue placeholder="Pilih semester" /></SelectTrigger>
+              <SelectContent>
+                {(semesters.data || []).map((s: any) => (
+                  <SelectItem key={s.id} value={String(s.id)}>{s.nama_semester}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Kelas</Label>
+            <Select value={classId} onValueChange={(v) => { setClassId(v); setStudentId(""); }}>
+              <SelectTrigger><SelectValue placeholder="Pilih kelas" /></SelectTrigger>
+              <SelectContent>
+                {(classes.data || []).map((k: any) => (
+                  <SelectItem key={k.id} value={String(k.id)}>{k.nama_kelas}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Siswa</Label>
+            <Select value={studentId} onValueChange={setStudentId} disabled={!classId}>
+              <SelectTrigger><SelectValue placeholder="Pilih siswa" /></SelectTrigger>
+              <SelectContent>
+                {(students.data?.items || []).map((s: any) => (
+                  <SelectItem key={s.id} value={String(s.id)}>{s.nama}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label>Kelas</Label>
-          <Select value={classId} onValueChange={(v) => { setClassId(v); setStudentId(""); }}>
-            <SelectTrigger><SelectValue placeholder="Pilih kelas" /></SelectTrigger>
-            <SelectContent>
-              {(classes.data || []).map((k: any) => (
-                <SelectItem key={k.id} value={String(k.id)}>{k.nama_kelas}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Siswa</Label>
-          <Select value={studentId} onValueChange={setStudentId} disabled={!classId}>
-            <SelectTrigger><SelectValue placeholder="Pilih siswa" /></SelectTrigger>
-            <SelectContent>
-              {(students.data?.items || []).map((s: any) => (
-                <SelectItem key={s.id} value={String(s.id)}>{s.nama}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        
+        {/* Info filter */}
+        {classId && semesterId && (
+          <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+            ℹ️ {filterInfo}
+          </div>
+        )}
       </Card>
 
       {/* Empty states */}
@@ -642,7 +706,7 @@ function GradesPage() {
       )}
       {studentId && grouped.length === 0 && (
         <Card className="p-8 text-center text-muted-foreground">
-          Belum ada materi/indikator untuk semester ini.
+          {materials.loading ? "Memuat materi..." : "Belum ada materi/indikator untuk kelas ini pada semester tersebut."}
         </Card>
       )}
 
@@ -651,7 +715,19 @@ function GradesPage() {
         <Card key={material?.id} className="p-0 overflow-hidden">
           <div className="px-5 py-3 bg-secondary border-b">
             <div className="font-semibold">{material?.judul}</div>
-            <div className="text-xs text-muted-foreground">{material?.nama_mapel} • {material?.kode_rapor}</div>
+            <div className="text-xs text-muted-foreground">
+              {material?.nama_mapel} • {material?.kode_rapor}
+              {material?.tingkat_kelas && (
+                <span className="ml-2 px-1.5 py-0.5 bg-primary/10 rounded text-[10px]">
+                  Kelas {material.tingkat_kelas}
+                </span>
+              )}
+              {!material?.tingkat_kelas && (
+                <span className="ml-2 px-1.5 py-0.5 bg-muted rounded text-[10px]">
+                  Global
+                </span>
+              )}
+            </div>
           </div>
           <Table>
             <TableHeader>
@@ -674,7 +750,10 @@ function GradesPage() {
                         <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                       )}
                       <Input
-                        type="number" step="0.1" min={0} max={parseFloat(ind.nilai_max)}
+                        type="number" 
+                        step="0.1" 
+                        min={0} 
+                        max={parseFloat(ind.nilai_max)}
                         className="w-20 text-right"
                         value={values[ind.id] ?? ""}
                         onChange={(e) => onChangeValue(ind, e.target.value)}
