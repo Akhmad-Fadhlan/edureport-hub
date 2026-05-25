@@ -8,7 +8,7 @@ export const UPLOADS_BASE = "https://rapor.codestechno.com/upload";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 20000,
+  timeout: 30000,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -30,7 +30,6 @@ export const tokenStorage = {
     if (typeof window === "undefined") return;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
-    // Clear photo cache juga saat logout
     photoCache.clear();
   },
 };
@@ -63,9 +62,16 @@ api.interceptors.response.use(
         toast.error("Sesi berakhir. Silakan login ulang.");
         location.href = "/login";
       }
+    } else if (error.response.status === 403) {
+      toast.error("Akses ditolak. Anda tidak memiliki izin.");
     } else {
       const msg = error.response?.data?.message || "Terjadi kesalahan";
-      if (error.response.status >= 500) toast.error(msg);
+      if (error.response.status >= 500) {
+        console.error("Server error:", error.response.data);
+        toast.error("Terjadi kesalahan server. Silakan coba lagi nanti.");
+      } else {
+        toast.error(msg);
+      }
     }
     return Promise.reject(error);
   },
@@ -81,18 +87,23 @@ export async function apiGet<T>(path: string, params?: any): Promise<T> {
   const res = await api.get<ApiResponse<T>>(path, { params });
   return res.data.data;
 }
+
 export async function apiPost<T>(path: string, body?: any, config?: any): Promise<T> {
   const res = await api.post<ApiResponse<T>>(path, body, config);
   return res.data.data;
 }
+
 export async function apiPut<T>(path: string, body?: any): Promise<T> {
   const res = await api.put<ApiResponse<T>>(path, body);
   return res.data.data;
 }
+
 export async function apiDelete<T>(path: string): Promise<T> {
   const res = await api.delete<ApiResponse<T>>(path);
   return res.data.data;
 }
+
+// ========== STUDENT PHOTO FUNCTIONS ==========
 
 function normalizeApiImage(raw: unknown): string | null {
   if (!raw) return null;
@@ -104,21 +115,17 @@ function normalizeApiImage(raw: unknown): string | null {
   return null;
 }
 
-// Fungsi utama untuk mengambil photo dari endpoint API (dengan cache)
 export async function getStudentPhoto(filename: string | null | undefined): Promise<string | null> {
   if (!filename) return null;
 
-  // Cek cache
   if (photoCache.has(filename)) {
     return photoCache.get(filename) || null;
   }
 
   try {
-    // Panggil endpoint API yang benar
-    const response = await apiPost<string | { data?: string }>("/get-student-photo", { filename });
+    const response = await apiPost<{ data?: string }>("/get-student-photo", { filename });
     const photoData = normalizeApiImage(response);
 
-    // Simpan ke cache
     if (photoData) {
       photoCache.set(filename, photoData);
     }
@@ -130,15 +137,12 @@ export async function getStudentPhoto(filename: string | null | undefined): Prom
   }
 }
 
-// Fungsi untuk mengambil multiple photos sekaligus
 export async function getStudentPhotos(filenames: string[]): Promise<Record<string, string>> {
   if (!filenames.length) return {};
 
-  // Filter yang belum ada di cache
   const uncachedFilenames = filenames.filter((f) => !photoCache.has(f));
 
   if (uncachedFilenames.length === 0) {
-    // Semua sudah di cache
     const result: Record<string, string> = {};
     filenames.forEach((f) => {
       const cached = photoCache.get(f);
@@ -148,18 +152,15 @@ export async function getStudentPhotos(filenames: string[]): Promise<Record<stri
   }
 
   try {
-    // Panggil endpoint untuk multiple photos
     const response = await apiPost<Record<string, string>>("/get-student-photos", {
       filenames: uncachedFilenames,
     });
 
-    // Simpan ke cache
     Object.entries(response).forEach(([key, value]) => {
       const normalized = normalizeApiImage(value);
       if (normalized) photoCache.set(key, normalized);
     });
 
-    // Return semua (termasuk dari cache)
     const result: Record<string, string> = {};
     filenames.forEach((f) => {
       const cached = photoCache.get(f);
@@ -173,22 +174,17 @@ export async function getStudentPhotos(filenames: string[]): Promise<Record<stri
   }
 }
 
-// DEPRECATED: Jangan gunakan fungsi ini lagi karena mengakses langsung ke folder uploads
-// yang menyebabkan 404. Gunakan getStudentPhoto() sebagai gantinya.
 export function studentPhotoUrl(photo?: string | null): string | null {
   console.warn("studentPhotoUrl is deprecated. Use getStudentPhoto() instead.");
   if (!photo) return null;
   if (photo.startsWith("http")) return photo;
-  // Ini akan tetap 404 karena file tidak bisa diakses langsung
   return `${UPLOADS_BASE}/students/${photo}`;
 }
 
-// Clear photo cache
 export function clearPhotoCache() {
   photoCache.clear();
 }
 
-// Preload multiple photos
 export async function preloadStudentPhotos(filenames: string[]) {
   const validFilenames = filenames.filter((f) => f && !photoCache.has(f));
   if (validFilenames.length > 0) {
