@@ -15,8 +15,8 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const { login, init, initialized, user } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("admin@rapor.id");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
 
