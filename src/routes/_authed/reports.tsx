@@ -189,19 +189,34 @@ function ReportsPage() {
   /* --------------------------------------------------------------------------
    * BUILD REPORT
    * ------------------------------------------------------------------------ */
+  /** Ekstrak angka pertama dari nama_kelas, mis. "8A" → 8, "7B-akh" → 7 */
+  function parseTingkatFromKelas(namaKelas: string | undefined | null): number | null {
+    if (!namaKelas) return null;
+    const m = namaKelas.match(/^(\d+)/);
+    return m ? parseInt(m[1]) : null;
+  }
+
   async function buildReport() {
     if (!studentId || !semesterId) return;
     setBuilding(true);
     try {
+      // ── 0. Tentukan tingkat kelas siswa dari nama_kelas ────────────────────
+      const studentFromList = (students.data?.items ?? []).find(
+        (s: any) => s.id === parseInt(studentId),
+      );
+      const namaKelasRaw: string | undefined = studentFromList?.nama_kelas;
+      const tingkatKelas = parseTingkatFromKelas(namaKelasRaw); // 7, 8, atau null
+
+      // Bangun params materials: filter by tingkat agar dapat materi global + tingkat siswa
+      const materialsParams: any = { semester_id: semesterId };
+      if (tingkatKelas !== null) materialsParams.tingkat_kelas = String(tingkatKelas);
+
       // ── 1. Fetch semua data paralel ────────────────────────────────────────
       const [studentDetail, materials, indicators, grades] = await Promise.all([
         apiGet<any>(`/students/${studentId}`).catch(
-          () =>
-            (students.data?.items ?? []).find(
-              (s: any) => s.id === parseInt(studentId),
-            ) ?? null,
+          () => studentFromList ?? null,
         ),
-        apiGet<any[]>("/materials", { semester_id: semesterId }),
+        apiGet<any[]>("/materials", materialsParams),
         apiGet<any[]>("/indicators"),
         apiGet<any[]>("/grades", {
           semester_id: semesterId,
