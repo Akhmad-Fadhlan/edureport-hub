@@ -16,6 +16,7 @@ import {
   Menu,
   FolderKanban,
   Briefcase,
+  UserCog,
 } from "lucide-react";
 import { useAuth, type Role } from "@/stores/auth-store";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,8 @@ interface NavItem {
 const ALL: Role[] = ["superadmin", "admin", "guru"];
 const ADMIN: Role[] = ["superadmin", "admin"];
 
+const SUPERADMIN: Role[] = ["superadmin"];
+
 const NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" />, roles: ALL },
   { to: "/semesters", label: "Semester", icon: <CalendarDays className="h-4 w-4" />, roles: ADMIN },
@@ -47,6 +50,7 @@ const NAV: NavItem[] = [
   { to: "/portfolio", label: "Portofolio", icon: <FolderKanban className="h-4 w-4" />, roles: ALL },
   { to: "/reports", label: "Rapor PDF", icon: <FileText className="h-4 w-4" />, roles: ALL },
   { to: "/project-reports", label: "Rapor Project", icon: <Briefcase className="h-4 w-4" />, roles: ALL },
+  { to: "/users", label: "Manajemen User", icon: <UserCog className="h-4 w-4" />, roles: SUPERADMIN },
 ];
 
 export function AppLayout() {
