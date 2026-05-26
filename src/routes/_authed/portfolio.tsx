@@ -76,19 +76,11 @@ import {
   resolveUploadUrl,
   resolveImageUrl,
   normalizeDriveLink,
-  downloadTeachingTemplate,
-  downloadProjectTemplate,
-  downloadYoutubeTemplate,
-  downloadCertificateTemplate,
-  parseTeachingCsv,
-  parseProjectCsv,
-  parseYoutubeCsv,
-  parseCertificateCsv,
-  importTeachingActivities,
-  importProjects,
-  importYoutubeVideos,
-  importCertificates,
-  type CsvImportRow,
+  downloadUnifiedTemplate,
+  parseUnifiedCsv,
+  importUnifiedPortfolio,
+  type UnifiedCsvRow,
+  type CsvImportResult,
   type StudentSummary,
   type TeachingActivity,
   type DesignProject,
@@ -101,48 +93,69 @@ export const Route = createFileRoute("/_authed/portfolio")({
   component: PortfolioPage,
 });
 
-// ── CSV IMPORT DIALOG ─────────────────────────────────────────────────────────
+// ── UNIFIED CSV IMPORT DIALOG ─────────────────────────────────────────────────
 
-interface CsvImportDialogProps<T> {
+interface UnifiedImportDialogProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  title: string;
-  onDownloadTemplate: () => void;
-  onParseFile: (file: File, cb: (rows: CsvImportRow<T>[]) => void) => void;
-  onImport: (rows: CsvImportRow<T>[]) => Promise<void>;
-  columns: { key: keyof T; label: string }[];
+  studentId: number;
+  semesterId: number;
+  onImportComplete: () => void;
 }
 
-function CsvImportDialog<T extends object>({
+function UnifiedImportDialog({
   open,
   onOpenChange,
-  title,
-  onDownloadTemplate,
-  onParseFile,
-  onImport,
-  columns,
-}: CsvImportDialogProps<T>) {
-  const [rows, setRows] = useState<CsvImportRow<T>[]>([]);
+  studentId,
+  semesterId,
+  onImportComplete,
+}: UnifiedImportDialogProps) {
+  const [rows, setRows] = useState<UnifiedCsvRow[]>([]);
   const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    onParseFile(file, (parsed) => {
+    parseUnifiedCsv(file, (parsed) => {
       setRows(parsed);
     });
   }
 
   async function handleImport() {
     const valid = rows.filter((r) => r.status !== "error");
-    if (!valid.length) { toast.error("Tidak ada baris valid untuk diimport"); return; }
+    if (!valid.length) {
+      toast.error("Tidak ada baris valid untuk diimport");
+      return;
+    }
     setImporting(true);
     try {
-      await onImport(rows);
+      const result = await importUnifiedPortfolio(rows, studentId, semesterId);
+      
+      // Show detailed result
+      const parts: string[] = [];
+      if (result.teaching.success) parts.push(`Mengajar: ${result.teaching.success}`);
+      if (result.design.success) parts.push(`Desain: ${result.design.success}`);
+      if (result.robotics.success) parts.push(`Robotik: ${result.robotics.success}`);
+      if (result.youtube.success) parts.push(`YouTube: ${result.youtube.success}`);
+      if (result.certificate.success) parts.push(`Sertifikat: ${result.certificate.success}`);
+      
+      let message = `Import selesai! Total: ${result.total.success} berhasil`;
+      if (result.total.failed) message += `, ${result.total.failed} gagal`;
+      if (parts.length) message += ` (${parts.join(", ")})`;
+      
+      if (result.total.failed) {
+        toast.warning(message);
+      } else {
+        toast.success(message);
+      }
+      
       onOpenChange(false);
       setRows([]);
       if (fileRef.current) fileRef.current.value = "";
+      onImportComplete();
+    } catch (error) {
+      toast.error("Gagal melakukan import");
     } finally {
       setImporting(false);
     }
@@ -154,17 +167,23 @@ function CsvImportDialog<T extends object>({
     if (fileRef.current) fileRef.current.value = "";
   }
 
+  const teachingRows = rows.filter((r) => r.type === "teaching");
+  const designRows = rows.filter((r) => r.type === "design");
+  const roboticsRows = rows.filter((r) => r.type === "robotics");
+  const youtubeRows = rows.filter((r) => r.type === "youtube");
+  const certificateRows = rows.filter((r) => r.type === "certificate");
+  
   const okCount = rows.filter((r) => r.status === "ok").length;
   const warnCount = rows.filter((r) => r.status === "warning").length;
   const errCount = rows.filter((r) => r.status === "error").length;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-green-600" />
-            Import CSV – {title}
+            Import Portofolio Lengkap (Semua Jenis)
           </DialogTitle>
         </DialogHeader>
 
@@ -173,9 +192,12 @@ function CsvImportDialog<T extends object>({
           <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-lg">
             <div className="flex-1 text-sm">
               <p className="font-medium">Langkah 1: Download template CSV</p>
-              <p className="text-muted-foreground text-xs mt-0.5">Isi data sesuai kolom yang tersedia, lalu upload kembali.</p>
+              <p className="text-muted-foreground text-xs mt-0.5">
+                Isi data sesuai kolom yang tersedia. Satu baris = satu item portofolio.
+                Gunakan kolom "type" untuk menentukan jenis data.
+              </p>
             </div>
-            <Button variant="outline" size="sm" onClick={onDownloadTemplate}>
+            <Button variant="outline" size="sm" onClick={downloadUnifiedTemplate}>
               <Download className="h-4 w-4 mr-1.5" /> Download Template
             </Button>
           </div>
@@ -186,11 +208,36 @@ function CsvImportDialog<T extends object>({
             <Input ref={fileRef} type="file" accept=".csv,text/csv" onChange={handleFile} />
           </div>
 
-          {/* Preview */}
+          {/* Summary stats */}
           {rows.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 text-sm">
-                <span className="font-medium">Preview ({rows.length} baris)</span>
+            <div className="flex flex-wrap items-center gap-3 text-sm p-2 bg-muted/30 rounded-lg">
+              <span className="font-medium">Total: {rows.length} baris</span>
+              {teachingRows.length > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  <GraduationCap className="h-3 w-3" /> Mengajar: {teachingRows.length}
+                </Badge>
+              )}
+              {designRows.length > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  <Palette className="h-3 w-3" /> Desain: {designRows.length}
+                </Badge>
+              )}
+              {roboticsRows.length > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  <Bot className="h-3 w-3" /> Robotik: {roboticsRows.length}
+                </Badge>
+              )}
+              {youtubeRows.length > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  <Youtube className="h-3 w-3" /> YouTube: {youtubeRows.length}
+                </Badge>
+              )}
+              {certificateRows.length > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  <Award className="h-3 w-3" /> Sertifikat: {certificateRows.length}
+                </Badge>
+              )}
+              <div className="flex items-center gap-2 ml-auto">
                 {okCount > 0 && (
                   <span className="flex items-center gap-1 text-green-600">
                     <CheckCircle2 className="h-3.5 w-3.5" /> {okCount} siap
@@ -207,21 +254,48 @@ function CsvImportDialog<T extends object>({
                   </span>
                 )}
               </div>
-              <div className="border rounded-lg overflow-auto max-h-52">
-                <table className="w-full text-xs">
-                  <thead className="bg-muted/50 sticky top-0">
-                    <tr>
-                      <th className="px-2 py-1.5 text-left font-medium">Baris</th>
-                      <th className="px-2 py-1.5 text-left font-medium">Status</th>
-                      {columns.map((c) => (
-                        <th key={String(c.key)} className="px-2 py-1.5 text-left font-medium">{c.label}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row) => (
+            </div>
+          )}
+
+          {/* Preview table */}
+          {rows.length > 0 && (
+            <div className="border rounded-lg overflow-auto max-h-96">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/50 sticky top-0">
+                  <tr>
+                    <th className="px-2 py-1.5 text-left font-medium">Baris</th>
+                    <th className="px-2 py-1.5 text-left font-medium">Tipe</th>
+                    <th className="px-2 py-1.5 text-left font-medium">Status</th>
+                    <th className="px-2 py-1.5 text-left font-medium">Judul/Tema</th>
+                    <th className="px-2 py-1.5 text-left font-medium">Detail</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => {
+                    let title = "";
+                    let detail = "";
+                    switch (row.type) {
+                      case "teaching":
+                        title = row.data.tema || "-";
+                        detail = row.data.lokasi || "";
+                        break;
+                      case "design":
+                      case "robotics":
+                        title = row.data.judul || "-";
+                        detail = row.data.teknologi || "";
+                        break;
+                      case "youtube":
+                        title = row.data.judul_video || "-";
+                        detail = row.data.link_youtube || "";
+                        break;
+                      case "certificate":
+                        title = row.data.tema || "-";
+                        detail = row.data.lingkup || "";
+                        break;
+                    }
+                    return (
                       <tr
-                        key={row.row}
+                        key={row.rowNumber}
                         className={
                           row.status === "error"
                             ? "bg-red-50"
@@ -230,7 +304,17 @@ function CsvImportDialog<T extends object>({
                             : ""
                         }
                       >
-                        <td className="px-2 py-1.5 text-muted-foreground">{row.row}</td>
+                        <td className="px-2 py-1.5 text-muted-foreground">{row.rowNumber}</td>
+                        <td className="px-2 py-1.5">
+                          <Badge variant="outline" className="text-xs">
+                            {row.type === "teaching" && <GraduationCap className="h-3 w-3 mr-1" />}
+                            {row.type === "design" && <Palette className="h-3 w-3 mr-1" />}
+                            {row.type === "robotics" && <Bot className="h-3 w-3 mr-1" />}
+                            {row.type === "youtube" && <Youtube className="h-3 w-3 mr-1" />}
+                            {row.type === "certificate" && <Award className="h-3 w-3 mr-1" />}
+                            {row.type}
+                          </Badge>
+                        </td>
                         <td className="px-2 py-1.5">
                           {row.status === "ok" && <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />}
                           {row.status === "warning" && (
@@ -246,16 +330,13 @@ function CsvImportDialog<T extends object>({
                             </span>
                           )}
                         </td>
-                        {columns.map((c) => (
-                          <td key={String(c.key)} className="px-2 py-1.5 max-w-[140px] truncate">
-                            {String((row.data as any)[c.key] ?? "")}
-                          </td>
-                        ))}
+                        <td className="px-2 py-1.5 max-w-[150px] truncate font-medium">{title}</td>
+                        <td className="px-2 py-1.5 max-w-[200px] truncate text-muted-foreground">{detail}</td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -267,7 +348,7 @@ function CsvImportDialog<T extends object>({
             disabled={importing || rows.filter((r) => r.status !== "error").length === 0}
           >
             {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Import {rows.filter((r) => r.status !== "error").length} Data
+            Import {rows.filter((r) => r.status !== "error").length} Item
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -517,7 +598,6 @@ function TeachingTab({ studentId, semesterId }: { studentId: number; semesterId:
   const [items, setItems] = useState<TeachingActivity[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<TeachingActivity | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -592,14 +672,9 @@ function TeachingTab({ studentId, semesterId }: { studentId: number; semesterId:
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <h3 className="font-medium text-sm text-muted-foreground">Kegiatan Mengajar</h3>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
-            <Upload className="h-4 w-4 mr-1" /> Import CSV
-          </Button>
-          <Button size="sm" onClick={openAdd}>
-            <Plus className="h-4 w-4 mr-1" /> Tambah
-          </Button>
-        </div>
+        <Button size="sm" onClick={openAdd}>
+          <Plus className="h-4 w-4 mr-1" /> Tambah
+        </Button>
       </div>
 
       {loading ? (
@@ -647,7 +722,6 @@ function TeachingTab({ studentId, semesterId }: { studentId: number; semesterId:
         </div>
       )}
 
-      {/* Add/Edit Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -691,27 +765,6 @@ function TeachingTab({ studentId, semesterId }: { studentId: number; semesterId:
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* CSV Import Dialog */}
-      <CsvImportDialog<Partial<TeachingActivity>>
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        title="Kegiatan Mengajar"
-        onDownloadTemplate={downloadTeachingTemplate}
-        onParseFile={parseTeachingCsv}
-        columns={[
-          { key: "tema", label: "Tema" },
-          { key: "lokasi", label: "Lokasi" },
-          { key: "tanggal", label: "Tanggal" },
-          { key: "jumlah_peserta", label: "Peserta" },
-          { key: "link_foto_1", label: "Link Foto 1" },
-        ]}
-        onImport={async (rows) => {
-          const { success, failed } = await importTeachingActivities(rows, studentId, semesterId);
-          toast.success(`Import selesai: ${success} berhasil${failed ? `, ${failed} gagal` : ""}`);
-          await load();
-        }}
-      />
     </div>
   );
 }
@@ -725,7 +778,6 @@ function ProjectTab({ type, studentId, semesterId }: { type: ProjectType; studen
   const [items, setItems] = useState<ProjectItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<ProjectItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ judul: "", link_file_flyer: "", deskripsi: "", teknologi: "", kompetensi_siswa: "" });
@@ -797,14 +849,9 @@ function ProjectTab({ type, studentId, semesterId }: { type: ProjectType; studen
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <h3 className="font-medium text-sm text-muted-foreground">Karya {label}</h3>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
-            <Upload className="h-4 w-4 mr-1" /> Import CSV
-          </Button>
-          <Button size="sm" onClick={openAdd}>
-            <Plus className="h-4 w-4 mr-1" /> Tambah
-          </Button>
-        </div>
+        <Button size="sm" onClick={openAdd}>
+          <Plus className="h-4 w-4 mr-1" /> Tambah
+        </Button>
       </div>
 
       {loading ? (
@@ -893,25 +940,6 @@ function ProjectTab({ type, studentId, semesterId }: { type: ProjectType; studen
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <CsvImportDialog<Partial<DesignProject | RoboticsProject>>
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        title={`Karya ${label}`}
-        onDownloadTemplate={() => downloadProjectTemplate(type)}
-        onParseFile={parseProjectCsv}
-        columns={[
-          { key: "judul", label: "Judul" },
-          { key: "teknologi", label: "Teknologi" },
-          { key: "link_file_flyer", label: "Link Flyer" },
-          { key: "link_gambar_drive", label: "Link Gambar" },
-        ]}
-        onImport={async (rows) => {
-          const { success, failed } = await importProjects(rows, type, studentId, semesterId);
-          toast.success(`Import selesai: ${success} berhasil${failed ? `, ${failed} gagal` : ""}`);
-          await load();
-        }}
-      />
     </div>
   );
 }
@@ -922,7 +950,6 @@ function YoutubeTab({ studentId, semesterId }: { studentId: number; semesterId: 
   const [items, setItems] = useState<YoutubeVideo[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<YoutubeVideo | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ judul_video: "", deskripsi_video: "", link_youtube: "" });
@@ -964,12 +991,7 @@ function YoutubeTab({ studentId, semesterId }: { studentId: number; semesterId: 
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <h3 className="font-medium text-sm text-muted-foreground">Video YouTube</h3>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
-            <Upload className="h-4 w-4 mr-1" /> Import CSV
-          </Button>
-          <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Tambah</Button>
-        </div>
+        <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Tambah</Button>
       </div>
 
       {loading ? (
@@ -1025,24 +1047,6 @@ function YoutubeTab({ studentId, semesterId }: { studentId: number; semesterId: 
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <CsvImportDialog<Partial<YoutubeVideo>>
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        title="Video YouTube"
-        onDownloadTemplate={downloadYoutubeTemplate}
-        onParseFile={parseYoutubeCsv}
-        columns={[
-          { key: "judul_video", label: "Judul" },
-          { key: "link_youtube", label: "Link YouTube" },
-          { key: "deskripsi_video", label: "Deskripsi" },
-        ]}
-        onImport={async (rows) => {
-          const { success, failed } = await importYoutubeVideos(rows, studentId, semesterId);
-          toast.success(`Import selesai: ${success} berhasil${failed ? `, ${failed} gagal` : ""}`);
-          await load();
-        }}
-      />
     </div>
   );
 }
@@ -1053,7 +1057,6 @@ function CertificateTab({ studentId, semesterId }: { studentId: number; semester
   const [items, setItems] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Certificate | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ lingkup: "", tanggal: "", tema: "" });
@@ -1107,12 +1110,7 @@ function CertificateTab({ studentId, semesterId }: { studentId: number; semester
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <h3 className="font-medium text-sm text-muted-foreground">Sertifikat</h3>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
-            <Upload className="h-4 w-4 mr-1" /> Import CSV
-          </Button>
-          <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Tambah</Button>
-        </div>
+        <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Tambah</Button>
       </div>
 
       {loading ? (
@@ -1184,25 +1182,6 @@ function CertificateTab({ studentId, semesterId }: { studentId: number; semester
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <CsvImportDialog<Partial<Certificate>>
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        title="Sertifikat"
-        onDownloadTemplate={downloadCertificateTemplate}
-        onParseFile={parseCertificateCsv}
-        columns={[
-          { key: "tema", label: "Tema" },
-          { key: "lingkup", label: "Lingkup" },
-          { key: "tanggal", label: "Tanggal" },
-          { key: "link_gambar_drive", label: "Link Gambar" },
-        ]}
-        onImport={async (rows) => {
-          const { success, failed } = await importCertificates(rows, studentId, semesterId);
-          toast.success(`Import selesai: ${success} berhasil${failed ? `, ${failed} gagal` : ""}`);
-          await load();
-        }}
-      />
     </div>
   );
 }
@@ -1213,6 +1192,9 @@ function PortfolioPage() {
   const { isGuru, getCabangId } = useAuth();
   const guruMode = isGuru();
   const cabangId = getCabangId();
+  
+  const [importOpen, setImportOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const semesters = useApiData<any[]>("/semesters");
   const classParams: any = {};
@@ -1244,15 +1226,28 @@ function PortfolioPage() {
     finally { setLoadingSummary(false); }
   }, [studentId, semesterId]);
 
-  useEffect(() => { loadSummary(); }, [loadSummary]);
+  useEffect(() => { loadSummary(); }, [loadSummary, refreshKey]);
+
+  const handleImportComplete = () => {
+    setRefreshKey(prev => prev + 1);
+    toast.success("Import selesai! Semua tab telah diperbarui.");
+  };
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold">Portofolio Siswa</h1>
-        <p className="text-sm text-muted-foreground">
-          Kelola kegiatan mengajar, karya desain, robotik, video, sertifikat siswa.
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Portofolio Siswa</h1>
+          <p className="text-sm text-muted-foreground">
+            Kelola kegiatan mengajar, karya desain, robotik, video, sertifikat siswa.
+          </p>
+        </div>
+        {studentId && semesterId && (
+          <Button onClick={() => setImportOpen(true)} className="gap-2">
+            <Upload className="h-4 w-4" />
+            Import Portofolio (CSV)
+          </Button>
+        )}
       </div>
 
       {/* Filter */}
@@ -1309,7 +1304,7 @@ function PortfolioPage() {
             />
           )}
 
-          <Tabs defaultValue="teaching">
+          <Tabs defaultValue="teaching" key={refreshKey}>
             <TabsList className="flex flex-wrap h-auto gap-1">
               <TabsTrigger value="teaching" className="flex items-center gap-1.5">
                 <GraduationCap className="h-4 w-4" /> Mengajar
@@ -1345,6 +1340,17 @@ function PortfolioPage() {
             </TabsContent>
           </Tabs>
         </>
+      )}
+
+      {/* Unified Import Dialog */}
+      {studentId && semesterId && (
+        <UnifiedImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          studentId={parseInt(studentId)}
+          semesterId={parseInt(semesterId)}
+          onImportComplete={handleImportComplete}
+        />
       )}
     </div>
   );
