@@ -695,22 +695,44 @@ export function resolveUploadUrl(path?: string | null): string | null {
   return `${UPLOADS_BASE_URL}/${path}`;
 }
 
+/**
+ * Ekstrak Google Drive file ID dari berbagai format URL.
+ */
+export function extractDriveFileId(url: string): string | null {
+  if (!url) return null;
+  // /file/d/FILE_ID/view
+  const m1 = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
+  if (m1) return m1[1];
+  // ?id=FILE_ID  atau  &id=FILE_ID
+  const m2 = url.match(/[?&]id=([^&]+)/);
+  if (m2) return m2[1];
+  return null;
+}
+
+/**
+ * Konversi link Google Drive ke URL thumbnail yang dapat di-embed langsung
+ * di tag <img> tanpa CORS issue.
+ */
+export function driveToThumbnailUrl(link: string): string {
+  const fileId = extractDriveFileId(link);
+  if (fileId) {
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w600`;
+  }
+  return link;
+}
+
 /** Resolve either an uploaded file path or a Google Drive link to a displayable URL */
 export function resolveImageUrl(filePath?: string | null, driveLink?: string | null): string | null {
   if (filePath) return resolveUploadUrl(filePath);
-  if (driveLink) return driveLink;
+  if (driveLink) return driveToThumbnailUrl(driveLink);
   return null;
 }
 
 /** Convert a Google Drive share link to a direct image URL if possible */
 export function normalizeDriveLink(link: string): string {
-  try {
-    const url = new URL(link);
-    // https://drive.google.com/file/d/FILE_ID/view → direct embed
-    const match = url.pathname.match(/\/file\/d\/([^/]+)/);
-    if (match) {
-      return `https://drive.google.com/uc?export=view&id=${match[1]}`;
-    }
-  } catch { /* not a URL */ }
+  const fileId = extractDriveFileId(link);
+  if (fileId) {
+    return `https://drive.google.com/file/d/${fileId}/view`;
+  }
   return link;
 }
