@@ -609,35 +609,29 @@ const styles = StyleSheet.create({
  * HELPERS
  * ========================================================================== */
 
-/**
- * Konversi Google Drive share URL ke direct image URL yang bisa di-fetch
- * oleh react-pdf (tidak kena CORS).
- *
- * Format yang didukung:
- * - https://drive.google.com/file/d/FILE_ID/view
- * - https://drive.google.com/file/d/FILE_ID/view?usp=sharing
- * - https://drive.google.com/open?id=FILE_ID
- * - https://drive.google.com/uc?id=FILE_ID
- *
- * Output: https://lh3.googleusercontent.com/d/FILE_ID
- * Format lh3 tidak kena CORS dan langsung bisa dirender sebagai gambar.
- */
 function toDirectImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
 
-  // Google Drive: /file/d/FILE_ID/...
   const driveFileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
   if (driveFileMatch) {
     return `https://lh3.googleusercontent.com/d/${driveFileMatch[1]}`;
   }
 
-  // Google Drive: open?id=FILE_ID atau uc?id=FILE_ID
   const driveIdMatch = url.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([^&]+)/);
   if (driveIdMatch) {
     return `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}`;
   }
 
   return url;
+}
+
+/**
+ * Tampilkan teks apa adanya (tanpa transformasi),
+ * potong di karakter ke-20 jika melebihi batas.
+ */
+function truncateText(text: string, maxLength = 20): string {
+  if (!text) return text;
+  return text.length > maxLength ? text.slice(0, maxLength) : text;
 }
 
 function calculateOverallAverage(materials: PdfMaterial[]) {
@@ -697,20 +691,6 @@ function chunkMaterials<T>(arr: T[], size: number): T[][] {
     result.push(arr.slice(i, i + size));
   }
   return result;
-}
-
-function shortenLinkedin(url: string) {
-  if (!url) return url;
-  try {
-    const u = new URL(url.startsWith("http") ? url : `https://${url}`);
-    const path = u.pathname.replace(/\/$/, "");
-    const match = path.match(/\/in\/([^/]+)/i);
-    if (match) return `linkedin.com/in/${match[1]}`;
-    const seg = path.split("/").filter(Boolean).pop();
-    return seg ? `linkedin.com/${seg}` : `linkedin.com`;
-  } catch {
-    return url.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, "");
-  }
 }
 
 function getScaleColor(nilai: number) {
@@ -806,7 +786,6 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   const materialPages = chunkMaterials(data.materials, 2);
   const semesterParts = splitSemesterLabel(semesterLabel);
 
-  // Resolve semua URL gambar — konversi Google Drive link ke lh3 format
   const photoUrl = toDirectImageUrl(data.student.photoDataUrl);
   const ttdUrl = toDirectImageUrl(data.teacher?.ttdDataUrl);
 
@@ -920,10 +899,12 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                       </View>
                       <View style={styles.scInfo}>
                         <Text style={styles.scName}>{studentName}</Text>
-                        <Text style={styles.detailText}>{data.student.email}</Text>
+                        <Text style={styles.detailText}>
+                          {truncateText(data.student.email)}
+                        </Text>
                         {data.student.linkedin && (
                           <Text style={styles.detailText}>
-                            {shortenLinkedin(data.student.linkedin)}
+                            {truncateText(data.student.linkedin)}
                           </Text>
                         )}
                       </View>
