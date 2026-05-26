@@ -332,33 +332,52 @@ function ProjectReportsPage() {
         "Siswa";
 
       // Resolve design screenshots
+      // Priority: link_file_flyer → gambar_proyek (uploaded file) → link_gambar_drive
       const designsWithImg = await Promise.all(
         designs.map(async (d) => {
           console.log('Processing design:', d.judul);
-          const screenshot = d.link_file_flyer
-            ? await urlToDataUrl(d.link_file_flyer)
-            : null;
+          let screenshot: string | null = null;
+          if (d.link_file_flyer) {
+            screenshot = await urlToDataUrl(d.link_file_flyer);
+          }
+          if (!screenshot && d.gambar_proyek) {
+            screenshot = await getAuthImage(d.gambar_proyek);
+          }
+          if (!screenshot && d.link_gambar_drive) {
+            screenshot = await urlToDataUrl(d.link_gambar_drive);
+          }
           return {
             judul: d.judul,
             kompetensi_siswa: d.kompetensi_siswa,
             teknologi: d.teknologi,
             deskripsi: d.deskripsi,
-            screenshot: screenshot,
+            screenshot,
           };
         }),
       );
 
       // Resolve robotics screenshots
+      // Priority: link_file_flyer → gambar_proyek (uploaded file) → link_gambar_drive
       const roboticsWithImg = await Promise.all(
-        robotics.map(async (r) => ({
-          judul: r.judul,
-          kompetensi_siswa: r.kompetensi_siswa,
-          teknologi: r.teknologi,
-          deskripsi: r.deskripsi,
-          screenshot: r.link_file_flyer
-            ? await urlToDataUrl(r.link_file_flyer)
-            : null,
-        })),
+        robotics.map(async (r) => {
+          let screenshot: string | null = null;
+          if (r.link_file_flyer) {
+            screenshot = await urlToDataUrl(r.link_file_flyer);
+          }
+          if (!screenshot && r.gambar_proyek) {
+            screenshot = await getAuthImage(r.gambar_proyek);
+          }
+          if (!screenshot && r.link_gambar_drive) {
+            screenshot = await urlToDataUrl(r.link_gambar_drive);
+          }
+          return {
+            judul: r.judul,
+            kompetensi_siswa: r.kompetensi_siswa,
+            teknologi: r.teknologi,
+            deskripsi: r.deskripsi,
+            screenshot,
+          };
+        }),
       );
 
       // Resolve youtube thumbnails
@@ -373,27 +392,42 @@ function ProjectReportsPage() {
       );
 
       // Resolve teaching photos
+      // Priority: foto_mengajar_X (uploaded file) → link_foto_X (Google Drive / URL)
       const teachingsWithPhotos = await Promise.all(
-        teachings.map(async (t) => ({
-          lokasi: t.lokasi,
-          tanggal: t.tanggal,
-          tema: t.tema,
-          jumlah_peserta: t.jumlah_peserta,
-          cerita_siswa: t.cerita_siswa,
-          testimoni_peserta: t.testimoni_peserta,
-          foto1: await getAuthImage(t.foto_mengajar_1),
-          foto2: await getAuthImage(t.foto_mengajar_2),
-        })),
+        teachings.map(async (t) => {
+          const foto1 = t.foto_mengajar_1
+            ? await getAuthImage(t.foto_mengajar_1)
+            : (t.link_foto_1 ? await urlToDataUrl(t.link_foto_1) : null);
+          const foto2 = t.foto_mengajar_2
+            ? await getAuthImage(t.foto_mengajar_2)
+            : (t.link_foto_2 ? await urlToDataUrl(t.link_foto_2) : null);
+          return {
+            lokasi: t.lokasi,
+            tanggal: t.tanggal,
+            tema: t.tema,
+            jumlah_peserta: t.jumlah_peserta,
+            cerita_siswa: t.cerita_siswa,
+            testimoni_peserta: t.testimoni_peserta,
+            foto1,
+            foto2,
+          };
+        }),
       );
 
       // Resolve certificate images
+      // Priority: gambar_sertifikat (uploaded file) → link_gambar_drive
       const certsWithImg = await Promise.all(
-        certs.map(async (c) => ({
-          lingkup: c.lingkup,
-          tanggal: c.tanggal,
-          tema: c.tema,
-          gambar: await getAuthImage(c.gambar_sertifikat),
-        })),
+        certs.map(async (c) => {
+          const gambar = c.gambar_sertifikat
+            ? await getAuthImage(c.gambar_sertifikat)
+            : (c.link_gambar_drive ? await urlToDataUrl(c.link_gambar_drive) : null);
+          return {
+            lingkup: c.lingkup,
+            tanggal: c.tanggal,
+            tema: c.tema,
+            gambar,
+          };
+        }),
       );
 
       setPdfData({
