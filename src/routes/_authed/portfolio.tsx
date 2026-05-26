@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,13 @@ import {
   GraduationCap,
   BarChart3,
   ExternalLink,
+  Upload,
+  Download,
+  FileSpreadsheet,
+  CheckCircle2,
+  AlertCircle,
+  Link as LinkIcon,
+  Image as ImageIcon,
 } from "lucide-react";
 import {
   getStudentSummary,
@@ -67,6 +74,21 @@ import {
   upsertStudentSummary,
   getYoutubeVideoId,
   resolveUploadUrl,
+  resolveImageUrl,
+  normalizeDriveLink,
+  downloadTeachingTemplate,
+  downloadProjectTemplate,
+  downloadYoutubeTemplate,
+  downloadCertificateTemplate,
+  parseTeachingCsv,
+  parseProjectCsv,
+  parseYoutubeCsv,
+  parseCertificateCsv,
+  importTeachingActivities,
+  importProjects,
+  importYoutubeVideos,
+  importCertificates,
+  type CsvImportRow,
   type StudentSummary,
   type TeachingActivity,
   type DesignProject,
@@ -79,7 +101,240 @@ export const Route = createFileRoute("/_authed/portfolio")({
   component: PortfolioPage,
 });
 
-// ── SUMMARY FORM FIELDS ───────────────────────────────────────────────────────
+// ── CSV IMPORT DIALOG ─────────────────────────────────────────────────────────
+
+interface CsvImportDialogProps<T> {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  title: string;
+  onDownloadTemplate: () => void;
+  onParseFile: (file: File, cb: (rows: CsvImportRow<T>[]) => void) => void;
+  onImport: (rows: CsvImportRow<T>[]) => Promise<void>;
+  columns: { key: keyof T; label: string }[];
+}
+
+function CsvImportDialog<T extends object>({
+  open,
+  onOpenChange,
+  title,
+  onDownloadTemplate,
+  onParseFile,
+  onImport,
+  columns,
+}: CsvImportDialogProps<T>) {
+  const [rows, setRows] = useState<CsvImportRow<T>[]>([]);
+  const [importing, setImporting] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    onParseFile(file, (parsed) => {
+      setRows(parsed);
+    });
+  }
+
+  async function handleImport() {
+    const valid = rows.filter((r) => r.status !== "error");
+    if (!valid.length) { toast.error("Tidak ada baris valid untuk diimport"); return; }
+    setImporting(true);
+    try {
+      await onImport(rows);
+      onOpenChange(false);
+      setRows([]);
+      if (fileRef.current) fileRef.current.value = "";
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  function handleClose() {
+    onOpenChange(false);
+    setRows([]);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  const okCount = rows.filter((r) => r.status === "ok").length;
+  const warnCount = rows.filter((r) => r.status === "warning").length;
+  const errCount = rows.filter((r) => r.status === "error").length;
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5 text-green-600" />
+            Import CSV – {title}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {/* Step 1: Download template */}
+          <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-lg">
+            <div className="flex-1 text-sm">
+              <p className="font-medium">Langkah 1: Download template CSV</p>
+              <p className="text-muted-foreground text-xs mt-0.5">Isi data sesuai kolom yang tersedia, lalu upload kembali.</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={onDownloadTemplate}>
+              <Download className="h-4 w-4 mr-1.5" /> Download Template
+            </Button>
+          </div>
+
+          {/* Step 2: Upload file */}
+          <div className="space-y-2">
+            <Label className="font-medium">Langkah 2: Upload file CSV</Label>
+            <Input ref={fileRef} type="file" accept=".csv,text/csv" onChange={handleFile} />
+          </div>
+
+          {/* Preview */}
+          {rows.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 text-sm">
+                <span className="font-medium">Preview ({rows.length} baris)</span>
+                {okCount > 0 && (
+                  <span className="flex items-center gap-1 text-green-600">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> {okCount} siap
+                  </span>
+                )}
+                {warnCount > 0 && (
+                  <span className="flex items-center gap-1 text-yellow-600">
+                    <AlertCircle className="h-3.5 w-3.5" /> {warnCount} peringatan
+                  </span>
+                )}
+                {errCount > 0 && (
+                  <span className="flex items-center gap-1 text-red-600">
+                    <AlertCircle className="h-3.5 w-3.5" /> {errCount} error
+                  </span>
+                )}
+              </div>
+              <div className="border rounded-lg overflow-auto max-h-52">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/50 sticky top-0">
+                    <tr>
+                      <th className="px-2 py-1.5 text-left font-medium">Baris</th>
+                      <th className="px-2 py-1.5 text-left font-medium">Status</th>
+                      {columns.map((c) => (
+                        <th key={String(c.key)} className="px-2 py-1.5 text-left font-medium">{c.label}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => (
+                      <tr
+                        key={row.row}
+                        className={
+                          row.status === "error"
+                            ? "bg-red-50"
+                            : row.status === "warning"
+                            ? "bg-yellow-50"
+                            : ""
+                        }
+                      >
+                        <td className="px-2 py-1.5 text-muted-foreground">{row.row}</td>
+                        <td className="px-2 py-1.5">
+                          {row.status === "ok" && <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />}
+                          {row.status === "warning" && (
+                            <span className="flex items-center gap-1 text-yellow-600">
+                              <AlertCircle className="h-3.5 w-3.5" />
+                              <span className="text-xs">{row.message}</span>
+                            </span>
+                          )}
+                          {row.status === "error" && (
+                            <span className="flex items-center gap-1 text-red-600">
+                              <AlertCircle className="h-3.5 w-3.5" />
+                              <span className="text-xs">{row.message}</span>
+                            </span>
+                          )}
+                        </td>
+                        {columns.map((c) => (
+                          <td key={String(c.key)} className="px-2 py-1.5 max-w-[140px] truncate">
+                            {String((row.data as any)[c.key] ?? "")}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={handleClose}>Batal</Button>
+          <Button
+            onClick={handleImport}
+            disabled={importing || rows.filter((r) => r.status !== "error").length === 0}
+          >
+            {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Import {rows.filter((r) => r.status !== "error").length} Data
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── IMAGE INPUT (upload or Google Drive link) ─────────────────────────────────
+
+interface ImageInputProps {
+  label: string;
+  currentUrl?: string | null;
+  onFileChange: (file: File | null) => void;
+  onLinkChange: (link: string) => void;
+  linkValue: string;
+}
+
+function ImageInput({ label, currentUrl, onFileChange, onLinkChange, linkValue }: ImageInputProps) {
+  const [mode, setMode] = useState<"upload" | "link">(linkValue ? "link" : "upload");
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      {currentUrl && (
+        <img src={currentUrl} alt="preview" className="h-20 w-20 object-cover rounded border" />
+      )}
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant={mode === "upload" ? "default" : "outline"}
+          onClick={() => setMode("upload")}
+        >
+          <ImageIcon className="h-3.5 w-3.5 mr-1" /> Upload
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={mode === "link" ? "default" : "outline"}
+          onClick={() => setMode("link")}
+        >
+          <LinkIcon className="h-3.5 w-3.5 mr-1" /> Google Drive
+        </Button>
+      </div>
+      {mode === "upload" ? (
+        <Input
+          type="file"
+          accept="image/*"
+          onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+        />
+      ) : (
+        <div className="space-y-1">
+          <Input
+            placeholder="https://drive.google.com/file/d/..."
+            value={linkValue}
+            onChange={(e) => onLinkChange(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Paste link share Google Drive. Pastikan akses "Anyone with the link".
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── SUMMARY CARD ─────────────────────────────────────────────────────────────
 
 const SUMMARY_FIELDS: { key: keyof Omit<StudentSummary, "id" | "student_id" | "semester_id" | "persentase" | "tuntas">; label: string }[] = [
   { key: "total_tercapai",      label: "Total Tercapai" },
@@ -97,47 +352,27 @@ const SUMMARY_FIELDS: { key: keyof Omit<StudentSummary, "id" | "student_id" | "s
 
 function buildEmptySummaryForm() {
   return {
-    tuntas: "",
-    persentase: "",
-    total_tercapai: "",
-    belum_tercapai: "",
-    selesai: "",
-    belum_selesai: "",
-    total_desain: "",
-    total_robotik: "",
-    total_video_youtube: "",
-    total_sertifikat: "",
-    total_mengajar: "",
-    total_buku: "",
-    total_lomba_it: "",
+    tuntas: "", persentase: "", total_tercapai: "", belum_tercapai: "",
+    selesai: "", belum_selesai: "", total_desain: "", total_robotik: "",
+    total_video_youtube: "", total_sertifikat: "", total_mengajar: "",
+    total_buku: "", total_lomba_it: "",
   } as Record<string, string>;
 }
 
 function summaryToForm(s: StudentSummary): Record<string, string> {
   return {
-    tuntas:               String(s.tuntas ?? ""),
-    persentase:           String(s.persentase ?? ""),
-    total_tercapai:       String(s.total_tercapai ?? ""),
-    belum_tercapai:       String(s.belum_tercapai ?? ""),
-    selesai:              String(s.selesai ?? ""),
-    belum_selesai:        String(s.belum_selesai ?? ""),
-    total_desain:         String(s.total_desain ?? ""),
-    total_robotik:        String(s.total_robotik ?? ""),
-    total_video_youtube:  String(s.total_video_youtube ?? ""),
-    total_sertifikat:     String(s.total_sertifikat ?? ""),
-    total_mengajar:       String(s.total_mengajar ?? ""),
-    total_buku:           String(s.total_buku ?? ""),
-    total_lomba_it:       String(s.total_lomba_it ?? ""),
+    tuntas: String(s.tuntas ?? ""), persentase: String(s.persentase ?? ""),
+    total_tercapai: String(s.total_tercapai ?? ""), belum_tercapai: String(s.belum_tercapai ?? ""),
+    selesai: String(s.selesai ?? ""), belum_selesai: String(s.belum_selesai ?? ""),
+    total_desain: String(s.total_desain ?? ""), total_robotik: String(s.total_robotik ?? ""),
+    total_video_youtube: String(s.total_video_youtube ?? ""), total_sertifikat: String(s.total_sertifikat ?? ""),
+    total_mengajar: String(s.total_mengajar ?? ""), total_buku: String(s.total_buku ?? ""),
+    total_lomba_it: String(s.total_lomba_it ?? ""),
   };
 }
 
-// ── SUMMARY CARD ─────────────────────────────────────────────────────────────
-
 function SummaryCard({
-  summary,
-  studentId,
-  semesterId,
-  onRefresh,
+  summary, studentId, semesterId, onRefresh,
 }: {
   summary: StudentSummary | null;
   studentId: number;
@@ -157,21 +392,14 @@ function SummaryCard({
     setSaving(true);
     try {
       await upsertStudentSummary({
-        student_id:           studentId,
-        semester_id:          semesterId,
-        tuntas:               Number(form.tuntas) || 0,
-        persentase:           parseFloat(form.persentase) || 0,
-        total_tercapai:       Number(form.total_tercapai) || 0,
-        belum_tercapai:       Number(form.belum_tercapai) || 0,
-        selesai:              Number(form.selesai) || 0,
-        belum_selesai:        Number(form.belum_selesai) || 0,
-        total_desain:         Number(form.total_desain) || 0,
-        total_robotik:        Number(form.total_robotik) || 0,
-        total_video_youtube:  Number(form.total_video_youtube) || 0,
-        total_sertifikat:     Number(form.total_sertifikat) || 0,
-        total_mengajar:       Number(form.total_mengajar) || 0,
-        total_buku:           Number(form.total_buku) || 0,
-        total_lomba_it:       Number(form.total_lomba_it) || 0,
+        student_id: studentId, semester_id: semesterId,
+        tuntas: Number(form.tuntas) || 0, persentase: parseFloat(form.persentase) || 0,
+        total_tercapai: Number(form.total_tercapai) || 0, belum_tercapai: Number(form.belum_tercapai) || 0,
+        selesai: Number(form.selesai) || 0, belum_selesai: Number(form.belum_selesai) || 0,
+        total_desain: Number(form.total_desain) || 0, total_robotik: Number(form.total_robotik) || 0,
+        total_video_youtube: Number(form.total_video_youtube) || 0, total_sertifikat: Number(form.total_sertifikat) || 0,
+        total_mengajar: Number(form.total_mengajar) || 0, total_buku: Number(form.total_buku) || 0,
+        total_lomba_it: Number(form.total_lomba_it) || 0,
       });
       toast.success(summary ? "Ringkasan diperbarui" : "Ringkasan dibuat");
       setOpen(false);
@@ -183,21 +411,19 @@ function SummaryCard({
     }
   }
 
-  const stats = summary
-    ? [
-        { label: "Total Tercapai",  value: Number(summary.total_tercapai),      color: "text-green-600" },
-        { label: "Belum Tercapai",  value: Number(summary.belum_tercapai),      color: "text-red-500" },
-        { label: "Selesai",         value: Number(summary.selesai),             color: "text-blue-600" },
-        { label: "Belum Selesai",   value: Number(summary.belum_selesai),       color: "text-orange-500" },
-        { label: "Desain",          value: Number(summary.total_desain),        color: "text-purple-600" },
-        { label: "Robotik",         value: Number(summary.total_robotik),       color: "text-cyan-600" },
-        { label: "Video YT",        value: Number(summary.total_video_youtube), color: "text-red-600" },
-        { label: "Sertifikat",      value: Number(summary.total_sertifikat),    color: "text-yellow-600" },
-        { label: "Mengajar",        value: Number(summary.total_mengajar),      color: "text-indigo-600" },
-        { label: "Buku",            value: Number(summary.total_buku),          color: "text-teal-600" },
-        { label: "Lomba IT",        value: Number(summary.total_lomba_it),      color: "text-pink-600" },
-      ]
-    : [];
+  const stats = summary ? [
+    { label: "Total Tercapai", value: Number(summary.total_tercapai), color: "text-green-600" },
+    { label: "Belum Tercapai", value: Number(summary.belum_tercapai), color: "text-red-500" },
+    { label: "Selesai",        value: Number(summary.selesai),        color: "text-blue-600" },
+    { label: "Belum Selesai",  value: Number(summary.belum_selesai),  color: "text-orange-500" },
+    { label: "Desain",         value: Number(summary.total_desain),   color: "text-purple-600" },
+    { label: "Robotik",        value: Number(summary.total_robotik),  color: "text-cyan-600" },
+    { label: "Video YT",       value: Number(summary.total_video_youtube), color: "text-red-600" },
+    { label: "Sertifikat",     value: Number(summary.total_sertifikat), color: "text-yellow-600" },
+    { label: "Mengajar",       value: Number(summary.total_mengajar), color: "text-indigo-600" },
+    { label: "Buku",           value: Number(summary.total_buku),     color: "text-teal-600" },
+    { label: "Lomba IT",       value: Number(summary.total_lomba_it), color: "text-pink-600" },
+  ] : [];
 
   return (
     <>
@@ -221,15 +447,10 @@ function SummaryCard({
               </>
             )}
             <Button size="sm" variant={summary ? "outline" : "default"} onClick={openEdit}>
-              {summary ? (
-                <><Pencil className="h-3.5 w-3.5 mr-1" /> Edit</>
-              ) : (
-                <><Plus className="h-3.5 w-3.5 mr-1" /> Isi Ringkasan</>
-              )}
+              {summary ? <><Pencil className="h-3.5 w-3.5 mr-1" /> Edit</> : <><Plus className="h-3.5 w-3.5 mr-1" /> Isi Ringkasan</>}
             </Button>
           </div>
         </div>
-
         {summary ? (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
             {stats.map((s) => (
@@ -246,104 +467,42 @@ function SummaryCard({
         )}
       </Card>
 
-      {/* Edit / Create Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{summary ? "Edit Ringkasan Portofolio" : "Isi Ringkasan Portofolio"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            {/* Tuntas & Persentase */}
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Tuntas</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.tuntas}
-                  onChange={(e) => setForm({ ...form, tuntas: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Persentase (%)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={0.1}
-                  value={form.persentase}
-                  onChange={(e) => setForm({ ...form, persentase: e.target.value })}
-                />
-              </div>
+              <div><Label>Tuntas</Label>
+                <Input type="number" min={0} value={form.tuntas} onChange={(e) => setForm({ ...form, tuntas: e.target.value })} /></div>
+              <div><Label>Persentase (%)</Label>
+                <Input type="number" min={0} max={100} step={0.1} value={form.persentase} onChange={(e) => setForm({ ...form, persentase: e.target.value })} /></div>
             </div>
-
-            {/* Tercapai / Belum */}
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Total Tercapai</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.total_tercapai}
-                  onChange={(e) => setForm({ ...form, total_tercapai: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Belum Tercapai</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.belum_tercapai}
-                  onChange={(e) => setForm({ ...form, belum_tercapai: e.target.value })}
-                />
-              </div>
+              <div><Label>Total Tercapai</Label>
+                <Input type="number" min={0} value={form.total_tercapai} onChange={(e) => setForm({ ...form, total_tercapai: e.target.value })} /></div>
+              <div><Label>Belum Tercapai</Label>
+                <Input type="number" min={0} value={form.belum_tercapai} onChange={(e) => setForm({ ...form, belum_tercapai: e.target.value })} /></div>
             </div>
-
-            {/* Selesai / Belum */}
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Selesai</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.selesai}
-                  onChange={(e) => setForm({ ...form, selesai: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Belum Selesai</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.belum_selesai}
-                  onChange={(e) => setForm({ ...form, belum_selesai: e.target.value })}
-                />
-              </div>
+              <div><Label>Selesai</Label>
+                <Input type="number" min={0} value={form.selesai} onChange={(e) => setForm({ ...form, selesai: e.target.value })} /></div>
+              <div><Label>Belum Selesai</Label>
+                <Input type="number" min={0} value={form.belum_selesai} onChange={(e) => setForm({ ...form, belum_selesai: e.target.value })} /></div>
             </div>
-
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide pt-1">
-              Total Per Kategori
-            </p>
-
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide pt-1">Total Per Kategori</p>
             <div className="grid grid-cols-2 gap-3">
               {SUMMARY_FIELDS.slice(4).map(({ key, label }) => (
-                <div key={key}>
-                  <Label>{label}</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={form[key] ?? ""}
-                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                  />
-                </div>
+                <div key={key}><Label>{label}</Label>
+                  <Input type="number" min={0} value={form[key] ?? ""} onChange={(e) => setForm({ ...form, [key]: e.target.value })} /></div>
               ))}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Simpan
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Simpan
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -354,37 +513,26 @@ function SummaryCard({
 
 // ── TEACHING TAB ─────────────────────────────────────────────────────────────
 
-function TeachingTab({
-  studentId,
-  semesterId,
-}: {
-  studentId: number;
-  semesterId: number;
-}) {
+function TeachingTab({ studentId, semesterId }: { studentId: number; semesterId: number }) {
   const [items, setItems] = useState<TeachingActivity[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<TeachingActivity | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    lokasi: "",
-    tanggal: "",
-    tema: "",
-    jumlah_peserta: "",
-    cerita_siswa: "",
-    testimoni_peserta: "",
+    lokasi: "", tanggal: "", tema: "", jumlah_peserta: "",
+    cerita_siswa: "", testimoni_peserta: "",
   });
   const [foto1, setFoto1] = useState<File | null>(null);
   const [foto2, setFoto2] = useState<File | null>(null);
+  const [linkFoto1, setLinkFoto1] = useState("");
+  const [linkFoto2, setLinkFoto2] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
-    try {
-      const data = await getTeachingActivities(studentId, semesterId);
-      setItems(data);
-    } finally {
-      setLoading(false);
-    }
+    try { setItems(await getTeachingActivities(studentId, semesterId)); }
+    finally { setLoading(false); }
   }, [studentId, semesterId]);
 
   useEffect(() => { load(); }, [load]);
@@ -392,23 +540,20 @@ function TeachingTab({
   function openAdd() {
     setEditing(null);
     setForm({ lokasi: "", tanggal: "", tema: "", jumlah_peserta: "", cerita_siswa: "", testimoni_peserta: "" });
-    setFoto1(null);
-    setFoto2(null);
+    setFoto1(null); setFoto2(null); setLinkFoto1(""); setLinkFoto2("");
     setOpen(true);
   }
 
   function openEdit(item: TeachingActivity) {
     setEditing(item);
     setForm({
-      lokasi: item.lokasi ?? "",
-      tanggal: item.tanggal ?? "",
-      tema: item.tema ?? "",
+      lokasi: item.lokasi ?? "", tanggal: item.tanggal ?? "", tema: item.tema ?? "",
       jumlah_peserta: item.jumlah_peserta ? String(item.jumlah_peserta) : "",
-      cerita_siswa: item.cerita_siswa ?? "",
-      testimoni_peserta: item.testimoni_peserta ?? "",
+      cerita_siswa: item.cerita_siswa ?? "", testimoni_peserta: item.testimoni_peserta ?? "",
     });
-    setFoto1(null);
-    setFoto2(null);
+    setFoto1(null); setFoto2(null);
+    setLinkFoto1(item.link_foto_1 ?? "");
+    setLinkFoto2(item.link_foto_2 ?? "");
     setOpen(true);
   }
 
@@ -421,6 +566,8 @@ function TeachingTab({
       Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v); });
       if (foto1) fd.append("foto_mengajar_1", foto1);
       if (foto2) fd.append("foto_mengajar_2", foto2);
+      if (linkFoto1 && !foto1) fd.append("link_foto_1", normalizeDriveLink(linkFoto1));
+      if (linkFoto2 && !foto2) fd.append("link_foto_2", normalizeDriveLink(linkFoto2));
 
       if (editing) {
         await updateTeachingActivity(editing.id, fd);
@@ -431,296 +578,110 @@ function TeachingTab({
       }
       setOpen(false);
       await load();
-    } catch {
-      toast.error("Gagal menyimpan");
-    } finally {
-      setSaving(false);
-    }
+    } catch { toast.error("Gagal menyimpan"); }
+    finally { setSaving(false); }
   }
 
   async function handleDelete(id: number) {
     if (!confirm("Hapus kegiatan ini?")) return;
-    try {
-      await deleteTeachingActivity(id);
-      toast.success("Dihapus");
-      await load();
-    } catch {
-      toast.error("Gagal menghapus");
-    }
+    try { await deleteTeachingActivity(id); toast.success("Dihapus"); await load(); }
+    catch { toast.error("Gagal menghapus"); }
   }
 
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <h3 className="font-medium text-sm text-muted-foreground">Kegiatan Mengajar</h3>
-        <Button size="sm" onClick={openAdd}>
-          <Plus className="h-4 w-4 mr-1" /> Tambah
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-1" /> Import CSV
+          </Button>
+          <Button size="sm" onClick={openAdd}>
+            <Plus className="h-4 w-4 mr-1" /> Tambah
+          </Button>
+        </div>
       </div>
+
       {loading ? (
         <div className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></div>
       ) : items.length === 0 ? (
         <Card className="p-8 text-center text-muted-foreground text-sm">Belum ada kegiatan mengajar.</Card>
       ) : (
         <div className="grid gap-3">
-          {items.map((item) => (
-            <Card key={item.id} className="p-4">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1 flex-1">
-                  <div className="font-medium">{item.tema || "(Tanpa tema)"}</div>
-                  <div className="text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                    {item.lokasi && <span>📍 {item.lokasi}</span>}
-                    {item.tanggal && <span>📅 {item.tanggal}</span>}
-                    {item.jumlah_peserta && <span>👥 {item.jumlah_peserta} peserta</span>}
-                  </div>
-                  {item.cerita_siswa && (
-                    <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{item.cerita_siswa}</p>
-                  )}
-                  {(item.foto_mengajar_1 || item.foto_mengajar_2) && (
-                    <div className="flex gap-2 mt-2">
-                      {[item.foto_mengajar_1, item.foto_mengajar_2].filter(Boolean).map((f, i) => {
-                        const url = resolveUploadUrl(f);
-                        return url ? (
-                          <img key={i} src={url} alt={`foto ${i + 1}`} className="h-14 w-14 object-cover rounded border" />
-                        ) : null;
-                      })}
+          {items.map((item) => {
+            const img1 = resolveImageUrl(item.foto_mengajar_1, item.link_foto_1);
+            const img2 = resolveImageUrl(item.foto_mengajar_2, item.link_foto_2);
+            return (
+              <Card key={item.id} className="p-4">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1 flex-1">
+                    <div className="font-medium">{item.tema || "(Tanpa tema)"}</div>
+                    <div className="text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+                      {item.lokasi && <span>📍 {item.lokasi}</span>}
+                      {item.tanggal && <span>📅 {item.tanggal}</span>}
+                      {item.jumlah_peserta && <span>👥 {item.jumlah_peserta} peserta</span>}
                     </div>
-                  )}
+                    {item.cerita_siswa && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{item.cerita_siswa}</p>
+                    )}
+                    {(img1 || img2) && (
+                      <div className="flex gap-2 mt-2">
+                        {[img1, img2].filter(Boolean).map((url, i) => (
+                          <img key={i} src={url!} alt={`foto ${i + 1}`} className="h-14 w-14 object-cover rounded border" />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-1 ml-3">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(item.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-1 ml-3">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(item.id)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
 
+      {/* Add/Edit Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit Kegiatan Mengajar" : "Tambah Kegiatan Mengajar"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <div>
-              <Label>Lokasi</Label>
-              <Input value={form.lokasi} onChange={(e) => setForm({ ...form, lokasi: e.target.value })} />
-            </div>
+            <div><Label>Lokasi</Label>
+              <Input value={form.lokasi} onChange={(e) => setForm({ ...form, lokasi: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Tanggal</Label>
-                <Input type="date" value={form.tanggal} onChange={(e) => setForm({ ...form, tanggal: e.target.value })} />
-              </div>
-              <div>
-                <Label>Jumlah Peserta</Label>
-                <Input type="number" value={form.jumlah_peserta} onChange={(e) => setForm({ ...form, jumlah_peserta: e.target.value })} />
-              </div>
+              <div><Label>Tanggal</Label>
+                <Input type="date" value={form.tanggal} onChange={(e) => setForm({ ...form, tanggal: e.target.value })} /></div>
+              <div><Label>Jumlah Peserta</Label>
+                <Input type="number" value={form.jumlah_peserta} onChange={(e) => setForm({ ...form, jumlah_peserta: e.target.value })} /></div>
             </div>
-            <div>
-              <Label>Tema</Label>
-              <Input value={form.tema} onChange={(e) => setForm({ ...form, tema: e.target.value })} />
-            </div>
-            <div>
-              <Label>Cerita Siswa</Label>
-              <Textarea rows={3} value={form.cerita_siswa} onChange={(e) => setForm({ ...form, cerita_siswa: e.target.value })} />
-            </div>
-            <div>
-              <Label>Testimoni Peserta</Label>
-              <Textarea rows={2} value={form.testimoni_peserta} onChange={(e) => setForm({ ...form, testimoni_peserta: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Foto 1</Label>
-                <Input type="file" accept="image/*" onChange={(e) => setFoto1(e.target.files?.[0] ?? null)} />
-              </div>
-              <div>
-                <Label>Foto 2</Label>
-                <Input type="file" accept="image/*" onChange={(e) => setFoto2(e.target.files?.[0] ?? null)} />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Simpan
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-// ── PROJECT TAB (Generic for Design & Robotics) ───────────────────────────────
-
-type ProjectItem = { id: number; judul: string; link_file_flyer?: string; deskripsi?: string; teknologi?: string; kompetensi_siswa?: string; };
-type ProjectType = "design" | "robotics";
-
-function ProjectTab({
-  type,
-  studentId,
-  semesterId,
-}: {
-  type: ProjectType;
-  studentId: number;
-  semesterId: number;
-}) {
-  const [items, setItems] = useState<ProjectItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<ProjectItem | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ judul: "", link_file_flyer: "", deskripsi: "", teknologi: "", kompetensi_siswa: "" });
-
-  const getFn = type === "design" ? getDesignProjects : getRoboticsProjects;
-  const createFn = type === "design" ? createDesignProject : createRoboticsProject;
-  const updateFn = type === "design" ? updateDesignProject : updateRoboticsProject;
-  const deleteFn = type === "design" ? deleteDesignProject : deleteRoboticsProject;
-  const label = type === "design" ? "Desain" : "Robotik";
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await getFn(studentId, semesterId);
-      setItems(data);
-    } finally {
-      setLoading(false);
-    }
-  }, [studentId, semesterId, type]);
-
-  useEffect(() => { load(); }, [load]);
-
-  function openAdd() {
-    setEditing(null);
-    setForm({ judul: "", link_file_flyer: "", deskripsi: "", teknologi: "", kompetensi_siswa: "" });
-    setOpen(true);
-  }
-
-  function openEdit(item: ProjectItem) {
-    setEditing(item);
-    setForm({
-      judul: item.judul,
-      link_file_flyer: item.link_file_flyer ?? "",
-      deskripsi: item.deskripsi ?? "",
-      teknologi: item.teknologi ?? "",
-      kompetensi_siswa: item.kompetensi_siswa ?? "",
-    });
-    setOpen(true);
-  }
-
-  async function handleSave() {
-    if (!form.judul.trim()) { toast.error("Judul wajib diisi"); return; }
-    setSaving(true);
-    try {
-      const payload = { student_id: studentId, semester_id: semesterId, ...form };
-      if (editing) {
-        await updateFn(editing.id, payload);
-        toast.success(`Karya ${label} diperbarui`);
-      } else {
-        await createFn(payload);
-        toast.success(`Karya ${label} ditambahkan`);
-      }
-      setOpen(false);
-      await load();
-    } catch {
-      toast.error("Gagal menyimpan");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDelete(id: number) {
-    if (!confirm(`Hapus karya ${label} ini?`)) return;
-    try {
-      await deleteFn(id);
-      toast.success("Dihapus");
-      await load();
-    } catch {
-      toast.error("Gagal menghapus");
-    }
-  }
-
-  return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center">
-        <h3 className="font-medium text-sm text-muted-foreground">Karya {label}</h3>
-        <Button size="sm" onClick={openAdd}>
-          <Plus className="h-4 w-4 mr-1" /> Tambah
-        </Button>
-      </div>
-      {loading ? (
-        <div className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></div>
-      ) : items.length === 0 ? (
-        <Card className="p-8 text-center text-muted-foreground text-sm">Belum ada karya {label.toLowerCase()}.</Card>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {items.map((item) => (
-            <Card key={item.id} className="p-4">
-              <div className="flex justify-between items-start">
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{item.judul}</div>
-                  {item.teknologi && (
-                    <Badge variant="secondary" className="text-xs mt-1">{item.teknologi}</Badge>
-                  )}
-                  {item.kompetensi_siswa && (
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{item.kompetensi_siswa}</p>
-                  )}
-                  {item.deskripsi && (
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.deskripsi}</p>
-                  )}
-                  {item.link_file_flyer && (
-                    <a href={item.link_file_flyer} target="_blank" rel="noopener noreferrer"
-                       className="text-xs text-primary flex items-center gap-1 mt-1">
-                      <ExternalLink className="h-3 w-3" /> Lihat File
-                    </a>
-                  )}
-                </div>
-                <div className="flex gap-1 ml-2">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(item.id)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editing ? `Edit Karya ${label}` : `Tambah Karya ${label}`}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <div>
-              <Label>Judul <span className="text-destructive">*</span></Label>
-              <Input value={form.judul} onChange={(e) => setForm({ ...form, judul: e.target.value })} />
-            </div>
-            <div>
-              <Label>Link File / Flyer</Label>
-              <Input placeholder="https://..." value={form.link_file_flyer} onChange={(e) => setForm({ ...form, link_file_flyer: e.target.value })} />
-            </div>
-            <div>
-              <Label>Teknologi</Label>
-              <Input placeholder="Canva, Arduino, dll" value={form.teknologi} onChange={(e) => setForm({ ...form, teknologi: e.target.value })} />
-            </div>
-            <div>
-              <Label>Kompetensi Siswa</Label>
-              <Input value={form.kompetensi_siswa} onChange={(e) => setForm({ ...form, kompetensi_siswa: e.target.value })} />
-            </div>
-            <div>
-              <Label>Deskripsi</Label>
-              <Textarea rows={3} value={form.deskripsi} onChange={(e) => setForm({ ...form, deskripsi: e.target.value })} />
-            </div>
+            <div><Label>Tema</Label>
+              <Input value={form.tema} onChange={(e) => setForm({ ...form, tema: e.target.value })} /></div>
+            <div><Label>Cerita Siswa</Label>
+              <Textarea rows={3} value={form.cerita_siswa} onChange={(e) => setForm({ ...form, cerita_siswa: e.target.value })} /></div>
+            <div><Label>Testimoni Peserta</Label>
+              <Textarea rows={2} value={form.testimoni_peserta} onChange={(e) => setForm({ ...form, testimoni_peserta: e.target.value })} /></div>
+            <ImageInput
+              label="Foto 1"
+              currentUrl={editing ? resolveImageUrl(editing.foto_mengajar_1, editing.link_foto_1) : null}
+              onFileChange={setFoto1}
+              onLinkChange={setLinkFoto1}
+              linkValue={linkFoto1}
+            />
+            <ImageInput
+              label="Foto 2"
+              currentUrl={editing ? resolveImageUrl(editing.foto_mengajar_2, editing.link_foto_2) : null}
+              onFileChange={setFoto2}
+              onLinkChange={setLinkFoto2}
+              linkValue={linkFoto2}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
@@ -730,6 +691,218 @@ function ProjectTab({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* CSV Import Dialog */}
+      <CsvImportDialog<Partial<TeachingActivity>>
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        title="Kegiatan Mengajar"
+        onDownloadTemplate={downloadTeachingTemplate}
+        onParseFile={parseTeachingCsv}
+        columns={[
+          { key: "tema", label: "Tema" },
+          { key: "lokasi", label: "Lokasi" },
+          { key: "tanggal", label: "Tanggal" },
+          { key: "jumlah_peserta", label: "Peserta" },
+          { key: "link_foto_1", label: "Link Foto 1" },
+        ]}
+        onImport={async (rows) => {
+          const { success, failed } = await importTeachingActivities(rows, studentId, semesterId);
+          toast.success(`Import selesai: ${success} berhasil${failed ? `, ${failed} gagal` : ""}`);
+          await load();
+        }}
+      />
+    </div>
+  );
+}
+
+// ── PROJECT TAB (Design & Robotics) ──────────────────────────────────────────
+
+type ProjectItem = DesignProject | RoboticsProject;
+type ProjectType = "design" | "robotics";
+
+function ProjectTab({ type, studentId, semesterId }: { type: ProjectType; studentId: number; semesterId: number }) {
+  const [items, setItems] = useState<ProjectItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [editing, setEditing] = useState<ProjectItem | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ judul: "", link_file_flyer: "", deskripsi: "", teknologi: "", kompetensi_siswa: "" });
+  const [imgFile, setImgFile] = useState<File | null>(null);
+  const [driveLink, setDriveLink] = useState("");
+
+  const getFn = type === "design" ? getDesignProjects : getRoboticsProjects;
+  const createFn = type === "design" ? createDesignProject : createRoboticsProject;
+  const updateFn = type === "design" ? updateDesignProject : updateRoboticsProject;
+  const deleteFn = type === "design" ? deleteDesignProject : deleteRoboticsProject;
+  const label = type === "design" ? "Desain" : "Robotik";
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { setItems(await getFn(studentId, semesterId)); }
+    finally { setLoading(false); }
+  }, [studentId, semesterId, type]);
+
+  useEffect(() => { load(); }, [load]);
+
+  function openAdd() {
+    setEditing(null);
+    setForm({ judul: "", link_file_flyer: "", deskripsi: "", teknologi: "", kompetensi_siswa: "" });
+    setImgFile(null); setDriveLink("");
+    setOpen(true);
+  }
+
+  function openEdit(item: ProjectItem) {
+    setEditing(item);
+    setForm({
+      judul: item.judul, link_file_flyer: item.link_file_flyer ?? "",
+      deskripsi: item.deskripsi ?? "", teknologi: item.teknologi ?? "",
+      kompetensi_siswa: item.kompetensi_siswa ?? "",
+    });
+    setImgFile(null);
+    setDriveLink(item.link_gambar_drive ?? "");
+    setOpen(true);
+  }
+
+  async function handleSave() {
+    if (!form.judul.trim()) { toast.error("Judul wajib diisi"); return; }
+    setSaving(true);
+    try {
+      const fd = new FormData();
+      fd.append("student_id", String(studentId));
+      fd.append("semester_id", String(semesterId));
+      Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v); });
+      if (imgFile) fd.append("gambar_proyek", imgFile);
+      if (driveLink && !imgFile) fd.append("link_gambar_drive", normalizeDriveLink(driveLink));
+
+      if (editing) {
+        await updateFn(editing.id, fd);
+        toast.success(`Karya ${label} diperbarui`);
+      } else {
+        await createFn(fd);
+        toast.success(`Karya ${label} ditambahkan`);
+      }
+      setOpen(false);
+      await load();
+    } catch { toast.error("Gagal menyimpan"); }
+    finally { setSaving(false); }
+  }
+
+  async function handleDelete(id: number) {
+    if (!confirm(`Hapus karya ${label} ini?`)) return;
+    try { await deleteFn(id); toast.success("Dihapus"); await load(); }
+    catch { toast.error("Gagal menghapus"); }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center">
+        <h3 className="font-medium text-sm text-muted-foreground">Karya {label}</h3>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-1" /> Import CSV
+          </Button>
+          <Button size="sm" onClick={openAdd}>
+            <Plus className="h-4 w-4 mr-1" /> Tambah
+          </Button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></div>
+      ) : items.length === 0 ? (
+        <Card className="p-8 text-center text-muted-foreground text-sm">Belum ada karya {label.toLowerCase()}.</Card>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {items.map((item) => {
+            const imgUrl = resolveImageUrl(item.gambar_proyek, item.link_gambar_drive);
+            return (
+              <Card key={item.id} className="overflow-hidden">
+                {imgUrl && (
+                  <img src={imgUrl} alt={item.judul} className="w-full h-32 object-cover" />
+                )}
+                <div className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{item.judul}</div>
+                      {item.teknologi && <Badge variant="secondary" className="text-xs mt-1">{item.teknologi}</Badge>}
+                      {item.kompetensi_siswa && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{item.kompetensi_siswa}</p>}
+                      {item.deskripsi && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.deskripsi}</p>}
+                      {item.link_file_flyer && (
+                        <a href={item.link_file_flyer} target="_blank" rel="noopener noreferrer"
+                           className="text-xs text-primary flex items-center gap-1 mt-1">
+                          <ExternalLink className="h-3 w-3" /> Lihat File
+                        </a>
+                      )}
+                    </div>
+                    <div className="flex gap-1 ml-2">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(item.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editing ? `Edit Karya ${label}` : `Tambah Karya ${label}`}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div><Label>Judul <span className="text-destructive">*</span></Label>
+              <Input value={form.judul} onChange={(e) => setForm({ ...form, judul: e.target.value })} /></div>
+            <div><Label>Link File / Flyer</Label>
+              <Input placeholder="https://..." value={form.link_file_flyer} onChange={(e) => setForm({ ...form, link_file_flyer: e.target.value })} /></div>
+            <div><Label>Teknologi</Label>
+              <Input placeholder="Canva, Arduino, dll" value={form.teknologi} onChange={(e) => setForm({ ...form, teknologi: e.target.value })} /></div>
+            <div><Label>Kompetensi Siswa</Label>
+              <Input value={form.kompetensi_siswa} onChange={(e) => setForm({ ...form, kompetensi_siswa: e.target.value })} /></div>
+            <div><Label>Deskripsi</Label>
+              <Textarea rows={3} value={form.deskripsi} onChange={(e) => setForm({ ...form, deskripsi: e.target.value })} /></div>
+            <ImageInput
+              label="Gambar Proyek"
+              currentUrl={editing ? resolveImageUrl(editing.gambar_proyek, editing.link_gambar_drive) : null}
+              onFileChange={setImgFile}
+              onLinkChange={setDriveLink}
+              linkValue={driveLink}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <CsvImportDialog<Partial<DesignProject | RoboticsProject>>
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        title={`Karya ${label}`}
+        onDownloadTemplate={() => downloadProjectTemplate(type)}
+        onParseFile={parseProjectCsv}
+        columns={[
+          { key: "judul", label: "Judul" },
+          { key: "teknologi", label: "Teknologi" },
+          { key: "link_file_flyer", label: "Link Flyer" },
+          { key: "link_gambar_drive", label: "Link Gambar" },
+        ]}
+        onImport={async (rows) => {
+          const { success, failed } = await importProjects(rows, type, studentId, semesterId);
+          toast.success(`Import selesai: ${success} berhasil${failed ? `, ${failed} gagal` : ""}`);
+          await load();
+        }}
+      />
     </div>
   );
 }
@@ -740,6 +913,7 @@ function YoutubeTab({ studentId, semesterId }: { studentId: number; semesterId: 
   const [items, setItems] = useState<YoutubeVideo[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<YoutubeVideo | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ judul_video: "", deskripsi_video: "", link_youtube: "" });
@@ -752,12 +926,7 @@ function YoutubeTab({ studentId, semesterId }: { studentId: number; semesterId: 
 
   useEffect(() => { load(); }, [load]);
 
-  function openAdd() {
-    setEditing(null);
-    setForm({ judul_video: "", deskripsi_video: "", link_youtube: "" });
-    setOpen(true);
-  }
-
+  function openAdd() { setEditing(null); setForm({ judul_video: "", deskripsi_video: "", link_youtube: "" }); setOpen(true); }
   function openEdit(item: YoutubeVideo) {
     setEditing(item);
     setForm({ judul_video: item.judul_video, deskripsi_video: item.deskripsi_video ?? "", link_youtube: item.link_youtube });
@@ -765,16 +934,13 @@ function YoutubeTab({ studentId, semesterId }: { studentId: number; semesterId: 
   }
 
   async function handleSave() {
-    if (!form.judul_video.trim() || !form.link_youtube.trim()) {
-      toast.error("Judul dan link YouTube wajib diisi"); return;
-    }
+    if (!form.judul_video.trim() || !form.link_youtube.trim()) { toast.error("Judul dan link YouTube wajib diisi"); return; }
     setSaving(true);
     try {
       const payload = { student_id: studentId, semester_id: semesterId, ...form };
       if (editing) { await updateYoutubeVideo(editing.id, payload); toast.success("Video diperbarui"); }
       else { await createYoutubeVideo(payload); toast.success("Video ditambahkan"); }
-      setOpen(false);
-      await load();
+      setOpen(false); await load();
     } catch { toast.error("Gagal menyimpan"); }
     finally { setSaving(false); }
   }
@@ -789,8 +955,14 @@ function YoutubeTab({ studentId, semesterId }: { studentId: number; semesterId: 
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <h3 className="font-medium text-sm text-muted-foreground">Video YouTube</h3>
-        <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Tambah</Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-1" /> Import CSV
+          </Button>
+          <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Tambah</Button>
+        </div>
       </div>
+
       {loading ? (
         <div className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></div>
       ) : items.length === 0 ? (
@@ -807,21 +979,15 @@ function YoutubeTab({ studentId, semesterId }: { studentId: number; semesterId: 
                   <div className="flex justify-between items-start">
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm truncate">{item.judul_video}</div>
-                      {item.deskripsi_video && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.deskripsi_video}</p>
-                      )}
+                      {item.deskripsi_video && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.deskripsi_video}</p>}
                       <a href={item.link_youtube} target="_blank" rel="noopener noreferrer"
                          className="text-xs text-red-600 flex items-center gap-1 mt-1">
                         <Youtube className="h-3 w-3" /> Tonton di YouTube
                       </a>
                     </div>
                     <div className="flex gap-1 ml-2">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(item.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}><Pencil className="h-3 w-3" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(item.id)}><Trash2 className="h-3 w-3" /></Button>
                     </div>
                   </div>
                 </div>
@@ -833,22 +999,14 @@ function YoutubeTab({ studentId, semesterId }: { studentId: number; semesterId: 
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Edit Video" : "Tambah Video YouTube"}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? "Edit Video" : "Tambah Video YouTube"}</DialogTitle></DialogHeader>
           <div className="space-y-3 py-2">
-            <div>
-              <Label>Judul Video <span className="text-destructive">*</span></Label>
-              <Input value={form.judul_video} onChange={(e) => setForm({ ...form, judul_video: e.target.value })} />
-            </div>
-            <div>
-              <Label>Link YouTube <span className="text-destructive">*</span></Label>
-              <Input placeholder="https://youtube.com/watch?v=..." value={form.link_youtube} onChange={(e) => setForm({ ...form, link_youtube: e.target.value })} />
-            </div>
-            <div>
-              <Label>Deskripsi</Label>
-              <Textarea rows={3} value={form.deskripsi_video} onChange={(e) => setForm({ ...form, deskripsi_video: e.target.value })} />
-            </div>
+            <div><Label>Judul Video <span className="text-destructive">*</span></Label>
+              <Input value={form.judul_video} onChange={(e) => setForm({ ...form, judul_video: e.target.value })} /></div>
+            <div><Label>Link YouTube <span className="text-destructive">*</span></Label>
+              <Input placeholder="https://youtube.com/watch?v=..." value={form.link_youtube} onChange={(e) => setForm({ ...form, link_youtube: e.target.value })} /></div>
+            <div><Label>Deskripsi</Label>
+              <Textarea rows={3} value={form.deskripsi_video} onChange={(e) => setForm({ ...form, deskripsi_video: e.target.value })} /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
@@ -858,6 +1016,24 @@ function YoutubeTab({ studentId, semesterId }: { studentId: number; semesterId: 
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CsvImportDialog<Partial<YoutubeVideo>>
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        title="Video YouTube"
+        onDownloadTemplate={downloadYoutubeTemplate}
+        onParseFile={parseYoutubeCsv}
+        columns={[
+          { key: "judul_video", label: "Judul" },
+          { key: "link_youtube", label: "Link YouTube" },
+          { key: "deskripsi_video", label: "Deskripsi" },
+        ]}
+        onImport={async (rows) => {
+          const { success, failed } = await importYoutubeVideos(rows, studentId, semesterId);
+          toast.success(`Import selesai: ${success} berhasil${failed ? `, ${failed} gagal` : ""}`);
+          await load();
+        }}
+      />
     </div>
   );
 }
@@ -868,10 +1044,12 @@ function CertificateTab({ studentId, semesterId }: { studentId: number; semester
   const [items, setItems] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Certificate | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ lingkup: "", tanggal: "", tema: "" });
   const [imgFile, setImgFile] = useState<File | null>(null);
+  const [driveLink, setDriveLink] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -882,17 +1060,14 @@ function CertificateTab({ studentId, semesterId }: { studentId: number; semester
   useEffect(() => { load(); }, [load]);
 
   function openAdd() {
-    setEditing(null);
-    setForm({ lingkup: "", tanggal: "", tema: "" });
-    setImgFile(null);
-    setOpen(true);
+    setEditing(null); setForm({ lingkup: "", tanggal: "", tema: "" });
+    setImgFile(null); setDriveLink(""); setOpen(true);
   }
 
   function openEdit(item: Certificate) {
     setEditing(item);
     setForm({ lingkup: item.lingkup ?? "", tanggal: item.tanggal ?? "", tema: item.tema ?? "" });
-    setImgFile(null);
-    setOpen(true);
+    setImgFile(null); setDriveLink(item.link_gambar_drive ?? ""); setOpen(true);
   }
 
   async function handleSave() {
@@ -903,10 +1078,10 @@ function CertificateTab({ studentId, semesterId }: { studentId: number; semester
       fd.append("semester_id", String(semesterId));
       Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v); });
       if (imgFile) fd.append("gambar_sertifikat", imgFile);
+      if (driveLink && !imgFile) fd.append("link_gambar_drive", normalizeDriveLink(driveLink));
       if (editing) { await updateCertificate(editing.id, fd); toast.success("Sertifikat diperbarui"); }
       else { await createCertificate(fd); toast.success("Sertifikat ditambahkan"); }
-      setOpen(false);
-      await load();
+      setOpen(false); await load();
     } catch { toast.error("Gagal menyimpan"); }
     finally { setSaving(false); }
   }
@@ -923,8 +1098,14 @@ function CertificateTab({ studentId, semesterId }: { studentId: number; semester
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <h3 className="font-medium text-sm text-muted-foreground">Sertifikat</h3>
-        <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Tambah</Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-1" /> Import CSV
+          </Button>
+          <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Tambah</Button>
+        </div>
       </div>
+
       {loading ? (
         <div className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></div>
       ) : items.length === 0 ? (
@@ -932,7 +1113,7 @@ function CertificateTab({ studentId, semesterId }: { studentId: number; semester
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
           {items.map((item) => {
-            const imgUrl = resolveUploadUrl(item.gambar_sertifikat);
+            const imgUrl = resolveImageUrl(item.gambar_sertifikat, item.link_gambar_drive);
             return (
               <Card key={item.id} className="overflow-hidden">
                 {imgUrl ? (
@@ -952,12 +1133,8 @@ function CertificateTab({ studentId, semesterId }: { studentId: number; semester
                       </div>
                     </div>
                     <div className="flex gap-1 ml-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(item.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}><Pencil className="h-3 w-3" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(item.id)}><Trash2 className="h-3 w-3" /></Button>
                     </div>
                   </div>
                 </div>
@@ -968,36 +1145,27 @@ function CertificateTab({ studentId, semesterId }: { studentId: number; semester
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Edit Sertifikat" : "Tambah Sertifikat"}</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{editing ? "Edit Sertifikat" : "Tambah Sertifikat"}</DialogTitle></DialogHeader>
           <div className="space-y-3 py-2">
-            <div>
-              <Label>Tema / Nama Kegiatan</Label>
-              <Input value={form.tema} onChange={(e) => setForm({ ...form, tema: e.target.value })} />
-            </div>
+            <div><Label>Tema / Nama Kegiatan</Label>
+              <Input value={form.tema} onChange={(e) => setForm({ ...form, tema: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Lingkup</Label>
+              <div><Label>Lingkup</Label>
                 <Select value={form.lingkup} onValueChange={(v) => setForm({ ...form, lingkup: v })}>
                   <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
-                  <SelectContent>
-                    {LINGKUP_OPTIONS.map((l) => (
-                      <SelectItem key={l} value={l}>{l}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Tanggal</Label>
-                <Input type="date" value={form.tanggal} onChange={(e) => setForm({ ...form, tanggal: e.target.value })} />
-              </div>
+                  <SelectContent>{LINGKUP_OPTIONS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
+                </Select></div>
+              <div><Label>Tanggal</Label>
+                <Input type="date" value={form.tanggal} onChange={(e) => setForm({ ...form, tanggal: e.target.value })} /></div>
             </div>
-            <div>
-              <Label>Gambar Sertifikat</Label>
-              <Input type="file" accept="image/*" onChange={(e) => setImgFile(e.target.files?.[0] ?? null)} />
-            </div>
+            <ImageInput
+              label="Gambar Sertifikat"
+              currentUrl={editing ? resolveImageUrl(editing.gambar_sertifikat, editing.link_gambar_drive) : null}
+              onFileChange={setImgFile}
+              onLinkChange={setDriveLink}
+              linkValue={driveLink}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
@@ -1007,6 +1175,25 @@ function CertificateTab({ studentId, semesterId }: { studentId: number; semester
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CsvImportDialog<Partial<Certificate>>
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        title="Sertifikat"
+        onDownloadTemplate={downloadCertificateTemplate}
+        onParseFile={parseCertificateCsv}
+        columns={[
+          { key: "tema", label: "Tema" },
+          { key: "lingkup", label: "Lingkup" },
+          { key: "tanggal", label: "Tanggal" },
+          { key: "link_gambar_drive", label: "Link Gambar" },
+        ]}
+        onImport={async (rows) => {
+          const { success, failed } = await importCertificates(rows, studentId, semesterId);
+          toast.success(`Import selesai: ${success} berhasil${failed ? `, ${failed} gagal` : ""}`);
+          await load();
+        }}
+      />
     </div>
   );
 }
@@ -1044,12 +1231,8 @@ function PortfolioPage() {
   const loadSummary = useCallback(async () => {
     if (!studentId || !semesterId) { setSummary(null); return; }
     setLoadingSummary(true);
-    try {
-      const data = await getStudentSummary(parseInt(studentId), parseInt(semesterId));
-      setSummary(data);
-    } finally {
-      setLoadingSummary(false);
-    }
+    try { setSummary(await getStudentSummary(parseInt(studentId), parseInt(semesterId))); }
+    finally { setLoadingSummary(false); }
   }, [studentId, semesterId]);
 
   useEffect(() => { loadSummary(); }, [loadSummary]);
@@ -1106,7 +1289,6 @@ function PortfolioPage() {
         </Card>
       ) : (
         <>
-          {/* Summary */}
           {loadingSummary ? (
             <div className="text-center py-4"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></div>
           ) : (
@@ -1118,7 +1300,6 @@ function PortfolioPage() {
             />
           )}
 
-          {/* Tabs */}
           <Tabs defaultValue="teaching">
             <TabsList className="flex flex-wrap h-auto gap-1">
               <TabsTrigger value="teaching" className="flex items-center gap-1.5">
