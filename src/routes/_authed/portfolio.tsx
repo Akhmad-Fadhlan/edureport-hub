@@ -132,7 +132,6 @@ function UnifiedImportDialog({
     try {
       const result = await importUnifiedPortfolio(rows, studentId, semesterId);
       
-      // Show detailed result
       const parts: string[] = [];
       if (result.teaching.success) parts.push(`Mengajar: ${result.teaching.success}`);
       if (result.design.success) parts.push(`Desain: ${result.design.success}`);
@@ -188,7 +187,6 @@ function UnifiedImportDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          {/* Step 1: Download template */}
           <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-lg">
             <div className="flex-1 text-sm">
               <p className="font-medium">Langkah 1: Download template CSV</p>
@@ -202,13 +200,11 @@ function UnifiedImportDialog({
             </Button>
           </div>
 
-          {/* Step 2: Upload file */}
           <div className="space-y-2">
             <Label className="font-medium">Langkah 2: Upload file CSV</Label>
             <Input ref={fileRef} type="file" accept=".csv,text/csv" onChange={handleFile} />
           </div>
 
-          {/* Summary stats */}
           {rows.length > 0 && (
             <div className="flex flex-wrap items-center gap-3 text-sm p-2 bg-muted/30 rounded-lg">
               <span className="font-medium">Total: {rows.length} baris</span>
@@ -257,7 +253,6 @@ function UnifiedImportDialog({
             </div>
           )}
 
-          {/* Preview table */}
           {rows.length > 0 && (
             <div className="border rounded-lg overflow-auto max-h-96">
               <table className="w-full text-xs">
@@ -356,7 +351,7 @@ function UnifiedImportDialog({
   );
 }
 
-// ── IMAGE INPUT (upload or Google Drive link) ─────────────────────────────────
+// ── IMAGE INPUT ─────────────────────────────────────────────────
 
 interface ImageInputProps {
   label: string;
@@ -769,7 +764,7 @@ function TeachingTab({ studentId, semesterId }: { studentId: number; semesterId:
   );
 }
 
-// ── PROJECT TAB (Design & Robotics) ──────────────────────────────────────────
+// ── PROJECT TAB ──────────────────────────────────────────────────────────
 
 type ProjectItem = DesignProject | RoboticsProject;
 type ProjectType = "design" | "robotics";
@@ -1250,7 +1245,6 @@ function PortfolioPage() {
         )}
       </div>
 
-      {/* Filter */}
       <Card className="p-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
         <div className="space-y-2">
           <Label>Semester</Label>
@@ -1342,7 +1336,6 @@ function PortfolioPage() {
         </>
       )}
 
-      {/* Unified Import Dialog */}
       {studentId && semesterId && (
         <UnifiedImportDialog
           open={importOpen}
