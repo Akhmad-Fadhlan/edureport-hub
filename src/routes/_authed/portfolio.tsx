@@ -729,7 +729,6 @@ function ProjectTab({ type, studentId, semesterId }: { type: ProjectType; studen
   const [editing, setEditing] = useState<ProjectItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ judul: "", link_file_flyer: "", deskripsi: "", teknologi: "", kompetensi_siswa: "" });
-  const [imgFile, setImgFile] = useState<File | null>(null);
   const [driveLink, setDriveLink] = useState("");
 
   const getFn = type === "design" ? getDesignProjects : getRoboticsProjects;
@@ -749,7 +748,7 @@ function ProjectTab({ type, studentId, semesterId }: { type: ProjectType; studen
   function openAdd() {
     setEditing(null);
     setForm({ judul: "", link_file_flyer: "", deskripsi: "", teknologi: "", kompetensi_siswa: "" });
-    setImgFile(null); setDriveLink("");
+    setDriveLink("");
     setOpen(true);
   }
 
@@ -760,7 +759,6 @@ function ProjectTab({ type, studentId, semesterId }: { type: ProjectType; studen
       deskripsi: item.deskripsi ?? "", teknologi: item.teknologi ?? "",
       kompetensi_siswa: item.kompetensi_siswa ?? "",
     });
-    setImgFile(null);
     setDriveLink(item.link_gambar_drive ?? "");
     setOpen(true);
   }
@@ -769,18 +767,18 @@ function ProjectTab({ type, studentId, semesterId }: { type: ProjectType; studen
     if (!form.judul.trim()) { toast.error("Judul wajib diisi"); return; }
     setSaving(true);
     try {
-      const fd = new FormData();
-      fd.append("student_id", String(studentId));
-      fd.append("semester_id", String(semesterId));
-      Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v); });
-      if (imgFile) fd.append("gambar_proyek", imgFile);
-      if (driveLink && !imgFile) fd.append("link_gambar_drive", normalizeDriveLink(driveLink));
+      const payload: Record<string, any> = {
+        student_id: studentId,
+        semester_id: semesterId,
+        ...Object.fromEntries(Object.entries(form).filter(([, v]) => v !== "")),
+      };
+      if (driveLink) payload.link_gambar_drive = normalizeDriveLink(driveLink);
 
       if (editing) {
-        await updateFn(editing.id, fd);
+        await updateFn(editing.id, payload);
         toast.success(`Karya ${label} diperbarui`);
       } else {
-        await createFn(fd);
+        await createFn(payload);
         toast.success(`Karya ${label} ditambahkan`);
       }
       setOpen(false);
@@ -868,13 +866,24 @@ function ProjectTab({ type, studentId, semesterId }: { type: ProjectType; studen
               <Input value={form.kompetensi_siswa} onChange={(e) => setForm({ ...form, kompetensi_siswa: e.target.value })} /></div>
             <div><Label>Deskripsi</Label>
               <Textarea rows={3} value={form.deskripsi} onChange={(e) => setForm({ ...form, deskripsi: e.target.value })} /></div>
-            <ImageInput
-              label="Gambar Proyek"
-              currentUrl={editing ? resolveImageUrl(editing.gambar_proyek, editing.link_gambar_drive) : null}
-              onFileChange={setImgFile}
-              onLinkChange={setDriveLink}
-              linkValue={driveLink}
-            />
+            <div><Label>Link Gambar (Google Drive)</Label>
+              <Input
+                placeholder="https://drive.google.com/file/d/..."
+                value={driveLink}
+                onChange={(e) => setDriveLink(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Paste link share Google Drive. Pastikan akses "Anyone with the link".
+              </p>
+              {driveLink && (
+                <img
+                  src={resolveImageUrl(null, driveLink) ?? ""}
+                  alt="preview"
+                  className="h-24 w-auto object-contain rounded border mt-2"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
