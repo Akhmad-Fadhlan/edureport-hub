@@ -629,7 +629,7 @@ function toDirectImageUrl(url: string | null | undefined): string | null {
  * Tampilkan teks apa adanya (tanpa transformasi),
  * potong di karakter ke-20 jika melebihi batas.
  */
-function truncateText(text: string, maxLength = 20): string {
+function truncateText(text: string, maxLength = 26): string {
   if (!text) return text;
   return text.length > maxLength ? text.slice(0, maxLength) : text;
 }
@@ -701,8 +701,8 @@ function getScaleColor(nilai: number) {
 }
 
 function splitSemesterLabel(label: string) {
-  if (label === "1st semester") return { number: "1", suffix: "st", rest: " semester" };
-  if (label === "2nd semester") return { number: "2", suffix: "nd", rest: " semester" };
+  if (label === "1st semester") return { number: "1", suffix: "st ", rest: " semester" };
+  if (label === "2nd semester") return { number: "2", suffix: "nd ", rest: " semester" };
   return null;
 }
 
