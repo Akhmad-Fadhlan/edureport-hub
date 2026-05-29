@@ -20,9 +20,7 @@ import {
 } from "@/lib/pdf/StudentReportPdf";
 import coverBgUrlikhwan from "@/assets/cover-bg1.png";
 import coverBgUrlakhwat from "@/assets/cover-bg2.png";
-import coverBgUrl from "@/assets/cover-bg.png";
 import reportFirstBgUrl from "@/assets/report-first.png";
-import reportLastBgUrl from "@/assets/report-last.png";
 
 export const Route = createFileRoute("/_authed/reports")({
   component: ReportsPage,
