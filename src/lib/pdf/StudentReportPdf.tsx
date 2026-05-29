@@ -53,7 +53,7 @@ export interface PdfReportData {
 
   coverBgDataUrl?: string | null;
   reportFirstBgDataUrl?: string | null;
-  reportLastBgDataUrl?: string | null;
+  reportLastBgDataUrl?: string | null; // tetap ada di type tapi tidak dipakai di render
 }
 
 /* ============================================================================
@@ -625,10 +625,6 @@ function toDirectImageUrl(url: string | null | undefined): string | null {
   return url;
 }
 
-/**
- * Tampilkan teks apa adanya (tanpa transformasi),
- * potong di karakter ke-20 jika melebihi batas.
- */
 function truncateText(text: string, maxLength = 26): string {
   if (!text) return text;
   return text.length > maxLength ? text.slice(0, maxLength) : text;
@@ -868,9 +864,10 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
         const isFirst = pageIndex === 0;
         const isLast = pageIndex === materialPages.length - 1;
 
-        let bgUrl: string | null = null;
-        if (isFirst) bgUrl = data.reportFirstBgDataUrl ?? null;
-        else if (isLast) bgUrl = data.reportLastBgDataUrl ?? null;
+        // ── PERUBAHAN: halaman terakhir tidak pakai background image ──────────
+        // Hanya halaman pertama yang mendapat background; halaman lain (termasuk
+        // halaman terakhir) dibiarkan putih bersih.
+        const bgUrl: string | null = isFirst ? (data.reportFirstBgDataUrl ?? null) : null;
 
         return (
           <Page key={pageIndex} size="A4" style={styles.page} wrap={false}>
@@ -1008,6 +1005,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                           </View>
                         )}
 
+                        {/* ── PERUBAHAN: nama dari user yang login (dikirim via data.teacher.nama) */}
                         <Text style={styles.signatureName}>
                           {data.teacher?.nama || "Nama Guru IT"}
                         </Text>
