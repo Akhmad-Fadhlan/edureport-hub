@@ -799,7 +799,7 @@ export function parseUnifiedCsv(
     const rows: UnifiedCsvRow[] = [];
 
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(",").map((v) => v.trim());
+      const values = parseCsvLine(lines[i]).map((v) => v.trim());
       const data: Record<string, string> = {};
       headers.forEach((h, idx) => {
         data[h] = values[idx] ?? "";
