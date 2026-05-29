@@ -799,7 +799,7 @@ export function parseUnifiedCsv(
     const rows: UnifiedCsvRow[] = [];
 
     for (let i = 1; i < lines.length; i++) {
-      const values = parseCsvLine(lines[i]).map((v) => v.trim());
+      const values = lines[i].split(",").map((v) => v.trim());
       const data: Record<string, string> = {};
       headers.forEach((h, idx) => {
         data[h] = values[idx] ?? "";
@@ -866,7 +866,13 @@ export async function importUnifiedPortfolio(
           if (row.data.tema)          fd.append("tema", row.data.tema);
           if (row.data.lokasi)        fd.append("lokasi", row.data.lokasi);
           if (row.data.tanggal)       fd.append("tanggal", row.data.tanggal);
-          if (row.data.dokumentasi)   fd.append("dokumentasi", row.data.dokumentasi);
+          // "dokumentasi" di CSV = link_foto_1 di API
+          if (row.data.dokumentasi)   fd.append("link_foto_1", row.data.dokumentasi);
+          if (row.data.link_foto_1)   fd.append("link_foto_1", row.data.link_foto_1);
+          if (row.data.link_foto_2)   fd.append("link_foto_2", row.data.link_foto_2);
+          if (row.data.jumlah_peserta)   fd.append("jumlah_peserta", row.data.jumlah_peserta);
+          if (row.data.cerita_siswa)     fd.append("cerita_siswa", row.data.cerita_siswa);
+          if (row.data.testimoni_peserta) fd.append("testimoni_peserta", row.data.testimoni_peserta);
           await createTeachingActivity(fd);
           result.teaching.success++;
           break;
@@ -879,8 +885,13 @@ export async function importUnifiedPortfolio(
           if (row.data.judul)         fd.append("judul", row.data.judul);
           if (row.data.teknologi)     fd.append("teknologi", row.data.teknologi);
           if (row.data.deskripsi)     fd.append("deskripsi", row.data.deskripsi);
-          if (row.data.link_project)  fd.append("link_project", row.data.link_project);
-          if (row.data.gambar)        fd.append("gambar", row.data.gambar);
+          if (row.data.kompetensi_siswa) fd.append("kompetensi_siswa", row.data.kompetensi_siswa);
+          // "link_project" di CSV = link_file_flyer di API
+          if (row.data.link_project)  fd.append("link_file_flyer", row.data.link_project);
+          if (row.data.link_file_flyer) fd.append("link_file_flyer", row.data.link_file_flyer);
+          // "gambar" di CSV = link_gambar_drive di API
+          if (row.data.gambar)        fd.append("link_gambar_drive", row.data.gambar);
+          if (row.data.link_gambar_drive) fd.append("link_gambar_drive", row.data.link_gambar_drive);
           if (row.type === "design") {
             await createDesignProject(fd);
             result.design.success++;
@@ -909,7 +920,10 @@ export async function importUnifiedPortfolio(
           if (row.data.lingkup)       fd.append("lingkup", row.data.lingkup);
           if (row.data.penyelenggara) fd.append("penyelenggara", row.data.penyelenggara);
           if (row.data.tahun)         fd.append("tahun", row.data.tahun);
-          if (row.data.sertifikat)    fd.append("sertifikat", row.data.sertifikat);
+          if (row.data.tanggal)       fd.append("tanggal", row.data.tanggal);
+          // "sertifikat" di CSV = link_gambar_drive di API
+          if (row.data.sertifikat)    fd.append("link_gambar_drive", row.data.sertifikat);
+          if (row.data.link_gambar_drive) fd.append("link_gambar_drive", row.data.link_gambar_drive);
           await createCertificate(fd);
           result.certificate.success++;
           break;
