@@ -736,3 +736,191 @@ export function normalizeDriveLink(link: string): string {
   }
   return link;
 }
+
+/* ============================================================================
+ * UNIFIED CSV IMPORT
+ * ========================================================================== */
+
+export type UnifiedCsvRowType = "teaching" | "design" | "robotics" | "youtube" | "certificate";
+
+export interface UnifiedCsvRow {
+  rowNumber: number;
+  type: UnifiedCsvRowType;
+  status: "ok" | "warning" | "error";
+  message?: string;
+  data: Record<string, string>;
+}
+
+export interface CsvImportResult {
+  teaching: { success: number; failed: number };
+  design: { success: number; failed: number };
+  robotics: { success: number; failed: number };
+  youtube: { success: number; failed: number };
+  certificate: { success: number; failed: number };
+  total: { success: number; failed: number };
+}
+
+const UNIFIED_TEMPLATE_HEADERS = [
+  "type",
+  // teaching
+  "tema", "lokasi", "tanggal", "dokumentasi",
+  // design / robotics
+  "judul", "teknologi", "deskripsi", "link_project", "gambar",
+  // youtube
+  "judul_video", "link_youtube", "deskripsi_video",
+  // certificate
+  "lingkup", "penyelenggara", "tahun", "sertifikat",
+];
+
+export function downloadUnifiedTemplate(): void {
+  const csv = UNIFIED_TEMPLATE_HEADERS.join(",") + "\n";
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "template-portofolio-lengkap.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export function parseUnifiedCsv(
+  file: File,
+  callback: (rows: UnifiedCsvRow[]) => void,
+): void {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target?.result as string;
+    const lines = text.split(/\r?\n/).filter((l) => l.trim());
+    if (lines.length < 2) {
+      callback([]);
+      return;
+    }
+    const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+    const rows: UnifiedCsvRow[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(",").map((v) => v.trim());
+      const data: Record<string, string> = {};
+      headers.forEach((h, idx) => {
+        data[h] = values[idx] ?? "";
+      });
+
+      const type = data["type"]?.toLowerCase() as UnifiedCsvRowType;
+      const validTypes: UnifiedCsvRowType[] = ["teaching", "design", "robotics", "youtube", "certificate"];
+
+      if (!validTypes.includes(type)) {
+        rows.push({
+          rowNumber: i + 1,
+          type: "teaching",
+          status: "error",
+          message: `Tipe tidak dikenali: "${data["type"]}"`,
+          data,
+        });
+        continue;
+      }
+
+      let status: "ok" | "warning" | "error" = "ok";
+      let message: string | undefined;
+
+      if (type === "teaching" && !data["tema"]) {
+        status = "warning"; message = "Kolom tema kosong";
+      } else if ((type === "design" || type === "robotics") && !data["judul"]) {
+        status = "warning"; message = "Kolom judul kosong";
+      } else if (type === "youtube" && !data["link_youtube"]) {
+        status = "error"; message = "link_youtube wajib diisi";
+      } else if (type === "certificate" && !data["tema"]) {
+        status = "warning"; message = "Kolom tema kosong";
+      }
+
+      rows.push({ rowNumber: i + 1, type, status, message, data });
+    }
+
+    callback(rows);
+  };
+  reader.readAsText(file);
+}
+
+export async function importUnifiedPortfolio(
+  rows: UnifiedCsvRow[],
+  studentId: string | number,
+  semesterId: string | number,
+): Promise<CsvImportResult> {
+  const result: CsvImportResult = {
+    teaching:    { success: 0, failed: 0 },
+    design:      { success: 0, failed: 0 },
+    robotics:    { success: 0, failed: 0 },
+    youtube:     { success: 0, failed: 0 },
+    certificate: { success: 0, failed: 0 },
+    total:       { success: 0, failed: 0 },
+  };
+
+  const validRows = rows.filter((r) => r.status !== "error");
+
+  for (const row of validRows) {
+    try {
+      switch (row.type) {
+        case "teaching": {
+          const fd = new FormData();
+          fd.append("student_id", String(studentId));
+          fd.append("semester_id", String(semesterId));
+          if (row.data.tema)          fd.append("tema", row.data.tema);
+          if (row.data.lokasi)        fd.append("lokasi", row.data.lokasi);
+          if (row.data.tanggal)       fd.append("tanggal", row.data.tanggal);
+          if (row.data.dokumentasi)   fd.append("dokumentasi", row.data.dokumentasi);
+          await createTeachingActivity(fd);
+          result.teaching.success++;
+          break;
+        }
+        case "design":
+        case "robotics": {
+          const fd = new FormData();
+          fd.append("student_id", String(studentId));
+          fd.append("semester_id", String(semesterId));
+          if (row.data.judul)         fd.append("judul", row.data.judul);
+          if (row.data.teknologi)     fd.append("teknologi", row.data.teknologi);
+          if (row.data.deskripsi)     fd.append("deskripsi", row.data.deskripsi);
+          if (row.data.link_project)  fd.append("link_project", row.data.link_project);
+          if (row.data.gambar)        fd.append("gambar", row.data.gambar);
+          if (row.type === "design") {
+            await createDesignProject(fd);
+            result.design.success++;
+          } else {
+            await createRoboticsProject(fd);
+            result.robotics.success++;
+          }
+          break;
+        }
+        case "youtube": {
+          await createYoutubeVideo({
+            student_id: Number(studentId),
+            semester_id: Number(semesterId),
+            judul_video: row.data.judul_video || "",
+            link_youtube: row.data.link_youtube || "",
+            deskripsi: row.data.deskripsi_video || "",
+          } as any);
+          result.youtube.success++;
+          break;
+        }
+        case "certificate": {
+          const fd = new FormData();
+          fd.append("student_id", String(studentId));
+          fd.append("semester_id", String(semesterId));
+          if (row.data.tema)          fd.append("tema", row.data.tema);
+          if (row.data.lingkup)       fd.append("lingkup", row.data.lingkup);
+          if (row.data.penyelenggara) fd.append("penyelenggara", row.data.penyelenggara);
+          if (row.data.tahun)         fd.append("tahun", row.data.tahun);
+          if (row.data.sertifikat)    fd.append("sertifikat", row.data.sertifikat);
+          await createCertificate(fd);
+          result.certificate.success++;
+          break;
+        }
+      }
+      result.total.success++;
+    } catch {
+      result[row.type].failed++;
+      result.total.failed++;
+    }
+  }
+
+  return result;
+}
