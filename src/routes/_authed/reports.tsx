@@ -269,8 +269,15 @@ function ReportsPage() {
         ? currentTeacher.data[0]
         : currentTeacher.data;
 
+      // ── PERUBAHAN: nama TTD diambil dari user yang sedang login ─────────────
+      // Prioritas: user.name → user.nama → teacher record → fallback
+      // Sesuaikan field (name/nama/username) dengan struktur auth store kamu.
       const teacherNama: string =
-        teacherRecord?.nama ?? "Nama Guru IT";
+        (user as any)?.name ??
+        (user as any)?.nama ??
+        (user as any)?.username ??
+        teacherRecord?.nama ??
+        "Nama Guru IT";
 
       const teacherJabatan: string =
         teacherRecord?.mata_pelajaran ?? teacherRecord?.jabatan ?? "Guru IT";
@@ -320,11 +327,13 @@ function ReportsPage() {
       const isAkhwat = selectedClass?.cabang?.toLowerCase() === "akhwat";
       const activeCoverBgUrl = isAkhwat ? coverBgUrlakhwat : coverBgUrlikhwan;
 
+      // ── PERUBAHAN: reportLastBgDataUrl tidak lagi dipakai di PDF renderer,
+      //    tapi tetap di-fetch agar tidak break jika suatu saat diperlukan lagi.
       const [coverBgDataUrl, reportFirstBgDataUrl, reportLastBgDataUrl] =
         await Promise.all([
           urlToDataUrl(activeCoverBgUrl),
           urlToDataUrl(reportFirstBgUrl),
-          urlToDataUrl(reportLastBgUrl),
+          urlToDataUrl(reportLastBgUrl), // nilai ini tidak dikirim ke PdfReportData
         ]);
 
       const generatedDate = new Date().toLocaleDateString("id-ID", {
@@ -354,7 +363,7 @@ function ReportsPage() {
         },
         generatedDate,
         teacher: {
-          nama: teacherNama,
+          nama: teacherNama,       // ← nama user yang login
           jabatan: teacherJabatan,
           ttdDataUrl: ttdDataUrl ?? null,
         },
@@ -363,7 +372,7 @@ function ReportsPage() {
         schoolName: "SMP IDN Boarding School",
         coverBgDataUrl,
         reportFirstBgDataUrl,
-        reportLastBgDataUrl,
+        // reportLastBgDataUrl sengaja tidak dikirim → halaman terakhir putih bersih
       });
     } catch (e) {
       console.error("buildReport error:", e);
