@@ -30,43 +30,21 @@ export const Route = createFileRoute("/_authed/reports")({
  * HELPERS
  * ========================================================================== */
 
-/**
- * Ekstrak Google Drive File ID dari berbagai format URL Google Drive.
- * Returns null jika bukan URL Google Drive.
- */
 function extractDriveFileId(url: string): string | null {
-  // Format: /file/d/FILE_ID/...
   const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
   if (fileMatch) return fileMatch[1];
-
-  // Format: open?id=FILE_ID atau uc?id=FILE_ID
   const idMatch = url.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([^&]+)/);
   if (idMatch) return idMatch[1];
-
   return null;
 }
 
-/**
- * Fetch gambar via proxy backend — menghindari CORS Google Drive.
- * Proxy sudah menangani autentikasi dan konversi ke base64.
- */
-async function fetchViaProxy(
-  rawUrl: string,
-  proxyBase: string,
-): Promise<string | null> {
+async function fetchViaProxy(rawUrl: string, proxyBase: string): Promise<string | null> {
   try {
     const proxyUrl = `${proxyBase}?url=${encodeURIComponent(rawUrl)}&format=jpeg`;
-    console.log("Fetching via proxy:", proxyUrl);
-
     const res = await fetch(proxyUrl);
     if (!res.ok) return null;
-
-    // Proxy returns JSON: { success: true, data: "data:image/png;base64,..." }
     const json = await res.json();
-    if (json?.success && typeof json?.data === "string") {
-      return json.data; // sudah berupa data URL, langsung pakai
-    }
-
+    if (json?.success && typeof json?.data === "string") return json.data;
     return null;
   } catch (err) {
     console.error("fetchViaProxy error:", err);
@@ -74,22 +52,13 @@ async function fetchViaProxy(
   }
 }
 
-/**
- * Konversi URL gambar ke base64 data URL.
- * - Google Drive URL → lewat proxy backend (tidak kena CORS)
- * - URL biasa → fetch langsung dengan cors mode
- * - URL proxy (sudah /api/...) → fetch langsung
- */
 async function urlToDataUrl(
   url: string | null | undefined,
   proxyBase = "/api/proxy-image",
 ): Promise<string | null> {
   if (!url) return null;
-
-  // Jika sudah berupa data URL, langsung kembalikan
   if (url.startsWith("data:")) return url;
 
-  // Jika sudah berupa URL proxy internal, fetch langsung
   if (url.startsWith("/api/") || url.includes(window.location.hostname)) {
     try {
       const res = await fetch(url, { credentials: "include" });
@@ -107,14 +76,9 @@ async function urlToDataUrl(
     }
   }
 
-  // Google Drive URL → wajib lewat proxy (kena CORS jika fetch langsung)
   const driveId = extractDriveFileId(url);
-  if (driveId) {
-    // Kirim original URL ke proxy, bukan URL yang dikonversi
-    return fetchViaProxy(url, proxyBase);
-  }
+  if (driveId) return fetchViaProxy(url, proxyBase);
 
-  // URL lain (non-Drive) → fetch langsung tanpa credentials
   try {
     const res = await fetch(url, { mode: "cors" });
     if (!res.ok) return null;
@@ -155,7 +119,6 @@ function ReportsPage() {
   const [classId, setClassId] = useState<string>("");
   const [studentId, setStudentId] = useState<string>("");
 
-  // Set semester aktif secara otomatis
   useEffect(() => {
     if (!semesterId && semesters.data) {
       const active = semesters.data.find((s: any) => s.is_active === 1);
@@ -173,7 +136,6 @@ function ReportsPage() {
   const [PDFViewer, setPDFViewer] = useState<any>(null);
   const [PDFDownloadLink, setPDFDownloadLink] = useState<any>(null);
 
-  // Client-only react-pdf import
   useEffect(() => {
     let mounted = true;
     import("@react-pdf/renderer").then((mod) => {
@@ -187,7 +149,6 @@ function ReportsPage() {
   /* --------------------------------------------------------------------------
    * BUILD REPORT
    * ------------------------------------------------------------------------ */
-  /** Ekstrak angka pertama dari nama_kelas, mis. "8A" → 8, "7B-akh" → 7 */
   function parseTingkatFromKelas(namaKelas: string | undefined | null): number | null {
     if (!namaKelas) return null;
     const m = namaKelas.match(/^(\d+)/);
@@ -198,45 +159,35 @@ function ReportsPage() {
     if (!studentId || !semesterId) return;
     setBuilding(true);
     try {
-      // ── 0. Tentukan tingkat kelas siswa dari nama_kelas ────────────────────
+      // ── 0. Tingkat kelas ───────────────────────────────────────────────────
       const studentFromList = (students.data?.items ?? []).find(
         (s: any) => s.id === parseInt(studentId),
       );
       const namaKelasRaw: string | undefined = studentFromList?.nama_kelas;
-      const tingkatKelas = parseTingkatFromKelas(namaKelasRaw); // 7, 8, atau null
+      const tingkatKelas = parseTingkatFromKelas(namaKelasRaw);
 
-      // Bangun params materials: filter by tingkat agar dapat materi global + tingkat siswa
       const materialsParams: any = { semester_id: semesterId };
       if (tingkatKelas !== null) materialsParams.tingkat_kelas = String(tingkatKelas);
 
-      // ── 1. Fetch semua data paralel ────────────────────────────────────────
+      // ── 1. Fetch paralel ───────────────────────────────────────────────────
       const [studentDetail, materials, indicators, grades] = await Promise.all([
-        apiGet<any>(`/students/${studentId}`).catch(
-          () => studentFromList ?? null,
-        ),
+        apiGet<any>(`/students/${studentId}`).catch(() => studentFromList ?? null),
         apiGet<any[]>("/materials", materialsParams),
         apiGet<any[]>("/indicators"),
-        apiGet<any[]>("/grades", {
-          semester_id: semesterId,
-          student_id: studentId,
-        }),
+        apiGet<any[]>("/grades", { semester_id: semesterId, student_id: studentId }),
       ]);
 
-      // ── 2. Semester info ───────────────────────────────────────────────────
+      // ── 2. Semester ────────────────────────────────────────────────────────
       const semester = (semesters.data ?? []).find(
         (s: any) => s.id === parseInt(semesterId),
       );
 
-      // ── 3. Susun materials + indicators + nilai ────────────────────────────
+      // ── 3. Materials + indicators + nilai ──────────────────────────────────
       const matIds = new Set((materials ?? []).map((m: any) => m.id));
-      const visIndicators = (indicators ?? []).filter((i: any) =>
-        matIds.has(i.material_id),
-      );
+      const visIndicators = (indicators ?? []).filter((i: any) => matIds.has(i.material_id));
 
       const gradeMap = new Map<string, number>();
-      (grades ?? []).forEach((g: any) =>
-        gradeMap.set(g.indicator_kode, parseFloat(g.nilai)),
-      );
+      (grades ?? []).forEach((g: any) => gradeMap.set(g.indicator_kode, parseFloat(g.nilai)));
 
       const pdfMaterials = (materials ?? [])
         .sort((a: any, b: any) => (a.urutan ?? 0) - (b.urutan ?? 0))
@@ -257,19 +208,17 @@ function ReportsPage() {
             })),
         }));
 
-      // ── 4. Resolve foto siswa via API (authenticated, bukan URL langsung) ──
+      // ── 4. Foto siswa ──────────────────────────────────────────────────────
       const photoDataUrl = studentDetail?.photo
         ? await getStudentPhoto(studentDetail.photo)
         : null;
 
-      // ── 5. Resolve data guru dari endpoint /teachers berdasarkan user_id ──
+      // ── 5. Data guru + nama dari user yang login ───────────────────────────
       const teacherRecord = Array.isArray(currentTeacher.data)
         ? currentTeacher.data[0]
         : currentTeacher.data;
 
-      // ── PERUBAHAN: nama TTD diambil dari user yang sedang login ─────────────
-      // Prioritas: user.name → user.nama → teacher record → fallback
-      // Sesuaikan field (name/nama/username) dengan struktur auth store kamu.
+      // Nama TTD = nama user yang sedang login (prioritas utama)
       const teacherNama: string =
         (user as any)?.name ??
         (user as any)?.nama ??
@@ -280,26 +229,18 @@ function ReportsPage() {
       const teacherJabatan: string =
         teacherRecord?.mata_pelajaran ?? teacherRecord?.jabatan ?? "Guru IT";
 
-      // TTD guru: ambil dari field tanda_tangan, fetch via proxy agar tidak kena CORS
       const ttdRawUrl: string | null = teacherRecord?.tanda_tangan
         ? teacherRecord.tanda_tangan.startsWith("http")
           ? teacherRecord.tanda_tangan
           : null
         : null;
 
-      // Google Drive URL wajib lewat proxy — sama seperti foto siswa
       const ttdDataUrl = await urlToDataUrl(
         ttdRawUrl,
-        "https://rapor.codestechno.com/api/proxy-image", // ← absolute URL backend
-      );
-      console.log(
-        "TTD resolved:",
-        ttdRawUrl,
-        "→",
-        ttdDataUrl ? ttdDataUrl.slice(0, 60) + "..." : null,
+        "https://rapor.codestechno.com/api/proxy-image",
       );
 
-      // ── 6. Fetch catatan / comment ─────────────────────────────────────────
+      // ── 6. Comment ─────────────────────────────────────────────────────────
       let comment: string | null = null;
       try {
         const noteRes = await apiGet<any>("/notes", {
@@ -308,31 +249,24 @@ function ReportsPage() {
         });
         if (noteRes) {
           const noteItem = Array.isArray(noteRes) ? noteRes[0] : noteRes;
-          comment =
-            noteItem?.comment ??
-            noteItem?.catatan ??
-            noteItem?.note ??
-            null;
+          comment = noteItem?.comment ?? noteItem?.catatan ?? noteItem?.note ?? null;
         }
       } catch {
-        // Belum ada data catatan → biarkan null
+        // belum ada catatan
       }
 
-      // ── 7. Convert asset backgrounds ──────────────────────────────────────
+      // ── 7. Backgrounds — hanya cover + halaman pertama ─────────────────────
       const selectedClass = (classes.data ?? []).find(
         (k: any) => k.id === parseInt(classId),
       );
       const isAkhwat = selectedClass?.cabang?.toLowerCase() === "akhwat";
       const activeCoverBgUrl = isAkhwat ? coverBgUrlakhwat : coverBgUrlikhwan;
 
-      // ── PERUBAHAN: reportLastBgDataUrl tidak lagi dipakai di PDF renderer,
-      //    tapi tetap di-fetch agar tidak break jika suatu saat diperlukan lagi.
-      const [coverBgDataUrl, reportFirstBgDataUrl, reportLastBgDataUrl] =
-        await Promise.all([
-          urlToDataUrl(activeCoverBgUrl),
-          urlToDataUrl(reportFirstBgUrl),
-          urlToDataUrl(reportLastBgUrl), // nilai ini tidak dikirim ke PdfReportData
-        ]);
+      const [coverBgDataUrl, reportFirstBgDataUrl] = await Promise.all([
+        urlToDataUrl(activeCoverBgUrl),
+        urlToDataUrl(reportFirstBgUrl),
+        // reportLastBgUrl TIDAK di-fetch — halaman terakhir putih bersih
+      ]);
 
       const generatedDate = new Date().toLocaleDateString("id-ID", {
         day: "numeric",
@@ -361,7 +295,7 @@ function ReportsPage() {
         },
         generatedDate,
         teacher: {
-          nama: teacherNama,       // ← nama user yang login
+          nama: teacherNama,
           jabatan: teacherJabatan,
           ttdDataUrl: ttdDataUrl ?? null,
         },
@@ -370,7 +304,7 @@ function ReportsPage() {
         schoolName: "SMP IDN Boarding School",
         coverBgDataUrl,
         reportFirstBgDataUrl,
-        // reportLastBgDataUrl sengaja tidak dikirim → halaman terakhir putih bersih
+        // reportLastBgDataUrl tidak dikirim → halaman terakhir putih bersih
       });
     } catch (e) {
       console.error("buildReport error:", e);
