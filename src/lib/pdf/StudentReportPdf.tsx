@@ -768,7 +768,10 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   const badgeColor = getBadgeColor(overallAvg);
   const badgeLabel = getBadgeLabel(overallAvg);
   const studentName = data.student.nama || "-";
-  const studentClass = data.student.nama_kelas || "-";
+  const namaKelasRaw = data.student.nama_kelas || "-";
+  const kelasMatch = namaKelasRaw.match(/^(\d+)/);
+  const kelasNum = kelasMatch ? parseInt(kelasMatch[1]) : null;
+  const studentClass = kelasNum === 7 || kelasNum === 8 ? String(kelasNum) : namaKelasRaw;
 
   let semesterLabel = data.semester.nama_semester || "";
   const semNum = data.semester.semester;
@@ -993,25 +996,21 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                         <Text style={styles.signatureDate}>
                           {data.generatedDate || "Tanggal"}
                         </Text>
-                        <Text style={styles.signatureSubLabel}>
-                          {data.teacher?.jabatan || "Guru IT 7 SMP IDN"}
-                        </Text>
 
                         {ttdUrl ? (
                           <Image src={ttdUrl} style={styles.signatureImage} />
                         ) : (
                           <View style={styles.signaturePlaceholder}>
-                            <Text style={{ fontSize: 8, color: MUTED }}>TTD Guru</Text>
+                            <Text style={{ fontSize: 8, color: MUTED }}>TTD</Text>
                           </View>
                         )}
 
-                        {/* ── PERUBAHAN: nama dari user yang login (dikirim via data.teacher.nama) */}
                         <Text style={styles.signatureName}>
-                          {data.teacher?.nama || "Nama Guru IT"}
+                          {data.teacher?.nama || "Nama Guru"}
                         </Text>
-                        {data.teacher?.jabatan && (
-                          <Text style={styles.signatureRole}>{data.teacher.jabatan}</Text>
-                        )}
+                        <Text style={styles.signatureRole}>
+                          {data.teacher?.jabatan || "Guru"}
+                        </Text>
                       </View>
                     </View>
                   </>
