@@ -218,12 +218,10 @@ function ReportsPage() {
         ? currentTeacher.data[0]
         : currentTeacher.data;
 
-      // Nama & jabatan diambil dari record teacher yang terhubung ke user login
-      // Fallback ke data user jika teacher record belum diisi
+      // Nama TTD = nama user yang sedang login
       const teacherNama: string =
+        user?.name ??
         teacherRecord?.nama ??
-        (user as any)?.name ??
-        (user as any)?.username ??
         "Nama Guru IT";
 
       const teacherJabatan: string = "Guru IT";
