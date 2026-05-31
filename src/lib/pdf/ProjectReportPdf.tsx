@@ -826,7 +826,7 @@ const s = StyleSheet.create({
   },
   /* Teks isi card */
   cardText: {
-    fontSize: 12,
+    fontSize: 10,
     color: C.text,
     lineHeight: 1.55,
   },
@@ -1322,8 +1322,8 @@ function ProjectPage({
         {/* Bottom: kolom kiri (Competence + Technology) | kolom kanan (Description) */}
         <View style={{ flexDirection: "row", alignItems: "stretch" }}>
 
-          {/* Kolom kiri — lebar mengikuti konten terpanjang di antara 2 card */}
-          <View style={{ marginRight: 10, flexShrink: 0 }}>
+          {/* Kolom kiri — lebar tepat setengah halaman */}
+          <View style={{ width: "50%", marginRight: 10, flexShrink: 0 }}>
             {/* Student Competence */}
             <View style={s.competenceCard}>
               <Text style={s.cardTitle}>Student Competence</Text>
@@ -1502,7 +1502,6 @@ function CertificatesPage({ certs }: { certs: ProjectCertificate[] }) {
 export function ProjectReportPdf({ data }: { data: ProjectReportData }) {
   return (
     <Document>
-      <CoverPage name={data.summary.nama} />
       <SummaryPage summary={data.summary} />
 
       {data.designs.map((d, i) => (
