@@ -218,16 +218,15 @@ function ReportsPage() {
         ? currentTeacher.data[0]
         : currentTeacher.data;
 
-      // Nama TTD = nama user yang sedang login (prioritas utama)
+      // Nama & jabatan diambil dari record teacher yang terhubung ke user login
+      // Fallback ke data user jika teacher record belum diisi
       const teacherNama: string =
-        (user as any)?.name ??
-        (user as any)?.nama ??
-        (user as any)?.username ??
         teacherRecord?.nama ??
+        (user as any)?.name ??
+        (user as any)?.username ??
         "Nama Guru IT";
 
-      const teacherJabatan: string =
-        teacherRecord?.mata_pelajaran ?? teacherRecord?.jabatan ?? "Guru IT";
+      const teacherJabatan: string = "Guru IT";
 
       const ttdRawUrl: string | null = teacherRecord?.tanda_tangan
         ? teacherRecord.tanda_tangan.startsWith("http")
