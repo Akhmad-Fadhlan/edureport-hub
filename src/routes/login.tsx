@@ -66,7 +66,7 @@ function LoginPage() {
         <div className="text-xs opacity-70">© {new Date().getFullYear()} IDN Boarding School</div>
       </div>
       <div className="flex items-center justify-center p-6">
-        <Card className="w-full max-w-md p-8">
+        <Card className="glass w-full max-w-md p-8 border-0 shadow-none">
           <h2 className="text-2xl font-bold">Masuk ke Akun</h2>
           <p className="text-sm text-muted-foreground mt-1">
             Masukkan kredensial Anda untuk melanjutkan.
