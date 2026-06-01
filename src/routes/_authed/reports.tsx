@@ -287,9 +287,10 @@ function ReportsPage() {
       const isAkhwat = selectedClass?.cabang?.toLowerCase() === "akhwat";
       const activeCoverBgUrl = isAkhwat ? coverBgUrlakhwat : coverBgUrlikhwan;
 
-      const [coverBgDataUrl, reportFirstBgDataUrl] = await Promise.all([
+      const [coverBgDataUrl, reportFirstBgDataUrl, dividerBgDataUrl] = await Promise.all([
         urlToDataUrl(activeCoverBgUrl),
         urlToDataUrl(reportFirstBgUrl),
+        urlToDataUrl(dividerBgUrl),
         // reportLastBgUrl TIDAK di-fetch — halaman terakhir putih bersih
       ]);
 
