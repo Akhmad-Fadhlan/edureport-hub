@@ -248,3 +248,248 @@
   }
 }
 
+
+/* ═══════════════════════════════════════════════════════════════════
+   EduReport Hub — Impeccable Table Design System
+   Hua Shu precision · Sky-blue accent · Clean white base
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Table CSS custom properties ────────────────────────────────── */
+:root {
+  --tbl-blue-header-bg:   #e0f2fe;
+  --tbl-blue-header-border: #7dd3fc;
+  --tbl-blue-hover:       #f0f9ff;
+  --tbl-blue-accent:      #38bdf8;
+  --tbl-blue-dark:        #0369a1;
+  --tbl-navy:             #1e293b;
+  --tbl-row-border:       #e2e8f0;
+  --tbl-bg:               #ffffff;
+  --tbl-stripe:           #f8fafc;
+  --tbl-btn-blue-bg:      #e0f2fe;
+  --tbl-btn-blue-hover:   #bae6fd;
+  --tbl-btn-blue-text:    #0284c7;
+  --tbl-shadow:           0 4px 12px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.05);
+  --tbl-radius:           16px;
+  --tbl-transition:       all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --tbl-font-size:        14px;
+  --tbl-line-height:      1.5;
+  --tbl-cell-px:          16px;
+  --tbl-cell-py:          14px;
+  --tbl-min-row-height:   56px;
+}
+
+/* ── Table wrapper: card container upgrade ──────────────────────── */
+.ehr-table-wrapper {
+  border-radius: var(--tbl-radius);
+  background: var(--tbl-bg);
+  box-shadow: var(--tbl-shadow);
+  overflow: hidden;
+  font-family: "Inter", sans-serif;
+  font-size: var(--tbl-font-size);
+  line-height: var(--tbl-line-height);
+}
+
+/* ── Table base ─────────────────────────────────────────────────── */
+.ehr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--tbl-font-size);
+  font-family: "Inter", sans-serif;
+}
+
+/* ── Table header: sky-blue band ────────────────────────────────── */
+.ehr-thead {
+  background-color: var(--tbl-blue-header-bg);
+  border-bottom: 2px solid var(--tbl-blue-header-border);
+}
+
+.ehr-th {
+  padding: var(--tbl-cell-py) var(--tbl-cell-px);
+  font-size: var(--tbl-font-size);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--tbl-navy);
+  white-space: nowrap;
+  height: var(--tbl-min-row-height);
+  cursor: default;
+  transition: var(--tbl-transition);
+  user-select: none;
+}
+
+/* Sortable header columns */
+.ehr-th[onClick],
+.ehr-th.sortable {
+  cursor: pointer;
+}
+.ehr-th[onClick]:hover,
+.ehr-th.sortable:hover {
+  color: var(--tbl-blue-dark);
+}
+
+/* ── Table rows ─────────────────────────────────────────────────── */
+.ehr-tbody .ehr-tr {
+  border-bottom: 1px solid var(--tbl-row-border);
+  background-color: var(--tbl-bg);
+  transition: var(--tbl-transition);
+  min-height: var(--tbl-min-row-height);
+}
+
+/* Striped rows */
+.ehr-tbody .ehr-tr:nth-child(even) {
+  background-color: var(--tbl-stripe);
+}
+
+/* Hover effect: elegant sky-blue highlight */
+.ehr-tbody .ehr-tr:hover {
+  background-color: var(--tbl-blue-hover) !important;
+  box-shadow: inset 3px 0 0 var(--tbl-blue-accent);
+}
+
+/* ── Table cells ────────────────────────────────────────────────── */
+.ehr-td {
+  padding: var(--tbl-cell-py) var(--tbl-cell-px);
+  font-size: var(--tbl-font-size);
+  line-height: var(--tbl-line-height);
+  color: var(--tbl-navy);
+  vertical-align: middle;
+  height: var(--tbl-min-row-height);
+}
+
+/* Number / action columns: right-aligned */
+.ehr-td:last-child {
+  text-align: right;
+}
+.ehr-th:last-child {
+  text-align: right;
+}
+
+/* ── Action buttons inside table cells ──────────────────────────── */
+.ehr-td button[class*="ghost"],
+.ehr-td [role="button"][class*="ghost"] {
+  background-color: var(--tbl-btn-blue-bg) !important;
+  color: var(--tbl-btn-blue-text) !important;
+  border-radius: 8px;
+  transition: var(--tbl-transition);
+}
+.ehr-td button[class*="ghost"]:hover,
+.ehr-td [role="button"][class*="ghost"]:hover {
+  background-color: var(--tbl-btn-blue-hover) !important;
+  color: var(--tbl-blue-dark) !important;
+  transform: scale(0.98);
+}
+
+/* Destructive action buttons */
+.ehr-td button.text-destructive {
+  background-color: #fff1f2 !important;
+  color: #e11d48 !important;
+}
+.ehr-td button.text-destructive:hover {
+  background-color: #fecdd3 !important;
+  color: #be123c !important;
+  transform: scale(0.98);
+}
+
+/* ── Table footer ───────────────────────────────────────────────── */
+.ehr-tfoot {
+  background-color: var(--tbl-stripe);
+  border-top: 1px solid var(--tbl-row-border);
+}
+
+/* ── Card wrapping the table (p-0 overflow-hidden pattern) ─────── */
+.p-0.overflow-hidden {
+  border-radius: var(--tbl-radius) !important;
+  box-shadow: var(--tbl-shadow) !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE: < 768px — Card / List mode
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+
+  /* Hide table headers visually but keep for accessibility */
+  .ehr-thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Table becomes full-width block */
+  .ehr-table,
+  .ehr-table tbody,
+  .ehr-table tr,
+  .ehr-table td {
+    display: block;
+    width: 100%;
+  }
+
+  /* Each row becomes a card */
+  .ehr-tbody .ehr-tr {
+    border: 1px solid var(--tbl-row-border) !important;
+    border-radius: 12px !important;
+    margin-bottom: 12px !important;
+    padding: 4px 0 !important;
+    background: var(--tbl-bg) !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    transition: var(--tbl-transition);
+  }
+
+  .ehr-tbody .ehr-tr:nth-child(even) {
+    background: var(--tbl-bg) !important;
+  }
+
+  .ehr-tbody .ehr-tr:hover {
+    background: var(--tbl-blue-hover) !important;
+    box-shadow: 0 2px 8px rgba(56, 189, 248, 0.15), inset 0 0 0 2px var(--tbl-blue-header-border);
+  }
+
+  /* Each cell becomes a labeled row */
+  .ehr-td {
+    display: flex;
+    align-items: center;
+    padding: 10px var(--tbl-cell-px);
+    border: none !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    height: auto;
+    min-height: 44px;
+    text-align: left !important;
+  }
+
+  .ehr-td:last-child {
+    border-bottom: none !important;
+    text-align: left !important;
+    justify-content: flex-start;
+  }
+
+  /* Label prefix from data-label attribute */
+  .ehr-td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 100px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--tbl-blue-dark);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    margin-right: 8px;
+    opacity: 0.85;
+  }
+
+  /* Remove card's built-in border-radius conflict */
+  .p-0.overflow-hidden {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  /* Table wrapper becomes transparent on mobile */
+  .ehr-table-wrapper {
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+}
