@@ -222,5 +222,29 @@
     background-clip: padding-box;
     border: 2px solid transparent;
   }
+
+  /* Glassmorphism — selective use only (navbar, key cards, modals) */
+  .glass {
+    background-color: rgba(173, 216, 230, 0.14);
+    backdrop-filter: blur(10px) saturate(140%);
+    border: 1px solid rgba(173, 216, 230, 0.3);
+    border-radius: 20px;
+    box-shadow: 0 4px 18px -8px rgba(30, 64, 120, 0.15);
+  }
+  .dark .glass {
+    background-color: rgba(173, 216, 230, 0.08);
+    border-color: rgba(173, 216, 230, 0.18);
+    box-shadow: 0 4px 20px -10px rgba(0, 0, 0, 0.5);
+  }
+  .glass-navbar {
+    background-color: rgba(173, 216, 230, 0.12);
+    backdrop-filter: blur(12px) saturate(140%);
+    border-bottom: 1px solid rgba(173, 216, 230, 0.3);
+    box-shadow: 0 2px 12px -6px rgba(30, 64, 120, 0.12);
+  }
+  .dark .glass-navbar {
+    background-color: rgba(20, 30, 50, 0.55);
+    border-bottom-color: rgba(173, 216, 230, 0.15);
+  }
 }
 
