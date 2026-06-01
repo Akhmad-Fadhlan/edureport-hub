@@ -134,6 +134,14 @@ export function detectVideoPlatform(link: string): VideoPlatform {
 }
 
 /**
+ * Cek apakah platform video didukung oleh backend /youtube-videos.
+ * Backend hanya menerima YouTube dan YouTube Shorts.
+ */
+export function isSupportedByBackend(platform: VideoPlatform): boolean {
+  return platform === "youtube" || platform === "youtube_shorts";
+}
+
+/**
  * Ekstrak video ID dari URL berdasarkan platform.
  */
 export function extractVideoId(link: string, platform: VideoPlatform): string {
@@ -147,16 +155,13 @@ export function extractVideoId(link: string, platform: VideoPlatform): string {
         return url.searchParams.get("v") ?? "";
       }
       case "youtube_shorts": {
-        // URL: youtube.com/shorts/VIDEO_ID
         return url.pathname.split("/shorts/")[1]?.split("/")[0] ?? "";
       }
       case "tiktok": {
-        // URL: tiktok.com/@user/video/1234567890
         const m = url.pathname.match(/\/video\/(\d+)/);
         return m?.[1] ?? "";
       }
       case "linkedin": {
-        // LinkedIn tidak punya short video ID di URL publik, gunakan path sebagai identifier
         return url.pathname;
       }
       default:
@@ -168,8 +173,7 @@ export function extractVideoId(link: string, platform: VideoPlatform): string {
 }
 
 /**
- * Dapatkan semua metadata video (platform, thumbnail, embed URL, dll.)
- * dari sebuah link video apapun platformnya.
+ * Dapatkan semua metadata video dari sebuah link.
  */
 export function getVideoMeta(link: string): VideoMeta {
   const platform = detectVideoPlatform(link);
@@ -183,9 +187,7 @@ export function getVideoMeta(link: string): VideoMeta {
         thumbnailUrl: videoId
           ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
           : "",
-        embedUrl: videoId
-          ? `https://www.youtube.com/embed/${videoId}`
-          : "",
+        embedUrl: videoId ? `https://www.youtube.com/embed/${videoId}` : "",
         platformLabel: "YouTube",
         platformColor: "#FF0000",
         originalLink: link,
@@ -195,13 +197,10 @@ export function getVideoMeta(link: string): VideoMeta {
       return {
         platform,
         videoId,
-        // Shorts menggunakan thumbnail API yang sama dengan YouTube biasa
         thumbnailUrl: videoId
           ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
           : "",
-        embedUrl: videoId
-          ? `https://www.youtube.com/embed/${videoId}`
-          : "",
+        embedUrl: videoId ? `https://www.youtube.com/embed/${videoId}` : "",
         platformLabel: "YouTube Shorts",
         platformColor: "#FF0000",
         originalLink: link,
@@ -211,8 +210,6 @@ export function getVideoMeta(link: string): VideoMeta {
       return {
         platform,
         videoId,
-        // TikTok thumbnail diambil via oEmbed (no API key needed untuk video publik)
-        // Resolver dilakukan di VideoThumbnail component secara async
         thumbnailUrl: `https://www.tiktok.com/oembed?url=${encodeURIComponent(link)}`,
         embedUrl: link,
         platformLabel: "TikTok",
@@ -224,7 +221,6 @@ export function getVideoMeta(link: string): VideoMeta {
       return {
         platform,
         videoId,
-        // LinkedIn tidak mengizinkan embed thumbnail publik tanpa auth
         thumbnailUrl: "",
         embedUrl: link,
         platformLabel: "LinkedIn",
@@ -246,7 +242,7 @@ export function getVideoMeta(link: string): VideoMeta {
 }
 
 /**
- * Validasi apakah sebuah link adalah URL video yang didukung.
+ * Validasi apakah sebuah link adalah URL video yang dikenali.
  */
 export function isValidVideoLink(link: string): boolean {
   if (!link) return false;
@@ -261,24 +257,16 @@ export function isValidVideoLink(link: string): boolean {
 
 /**
  * @deprecated Gunakan getVideoMeta(link).thumbnailUrl
- * Dipertahankan untuk backward compatibility.
  */
 export function getYoutubeEmbedUrl(link: string): string {
-  const meta = getVideoMeta(link);
-  // Untuk YouTube & Shorts, langsung kembalikan thumbnail URL
-  if (meta.platform === "youtube" || meta.platform === "youtube_shorts") {
-    return meta.thumbnailUrl;
-  }
-  return meta.thumbnailUrl;
+  return getVideoMeta(link).thumbnailUrl;
 }
 
 /**
  * @deprecated Gunakan extractVideoId(link, detectVideoPlatform(link))
- * Dipertahankan untuk backward compatibility.
  */
 export function getYoutubeVideoId(link: string): string {
-  const platform = detectVideoPlatform(link);
-  return extractVideoId(link, platform);
+  return extractVideoId(link, detectVideoPlatform(link));
 }
 
 // ── CSV HELPERS ───────────────────────────────────────────────────────────────
@@ -610,12 +598,11 @@ export async function importProjects(
 export function downloadYoutubeTemplate() {
   downloadCsv(
     [
-      ["TEMPLATE IMPORT VIDEO (YouTube / YouTube Shorts / TikTok / LinkedIn)"],
-      [
-        "Kolom link_video mendukung: YouTube, YouTube Shorts, TikTok, LinkedIn",
-      ],
+      ["TEMPLATE IMPORT VIDEO YOUTUBE"],
+      ["Hanya mendukung YouTube dan YouTube Shorts."],
+      ["Untuk TikTok/LinkedIn, upload manual lewat form portofolio."],
       [],
-      ["judul_video", "link_video", "deskripsi_video"],
+      ["judul_video", "link_youtube", "deskripsi_video"],
       [
         "Tutorial Coding Dasar",
         "https://youtube.com/watch?v=xxx",
@@ -626,18 +613,8 @@ export function downloadYoutubeTemplate() {
         "https://youtube.com/shorts/xxx",
         "Deskripsi...",
       ],
-      [
-        "Video TikTok",
-        "https://www.tiktok.com/@user/video/xxx",
-        "Deskripsi...",
-      ],
-      [
-        "Post LinkedIn",
-        "https://www.linkedin.com/posts/xxx",
-        "Deskripsi...",
-      ],
     ],
-    "template_video.csv"
+    "template_video_youtube.csv"
   );
 }
 
@@ -655,11 +632,10 @@ export function parseYoutubeCsv(
     const allRows = parseCsvText(raw);
     // Cari header row: bisa "judul_video" atau "judul"
     const headerIdx = allRows.findIndex((r) =>
-      r.some(
-        (c) =>
-          c.trim().toLowerCase() === "judul_video" ||
-          c.trim().toLowerCase() === "judul"
-      )
+      r.some((c) => {
+        const v = c.trim().toLowerCase();
+        return v === "judul_video" || v === "judul";
+      })
     );
     if (headerIdx === -1) {
       callback([]);
@@ -673,37 +649,41 @@ export function parseYoutubeCsv(
       if (cols.every((c) => !c.trim())) continue;
       const get = (key: string) => cols[header.indexOf(key)]?.trim() ?? "";
 
-      // Support both "link_video" (new) and "link_youtube" (legacy) column names
+      // FIX: support "link_youtube" (template baru & lama) maupun "link_video"
       const linkValue = get("link_video") || get("link_youtube");
+      const platform = linkValue ? detectVideoPlatform(linkValue) : "unknown";
 
       const data: Partial<YoutubeVideo> = {
         judul_video: get("judul_video") || get("judul"),
         link_youtube: linkValue,
-        deskripsi_video: get("deskripsi_video") || get("deskripsi") || undefined,
+        deskripsi_video:
+          get("deskripsi_video") || get("deskripsi") || undefined,
       };
 
       const missing: string[] = [];
       if (!data.judul_video) missing.push("judul_video");
-      if (!data.link_youtube) missing.push("link_video");
+      if (!data.link_youtube) missing.push("link_youtube");
 
-      // Validasi platform
-      let platformWarning = "";
-      if (data.link_youtube && !isValidVideoLink(data.link_youtube)) {
-        platformWarning =
-          "Link tidak dikenali sebagai YouTube/TikTok/LinkedIn";
+      // FIX: TikTok & LinkedIn tidak didukung backend → tandai error agar tidak dikirim
+      let platformError = "";
+      if (linkValue && !isSupportedByBackend(platform)) {
+        const label =
+          platform === "tiktok"
+            ? "TikTok"
+            : platform === "linkedin"
+            ? "LinkedIn"
+            : "platform tidak dikenali";
+        platformError = `Link ${label} tidak bisa diimport via CSV. Hanya YouTube & YouTube Shorts yang didukung backend.`;
       }
 
-      const hasError = missing.length > 0;
-      const hasWarning = !!platformWarning;
+      const hasError = missing.length > 0 || !!platformError;
 
       results.push({
         row: i + 1,
         data,
-        status: hasError ? "error" : hasWarning ? "warning" : "ok",
+        status: hasError ? "error" : "ok",
         message: hasError
-          ? `Wajib diisi: ${missing.join(", ")}`
-          : hasWarning
-          ? platformWarning
+          ? platformError || `Wajib diisi: ${missing.join(", ")}`
           : undefined,
       });
     }
@@ -1061,9 +1041,6 @@ export function resolveUploadUrl(path?: string | null): string | null {
   return `${UPLOADS_BASE_URL}/${path}`;
 }
 
-/**
- * Ekstrak Google Drive file ID dari berbagai format URL.
- */
 export function extractDriveFileId(url: string): string | null {
   if (!url) return null;
   const m1 = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
@@ -1073,10 +1050,6 @@ export function extractDriveFileId(url: string): string | null {
   return null;
 }
 
-/**
- * Konversi link Google Drive ke URL thumbnail yang dapat di-embed langsung
- * di tag <img> tanpa CORS issue.
- */
 export function driveToThumbnailUrl(link: string): string {
   const fileId = extractDriveFileId(link);
   if (fileId) {
@@ -1085,7 +1058,6 @@ export function driveToThumbnailUrl(link: string): string {
   return link;
 }
 
-/** Resolve either an uploaded file path or a Google Drive link to a displayable URL */
 export function resolveImageUrl(
   filePath?: string | null,
   driveLink?: string | null
@@ -1095,7 +1067,6 @@ export function resolveImageUrl(
   return null;
 }
 
-/** Convert a Google Drive share link to a direct image URL if possible */
 export function normalizeDriveLink(link: string): string {
   const fileId = extractDriveFileId(link);
   if (fileId) {
@@ -1145,9 +1116,9 @@ const UNIFIED_TEMPLATE_HEADERS = [
   "deskripsi",
   "link_project",
   "gambar",
-  // youtube / video (support multi-platform)
+  // youtube — gunakan "link_youtube" agar konsisten dengan nama field backend
   "judul_video",
-  "link_video",
+  "link_youtube",
   "deskripsi_video",
   // certificate
   "lingkup",
@@ -1157,14 +1128,110 @@ const UNIFIED_TEMPLATE_HEADERS = [
 ];
 
 export function downloadUnifiedTemplate(): void {
-  const csv = UNIFIED_TEMPLATE_HEADERS.join(",") + "\n";
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "template-portofolio-lengkap.csv";
-  a.click();
-  URL.revokeObjectURL(url);
+  const rows: (string | number | null | undefined)[][] = [
+    ["TEMPLATE IMPORT PORTOFOLIO LENGKAP"],
+    ["Kolom link_youtube hanya mendukung YouTube & YouTube Shorts."],
+    ["Untuk TikTok/LinkedIn, upload manual lewat form portofolio."],
+    [],
+    UNIFIED_TEMPLATE_HEADERS,
+    // contoh baris
+    [
+      "teaching",
+      "Belajar Coding",
+      "Sekolah ABC",
+      "2025-01-15",
+      "https://drive.google.com/...",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+    ],
+    [
+      "design",
+      "",
+      "",
+      "",
+      "",
+      "Poster HUT RI",
+      "Canva",
+      "Deskripsi...",
+      "https://drive.google.com/...",
+      "https://drive.google.com/...",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+    ],
+    [
+      "robotics",
+      "",
+      "",
+      "",
+      "",
+      "Smart Greenhouse",
+      "Microbit, Firebase",
+      "Deskripsi...",
+      "https://drive.google.com/...",
+      "https://drive.google.com/...",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+    ],
+    [
+      "youtube",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "Tutorial Coding",
+      "https://youtube.com/watch?v=xxx",
+      "Deskripsi video...",
+      "",
+      "",
+      "",
+      "",
+    ],
+    [
+      "certificate",
+      "Juara 1 Coding",
+      "",
+      "2025-03-10",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "Nasional",
+      "Penyelenggara",
+      "2025",
+      "https://drive.google.com/...",
+    ],
+  ];
+  downloadCsv(rows, "template-portofolio-lengkap.csv");
 }
 
 export function parseUnifiedCsv(
@@ -1174,22 +1241,50 @@ export function parseUnifiedCsv(
   const reader = new FileReader();
   reader.onload = (e) => {
     const text = e.target?.result as string;
-    const lines = text.split(/\r?\n/).filter((l) => l.trim());
-    if (lines.length < 2) {
+
+    // Cari baris header (baris yang mengandung kolom "type")
+    const allLines = text
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .split("\n")
+      .filter((l) => l.trim());
+
+    if (allLines.length < 2) {
       callback([]);
       return;
     }
-    const headers = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
+
+    // Cari index baris header yang punya kolom "type"
+    let headerLineIdx = -1;
+    let headers: string[] = [];
+    for (let i = 0; i < allLines.length; i++) {
+      const cols = parseCsvLine(allLines[i]).map((h) => h.trim().toLowerCase());
+      if (cols.includes("type")) {
+        headerLineIdx = i;
+        headers = cols;
+        break;
+      }
+    }
+
+    if (headerLineIdx === -1) {
+      callback([]);
+      return;
+    }
+
     const rows: UnifiedCsvRow[] = [];
 
-    for (let i = 1; i < lines.length; i++) {
-      const values = parseCsvLine(lines[i]).map((v) => v.trim());
+    for (let i = headerLineIdx + 1; i < allLines.length; i++) {
+      const values = parseCsvLine(allLines[i]).map((v) => v.trim());
+
+      // Skip baris komentar / info (tidak punya kolom pertama yang valid)
+      if (values.every((v) => !v)) continue;
+
       const data: Record<string, string> = {};
       headers.forEach((h, idx) => {
         data[h] = values[idx] ?? "";
       });
 
-      const type = data["type"]?.toLowerCase() as UnifiedCsvRowType;
+      const rawType = data["type"]?.toLowerCase().trim();
       const validTypes: UnifiedCsvRowType[] = [
         "teaching",
         "design",
@@ -1198,7 +1293,9 @@ export function parseUnifiedCsv(
         "certificate",
       ];
 
-      if (!validTypes.includes(type)) {
+      if (!validTypes.includes(rawType as UnifiedCsvRowType)) {
+        // Baris komentar / info tidak punya type valid → skip tanpa error
+        if (!rawType) continue;
         rows.push({
           rowNumber: i + 1,
           type: "teaching",
@@ -1209,31 +1306,53 @@ export function parseUnifiedCsv(
         continue;
       }
 
+      const type = rawType as UnifiedCsvRowType;
       let status: "ok" | "warning" | "error" = "ok";
       let message: string | undefined;
 
-      if (type === "teaching" && !data["tema"]) {
-        status = "warning";
-        message = "Kolom tema kosong";
-      } else if (
-        (type === "design" || type === "robotics") &&
-        !data["judul"]
-      ) {
-        status = "warning";
-        message = "Kolom judul kosong";
+      if (type === "teaching") {
+        if (!data["tema"]) {
+          status = "warning";
+          message = "Kolom tema kosong";
+        }
+      } else if (type === "design" || type === "robotics") {
+        if (!data["judul"]) {
+          status = "error";
+          message = "Kolom judul wajib diisi";
+        }
       } else if (type === "youtube") {
-        // Support both "link_video" (new) and "link_youtube" (legacy)
-        const videoLink = data["link_video"] || data["link_youtube"];
+        // FIX: support kolom "link_youtube" (template baru) maupun "link_video" (lama)
+        const videoLink = (data["link_youtube"] || data["link_video"] || "").trim();
         if (!videoLink) {
           status = "error";
-          message = "link_video wajib diisi";
-        } else if (!isValidVideoLink(videoLink)) {
-          status = "warning";
-          message = `Platform tidak dikenali untuk link: ${videoLink}`;
+          message = "Kolom link_youtube wajib diisi";
+        } else {
+          const platform = detectVideoPlatform(videoLink);
+          // FIX: TikTok & LinkedIn → backend 422, tandai error dengan pesan jelas
+          if (!isSupportedByBackend(platform)) {
+            const label =
+              platform === "tiktok"
+                ? "TikTok"
+                : platform === "linkedin"
+                ? "LinkedIn"
+                : "platform tidak dikenali";
+            status = "error";
+            message = `Link ${label} tidak bisa diimport via CSV. Hanya YouTube & YouTube Shorts yang didukung. Upload manual lewat form portofolio.`;
+          }
+          if (!data["judul_video"] && !data["judul"]) {
+            status = "error";
+            message = (message ? message + " | " : "") + "judul_video wajib diisi";
+          }
         }
-      } else if (type === "certificate" && !data["tema"]) {
-        status = "warning";
-        message = "Kolom tema kosong";
+        // Normalisasi: simpan ke "link_youtube" agar konsisten saat import
+        if (data["link_video"] && !data["link_youtube"]) {
+          data["link_youtube"] = data["link_video"];
+        }
+      } else if (type === "certificate") {
+        if (!data["tema"]) {
+          status = "warning";
+          message = "Kolom tema kosong";
+        }
       }
 
       rows.push({ rowNumber: i + 1, type, status, message, data });
@@ -1241,7 +1360,7 @@ export function parseUnifiedCsv(
 
     callback(rows);
   };
-  reader.readAsText(file);
+  reader.readAsText(file, "utf-8");
 }
 
 export async function importUnifiedPortfolio(
@@ -1258,6 +1377,7 @@ export async function importUnifiedPortfolio(
     total: { success: 0, failed: 0 },
   };
 
+  // Hanya proses baris yang tidak error
   const validRows = rows.filter((r) => r.status !== "error");
 
   for (const row of validRows) {
@@ -1270,6 +1390,7 @@ export async function importUnifiedPortfolio(
           if (row.data.tema) fd.append("tema", row.data.tema);
           if (row.data.lokasi) fd.append("lokasi", row.data.lokasi);
           if (row.data.tanggal) fd.append("tanggal", row.data.tanggal);
+          // "dokumentasi" di CSV → link_foto_1
           if (row.data.dokumentasi)
             fd.append("link_foto_1", row.data.dokumentasi);
           if (row.data.link_foto_1)
@@ -1286,6 +1407,7 @@ export async function importUnifiedPortfolio(
           result.teaching.success++;
           break;
         }
+
         case "design":
         case "robotics": {
           const fd = new FormData();
@@ -1296,13 +1418,13 @@ export async function importUnifiedPortfolio(
           if (row.data.deskripsi) fd.append("deskripsi", row.data.deskripsi);
           if (row.data.kompetensi_siswa)
             fd.append("kompetensi_siswa", row.data.kompetensi_siswa);
-          if (row.data.link_project)
-            fd.append("link_file_flyer", row.data.link_project);
-          if (row.data.link_file_flyer)
-            fd.append("link_file_flyer", row.data.link_file_flyer);
-          const gambarUrl =
-            row.data.gambar || row.data.link_gambar_drive || "";
+          // "link_project" di CSV → link_file_flyer
+          const flyerUrl = row.data.link_project || row.data.link_file_flyer || "";
+          if (flyerUrl) fd.append("link_file_flyer", flyerUrl);
+          // "gambar" di CSV → link_gambar_drive
+          const gambarUrl = row.data.gambar || row.data.link_gambar_drive || "";
           if (gambarUrl) fd.append("link_gambar_drive", gambarUrl);
+
           if (row.type === "design") {
             await createDesignProject(fd);
             result.design.success++;
@@ -1312,19 +1434,30 @@ export async function importUnifiedPortfolio(
           }
           break;
         }
+
         case "youtube": {
-          // Support both "link_video" (new multi-platform) and "link_youtube" (legacy)
-          const videoLink = row.data.link_video || row.data.link_youtube || "";
+          // FIX: support kolom "link_youtube" (template) maupun "link_video" (legacy)
+          const videoLink = (row.data.link_youtube || row.data.link_video || "").trim();
+
+          // FIX: Safety guard — jangan kirim ke backend jika bukan YouTube
+          const platform = detectVideoPlatform(videoLink);
+          if (!isSupportedByBackend(platform)) {
+            // Seharusnya sudah di-filter di parse, tapi sebagai safety net
+            result.youtube.failed++;
+            break;
+          }
+
           await createYoutubeVideo({
             student_id: Number(studentId),
             semester_id: Number(semesterId),
-            judul_video: row.data.judul_video || "",
+            judul_video: row.data.judul_video || row.data.judul || "",
             link_youtube: videoLink,
             deskripsi_video: row.data.deskripsi_video || undefined,
           });
           result.youtube.success++;
           break;
         }
+
         case "certificate": {
           const fd = new FormData();
           fd.append("student_id", String(studentId));
@@ -1335,10 +1468,10 @@ export async function importUnifiedPortfolio(
             fd.append("penyelenggara", row.data.penyelenggara);
           if (row.data.tahun) fd.append("tahun", row.data.tahun);
           if (row.data.tanggal) fd.append("tanggal", row.data.tanggal);
-          if (row.data.sertifikat)
-            fd.append("link_gambar_drive", row.data.sertifikat);
-          if (row.data.link_gambar_drive)
-            fd.append("link_gambar_drive", row.data.link_gambar_drive);
+          // "sertifikat" di CSV → link_gambar_drive
+          const sertifikatUrl =
+            row.data.sertifikat || row.data.link_gambar_drive || "";
+          if (sertifikatUrl) fd.append("link_gambar_drive", sertifikatUrl);
           await createCertificate(fd);
           result.certificate.success++;
           break;
