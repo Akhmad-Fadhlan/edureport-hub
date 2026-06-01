@@ -246,8 +246,5 @@
     background-color: rgba(20, 30, 50, 0.55);
     border-bottom-color: rgba(173, 216, 230, 0.15);
   }
-  .glass-stub {
-    border: 2px solid transparent;
-  }
 }
 
