@@ -21,6 +21,7 @@ import {
 import coverBgUrlikhwan from "@/assets/cover-bg1.png";
 import coverBgUrlakhwat from "@/assets/cover-bg2.png";
 import reportFirstBgUrl from "@/assets/report-first.png";
+import dividerBgUrl from "@/assets/report-divider.png";
 
 export const Route = createFileRoute("/_authed/reports")({
   component: ReportsPage,
