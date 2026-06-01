@@ -715,8 +715,8 @@ function getScaleColor(nilai: number) {
 }
 
 function splitSemesterLabel(label: string) {
-  if (label === "1st semester") return { number: "1", suffix: "st ", rest: " semester" };
-  if (label === "2nd semester") return { number: "2", suffix: "nd ", rest: " semester" };
+  if (label === "1st Semester") return { number: "1", suffix: "st ", rest: " Semester" };
+  if (label === "2nd Semester") return { number: "2", suffix: "nd ", rest: " Semester" };
   return null;
 }
 
