@@ -53,7 +53,7 @@ export interface PdfReportData {
 
   coverBgDataUrl?: string | null;
   reportFirstBgDataUrl?: string | null;
-  reportLastBgDataUrl?: string | null; // tetap ada di type tapi tidak dipakai di render
+  reportLastBgDataUrl?: string | null;
 }
 
 /* ============================================================================
@@ -415,6 +415,24 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
 
+  progressSegmentPartial: {
+    width: 14,
+    height: 8,
+    borderRadius: 10,
+    overflow: "hidden",
+    flexDirection: "row",
+  },
+
+  progressSegmentPartialFill: {
+    height: 8,
+    backgroundColor: ORANGE,
+  },
+
+  progressSegmentPartialEmpty: {
+    height: 8,
+    backgroundColor: "#dbe4f0",
+  },
+
   progressValue: {
     width: 34,
     height: 20,
@@ -703,24 +721,64 @@ function splitSemesterLabel(label: string) {
 }
 
 /* ============================================================================
- * PROGRESS BAR
+ * PROGRESS BAR - CORRECTED VERSION WITH PARTIAL FILL
  * ========================================================================== */
 
 function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
   const totalSegs = 5;
-  const filled = Math.min(Math.round((nilai / max) * totalSegs), totalSegs);
+  // Calculate exact proportion (0 to totalSegs)
+  const exactFill = (nilai / max) * totalSegs;
+  
+  // Number of completely filled segments
+  const fullSegments = Math.floor(exactFill);
+  
+  // Partial fill percentage for the next segment (0 to 1)
+  const partialFill = exactFill - fullSegments;
+  
   const color = getScaleColor(nilai);
 
   return (
     <View style={styles.progressWrapper}>
       <View style={styles.progressBarWrap}>
         <View style={styles.progressSegmentsRow}>
-          {Array.from({ length: totalSegs }).map((_, i) => (
-            <View
-              key={i}
-              style={[styles.progressSegment, { backgroundColor: i < filled ? color : "#dbe4f0" }]}
-            />
-          ))}
+          {Array.from({ length: totalSegs }).map((_, i) => {
+            if (i < fullSegments) {
+              // Fully filled segment
+              return (
+                <View
+                  key={i}
+                  style={[styles.progressSegment, { backgroundColor: color }]}
+                />
+              );
+            } else if (i === fullSegments && partialFill > 0 && partialFill < 1) {
+              // Partially filled segment
+              const fillWidthPercentage = partialFill * 100;
+              return (
+                <View key={i} style={styles.progressSegmentPartial}>
+                  <View
+                    style={[
+                      styles.progressSegmentPartialFill,
+                      { backgroundColor: color, width: `${fillWidthPercentage}%` }
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.progressSegmentPartialEmpty,
+                      { width: `${100 - fillWidthPercentage}%` }
+                    ]}
+                  />
+                </View>
+              );
+            } else {
+              // Empty segment
+              return (
+                <View
+                  key={i}
+                  style={[styles.progressSegment, { backgroundColor: "#dbe4f0" }]}
+                />
+              );
+            }
+          })}
         </View>
         <View style={[styles.progressValue, { backgroundColor: color }]}>
           <Text style={styles.progressValueText}>{nilai.toFixed(1)}</Text>
@@ -790,9 +848,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
   return (
     <Document>
-      {/* ====================================================================
-       * COVER
-       * ================================================================== */}
+      {/* COVER PAGE */}
       <Page size="A4" style={styles.page}>
         {data.coverBgDataUrl && (
           <Image src={data.coverBgDataUrl} style={styles.absoluteBg} fixed />
@@ -816,9 +872,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
         </View>
       </Page>
 
-      {/* ====================================================================
-       * FOREWORD
-       * ================================================================== */}
+      {/* FOREWORD PAGE */}
       <Page size="A4" style={styles.page}>
         <View style={styles.forewordPage}>
           <Text style={styles.forewordHeading}>Foreword</Text>
@@ -860,16 +914,11 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
         </View>
       </Page>
 
-      {/* ====================================================================
-       * REPORT PAGES
-       * ================================================================== */}
+      {/* REPORT PAGES */}
       {materialPages.map((pageMaterials, pageIndex) => {
         const isFirst = pageIndex === 0;
         const isLast = pageIndex === materialPages.length - 1;
 
-        // ── PERUBAHAN: halaman terakhir tidak pakai background image ──────────
-        // Hanya halaman pertama yang mendapat background; halaman lain (termasuk
-        // halaman terakhir) dibiarkan putih bersih.
         const bgUrl: string | null = isFirst ? (data.reportFirstBgDataUrl ?? null) : null;
 
         return (
@@ -884,7 +933,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                   ...(isLast ? [styles.reportBodyLast] : []),
                 ]}
               >
-                {/* Student Card — hanya di halaman pertama */}
+                {/* Student Card - only on first page */}
                 {isFirst && (
                   <View style={styles.studentCard}>
                     <View style={styles.scLeft}>
@@ -940,7 +989,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                   );
                 })}
 
-                {/* Halaman terakhir: Comment + Skala Nilai + TTD Guru */}
+                {/* Last page: Comment + Skala Nilai + Teacher Signature */}
                 {isLast && (
                   <>
                     {/* Comment */}
@@ -958,7 +1007,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
                     {/* Bottom: Skala Nilai + TTD Guru */}
                     <View style={styles.bottomSection}>
-                      {/* Kiri: Skala Nilai */}
+                      {/* Left: Skala Nilai */}
                       <View style={styles.scaleSection}>
                         <Text style={styles.scaleTitle}>Skala Nilai Rata-rata :</Text>
                         <SkalaRow
@@ -991,7 +1040,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                         />
                       </View>
 
-                      {/* Kanan: TTD Guru */}
+                      {/* Right: Teacher Signature */}
                       <View style={styles.signatureSection}>
                         <Text style={styles.signatureDate}>
                           {data.generatedDate || "Tanggal"}
