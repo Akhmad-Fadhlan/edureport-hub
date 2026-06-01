@@ -30,12 +30,33 @@ export const Route = createFileRoute("/_authed/reports")({
  * HELPERS
  * ========================================================================== */
 
-function extractDriveFileId(url: string): string | null {
-  const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
-  if (fileMatch) return fileMatch[1];
-  const idMatch = url.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([^&]+)/);
-  if (idMatch) return idMatch[1];
-  return null;
+/**
+ * Konversi Google Drive share link ke URL lh3.googleusercontent.com
+ * (sama persis dengan fungsi di teachers.tsx agar konsisten)
+ */
+function toDirectImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+
+  const driveFileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
+  if (driveFileMatch) {
+    return `https://lh3.googleusercontent.com/d/${driveFileMatch[1]}`;
+  }
+
+  const driveIdMatch = url.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([^&]+)/);
+  if (driveIdMatch) {
+    return `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}`;
+  }
+
+  return url;
+}
+
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 
 async function fetchViaProxy(rawUrl: string, proxyBase: string): Promise<string | null> {
@@ -59,44 +80,32 @@ async function urlToDataUrl(
   if (!url) return null;
   if (url.startsWith("data:")) return url;
 
-  if (url.startsWith("/api/") || url.includes(window.location.hostname)) {
+  // Konversi Google Drive → lh3.googleusercontent.com terlebih dahulu
+  const directUrl = toDirectImageUrl(url);
+  if (!directUrl) return null;
+
+  // Jika URL internal (same-origin / /api/...)
+  if (directUrl.startsWith("/api/") || directUrl.includes(window.location.hostname)) {
     try {
-      const res = await fetch(url, { credentials: "include" });
+      const res = await fetch(directUrl, { credentials: "include" });
       if (!res.ok) return null;
-      const blob = await res.blob();
-      return await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
+      return blobToDataUrl(await res.blob());
     } catch (err) {
-      console.error("urlToDataUrl error:", err);
+      console.error("urlToDataUrl (internal) error:", err);
       return null;
     }
   }
 
-  const driveId = extractDriveFileId(url);
-  if (driveId) return fetchViaProxy(url, proxyBase);
-
-  // Coba fetch langsung dulu (CORS)
+  // Coba fetch langsung (works untuk lh3.googleusercontent.com & URL publik lain)
   try {
-    const res = await fetch(url, { mode: "cors" });
-    if (res.ok) {
-      const blob = await res.blob();
-      return await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    }
+    const res = await fetch(directUrl, { mode: "cors" });
+    if (res.ok) return blobToDataUrl(await res.blob());
   } catch {
-    // CORS gagal, coba via proxy
+    // CORS gagal → coba via proxy
   }
 
-  // Fallback: lewat proxy (untuk URL eksternal yang blokir CORS)
-  return fetchViaProxy(url, proxyBase);
+  // Fallback: proxy server (untuk URL yang blokir CORS)
+  return fetchViaProxy(directUrl, proxyBase);
 }
 
 /* ============================================================================
@@ -245,10 +254,15 @@ function ReportsPage() {
         ? teacherRecord.tanda_tangan.trim() || null
         : null;
 
+      console.log("[TTD] tanda_tangan raw:", ttdRawUrl);
+      console.log("[TTD] teacherRecord:", JSON.stringify(teacherRecord));
+
       const ttdDataUrl = await urlToDataUrl(
         ttdRawUrl,
         "https://rapor.codestechno.com/api/proxy-image",
       );
+
+      console.log("[TTD] ttdDataUrl result:", ttdDataUrl ? ttdDataUrl.substring(0, 80) + "..." : null);
 
       // ── 6. Comment ─────────────────────────────────────────────────────────
       let comment: string | null = null;
