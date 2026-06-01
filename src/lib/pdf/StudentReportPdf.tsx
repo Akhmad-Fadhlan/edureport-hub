@@ -54,6 +54,7 @@ export interface PdfReportData {
   coverBgDataUrl?: string | null;
   reportFirstBgDataUrl?: string | null;
   reportLastBgDataUrl?: string | null;
+  dividerBgDataUrl?: string | null;
 }
 
 /* ============================================================================
