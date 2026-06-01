@@ -222,26 +222,5 @@
     background-clip: padding-box;
     border: 2px solid transparent;
   }
-
-  /* Solid clean styles — glassmorphism removed */
-  .glass {
-    background-color: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
-  }
-  .dark .glass {
-    background-color: oklch(0.22 0.04 252);
-    border-color: oklch(1 0 0 / 10%);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  }
-  .glass-navbar {
-    background-color: #ffffff;
-    border-bottom: 1px solid #e2e8f0;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  }
-  .dark .glass-navbar {
-    background-color: oklch(0.2 0.04 252);
-    border-bottom-color: oklch(1 0 0 / 10%);
-  }
 }
+
