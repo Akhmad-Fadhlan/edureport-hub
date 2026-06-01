@@ -1108,7 +1108,7 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
     label: string;
     value: number;
     pill: PillKey;
-    Icon: (p: { n?: number }) => JSX.Element;
+    Icon: (p: { n?: number }) => React.ReactElement;
   }[] = [
     { label: "Youtube",       value: summary.ityt,     pill: "red",       Icon: IcoVideo    },
     { label: "Certificates",  value: summary.itc,      pill: "orange",    Icon: IcoCert     },
