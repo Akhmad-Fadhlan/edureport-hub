@@ -122,7 +122,7 @@ export function AppLayout() {
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col lg:ml-0">
         {/* Topbar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-card/80 px-4 backdrop-blur lg:px-6">
+        <header className="glass-navbar sticky top-0 z-30 flex h-16 items-center justify-between px-4 lg:px-6">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
