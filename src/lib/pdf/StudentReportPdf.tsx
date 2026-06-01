@@ -54,6 +54,7 @@ export interface PdfReportData {
   coverBgDataUrl?: string | null;
   reportFirstBgDataUrl?: string | null;
   reportLastBgDataUrl?: string | null;
+  dividerBgDataUrl?: string | null;
 }
 
 /* ============================================================================
@@ -912,6 +913,13 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
             baik.
           </Text>
         </View>
+      </Page>
+
+      {/* DIVIDER PAGE (IT REPORT) */}
+      <Page size="A4" style={styles.page}>
+        {data.dividerBgDataUrl && (
+          <Image src={data.dividerBgDataUrl} style={styles.absoluteBg} />
+        )}
       </Page>
 
       {/* REPORT PAGES */}
