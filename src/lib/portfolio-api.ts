@@ -1,4 +1,4 @@
-import { api, apiGet, apiDelete } from "./api";
+import { api, apiDelete } from "./api";
 
 const BASE = "https://rapor.codestechno.com/api";
 
@@ -94,11 +94,203 @@ export interface FullPortfolio {
   certificates: Certificate[];
 }
 
+// ── PLATFORM VIDEO HELPERS ────────────────────────────────────────────────────
+
+export type VideoPlatform =
+  | "youtube"
+  | "youtube_shorts"
+  | "tiktok"
+  | "linkedin"
+  | "unknown";
+
+export interface VideoMeta {
+  platform: VideoPlatform;
+  videoId: string;
+  thumbnailUrl: string;
+  embedUrl: string;
+  platformLabel: string;
+  platformColor: string;
+  originalLink: string;
+}
+
+/**
+ * Deteksi platform dari URL video.
+ */
+export function detectVideoPlatform(link: string): VideoPlatform {
+  try {
+    const url = new URL(link);
+    const host = url.hostname.replace("www.", "");
+
+    if (host.includes("youtu.be") || host.includes("youtube.com")) {
+      if (url.pathname.startsWith("/shorts/")) return "youtube_shorts";
+      return "youtube";
+    }
+    if (host.includes("tiktok.com")) return "tiktok";
+    if (host.includes("linkedin.com")) return "linkedin";
+  } catch {
+    // ignore invalid URLs
+  }
+  return "unknown";
+}
+
+/**
+ * Ekstrak video ID dari URL berdasarkan platform.
+ */
+export function extractVideoId(link: string, platform: VideoPlatform): string {
+  try {
+    const url = new URL(link);
+    switch (platform) {
+      case "youtube": {
+        if (url.hostname.includes("youtu.be")) {
+          return url.pathname.slice(1).split("?")[0];
+        }
+        return url.searchParams.get("v") ?? "";
+      }
+      case "youtube_shorts": {
+        // URL: youtube.com/shorts/VIDEO_ID
+        return url.pathname.split("/shorts/")[1]?.split("/")[0] ?? "";
+      }
+      case "tiktok": {
+        // URL: tiktok.com/@user/video/1234567890
+        const m = url.pathname.match(/\/video\/(\d+)/);
+        return m?.[1] ?? "";
+      }
+      case "linkedin": {
+        // LinkedIn tidak punya short video ID di URL publik, gunakan path sebagai identifier
+        return url.pathname;
+      }
+      default:
+        return "";
+    }
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Dapatkan semua metadata video (platform, thumbnail, embed URL, dll.)
+ * dari sebuah link video apapun platformnya.
+ */
+export function getVideoMeta(link: string): VideoMeta {
+  const platform = detectVideoPlatform(link);
+  const videoId = extractVideoId(link, platform);
+
+  switch (platform) {
+    case "youtube":
+      return {
+        platform,
+        videoId,
+        thumbnailUrl: videoId
+          ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+          : "",
+        embedUrl: videoId
+          ? `https://www.youtube.com/embed/${videoId}`
+          : "",
+        platformLabel: "YouTube",
+        platformColor: "#FF0000",
+        originalLink: link,
+      };
+
+    case "youtube_shorts":
+      return {
+        platform,
+        videoId,
+        // Shorts menggunakan thumbnail API yang sama dengan YouTube biasa
+        thumbnailUrl: videoId
+          ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+          : "",
+        embedUrl: videoId
+          ? `https://www.youtube.com/embed/${videoId}`
+          : "",
+        platformLabel: "YouTube Shorts",
+        platformColor: "#FF0000",
+        originalLink: link,
+      };
+
+    case "tiktok":
+      return {
+        platform,
+        videoId,
+        // TikTok thumbnail diambil via oEmbed (no API key needed untuk video publik)
+        // Resolver dilakukan di VideoThumbnail component secara async
+        thumbnailUrl: `https://www.tiktok.com/oembed?url=${encodeURIComponent(link)}`,
+        embedUrl: link,
+        platformLabel: "TikTok",
+        platformColor: "#010101",
+        originalLink: link,
+      };
+
+    case "linkedin":
+      return {
+        platform,
+        videoId,
+        // LinkedIn tidak mengizinkan embed thumbnail publik tanpa auth
+        thumbnailUrl: "",
+        embedUrl: link,
+        platformLabel: "LinkedIn",
+        platformColor: "#0A66C2",
+        originalLink: link,
+      };
+
+    default:
+      return {
+        platform: "unknown",
+        videoId: "",
+        thumbnailUrl: "",
+        embedUrl: link,
+        platformLabel: "Video",
+        platformColor: "#6B7280",
+        originalLink: link,
+      };
+  }
+}
+
+/**
+ * Validasi apakah sebuah link adalah URL video yang didukung.
+ */
+export function isValidVideoLink(link: string): boolean {
+  if (!link) return false;
+  try {
+    new URL(link);
+    const platform = detectVideoPlatform(link);
+    return platform !== "unknown";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * @deprecated Gunakan getVideoMeta(link).thumbnailUrl
+ * Dipertahankan untuk backward compatibility.
+ */
+export function getYoutubeEmbedUrl(link: string): string {
+  const meta = getVideoMeta(link);
+  // Untuk YouTube & Shorts, langsung kembalikan thumbnail URL
+  if (meta.platform === "youtube" || meta.platform === "youtube_shorts") {
+    return meta.thumbnailUrl;
+  }
+  return meta.thumbnailUrl;
+}
+
+/**
+ * @deprecated Gunakan extractVideoId(link, detectVideoPlatform(link))
+ * Dipertahankan untuk backward compatibility.
+ */
+export function getYoutubeVideoId(link: string): string {
+  const platform = detectVideoPlatform(link);
+  return extractVideoId(link, platform);
+}
+
 // ── CSV HELPERS ───────────────────────────────────────────────────────────────
 
 function csvCell(v: string | number | null | undefined): string {
   const s = String(v ?? "");
-  if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r")) {
+  if (
+    s.includes(",") ||
+    s.includes('"') ||
+    s.includes("\n") ||
+    s.includes("\r")
+  ) {
     return `"${s.replace(/"/g, '""')}"`;
   }
   return s;
@@ -115,13 +307,23 @@ function parseCsvLine(line: string): string[] {
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
     if (inQ) {
-      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
-      else if (ch === '"') { inQ = false; }
-      else { cur += ch; }
+      if (ch === '"' && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else if (ch === '"') {
+        inQ = false;
+      } else {
+        cur += ch;
+      }
     } else {
-      if (ch === '"') { inQ = true; }
-      else if (ch === ",") { cells.push(cur); cur = ""; }
-      else { cur += ch; }
+      if (ch === '"') {
+        inQ = true;
+      } else if (ch === ",") {
+        cells.push(cur);
+        cur = "";
+      } else {
+        cur += ch;
+      }
     }
   }
   cells.push(cur);
@@ -129,13 +331,21 @@ function parseCsvLine(line: string): string[] {
 }
 
 function parseCsvText(text: string): string[][] {
-  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+  const lines = text
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n");
   return lines.filter((l) => l.trim()).map(parseCsvLine);
 }
 
-function downloadCsv(rows: (string | number | null | undefined)[][], filename: string) {
+function downloadCsv(
+  rows: (string | number | null | undefined)[][],
+  filename: string
+) {
   const bom = "\uFEFF";
-  const blob = new Blob([bom + toCsv(rows)], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob([bom + toCsv(rows)], {
+    type: "text/csv;charset=utf-8;",
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -163,29 +373,54 @@ export function downloadTeachingTemplate() {
   downloadCsv(
     [
       ["TEMPLATE IMPORT KEGIATAN MENGAJAR"],
-      ["Kolom foto tidak bisa diisi via CSV. Upload foto manual setelah import."],
+      [
+        "Kolom foto tidak bisa diisi via CSV. Upload foto manual setelah import.",
+      ],
       [],
-      ["lokasi", "tanggal", "tema", "jumlah_peserta", "cerita_siswa", "testimoni_peserta", "link_foto_1", "link_foto_2"],
-      ["Contoh Lokasi", "2025-01-15", "Belajar Coding", "30", "Cerita siswa...", "Testimoni...", "https://drive.google.com/...", ""],
+      [
+        "lokasi",
+        "tanggal",
+        "tema",
+        "jumlah_peserta",
+        "cerita_siswa",
+        "testimoni_peserta",
+        "link_foto_1",
+        "link_foto_2",
+      ],
+      [
+        "Contoh Lokasi",
+        "2025-01-15",
+        "Belajar Coding",
+        "30",
+        "Cerita siswa...",
+        "Testimoni...",
+        "https://drive.google.com/...",
+        "",
+      ],
     ],
-    "template_kegiatan_mengajar.csv",
+    "template_kegiatan_mengajar.csv"
   );
 }
 
 export function parseTeachingCsv(
   file: File,
-  callback: (rows: CsvImportRow<Partial<TeachingActivity>>[]) => void,
+  callback: (rows: CsvImportRow<Partial<TeachingActivity>>[]) => void
 ) {
   const reader = new FileReader();
   reader.onload = (e) => {
     const raw = e.target?.result;
-    if (typeof raw !== "string") { callback([]); return; }
+    if (typeof raw !== "string") {
+      callback([]);
+      return;
+    }
     const allRows = parseCsvText(raw);
-    // skip header lines until we find the header row
     const headerIdx = allRows.findIndex((r) =>
-      r.some((c) => c.trim().toLowerCase() === "lokasi"),
+      r.some((c) => c.trim().toLowerCase() === "lokasi")
     );
-    if (headerIdx === -1) { callback([]); return; }
+    if (headerIdx === -1) {
+      callback([]);
+      return;
+    }
     const header = allRows[headerIdx].map((c) => c.trim().toLowerCase());
     const results: CsvImportRow<Partial<TeachingActivity>>[] = [];
 
@@ -198,7 +433,9 @@ export function parseTeachingCsv(
         lokasi: get("lokasi") || undefined,
         tanggal: get("tanggal") || undefined,
         tema: get("tema") || undefined,
-        jumlah_peserta: get("jumlah_peserta") ? Number(get("jumlah_peserta")) : undefined,
+        jumlah_peserta: get("jumlah_peserta")
+          ? Number(get("jumlah_peserta"))
+          : undefined,
         cerita_siswa: get("cerita_siswa") || undefined,
         testimoni_peserta: get("testimoni_peserta") || undefined,
         link_foto_1: get("link_foto_1") || undefined,
@@ -211,7 +448,9 @@ export function parseTeachingCsv(
         row: i + 1,
         data,
         status: missing.length ? "warning" : "ok",
-        message: missing.length ? `Kolom kosong: ${missing.join(", ")}` : undefined,
+        message: missing.length
+          ? `Kolom kosong: ${missing.join(", ")}`
+          : undefined,
       });
     }
     callback(results);
@@ -222,12 +461,15 @@ export function parseTeachingCsv(
 export async function importTeachingActivities(
   rows: CsvImportRow<Partial<TeachingActivity>>[],
   studentId: number,
-  semesterId: number,
+  semesterId: number
 ): Promise<{ success: number; failed: number }> {
   let success = 0;
   let failed = 0;
   for (const row of rows) {
-    if (row.status === "error") { failed++; continue; }
+    if (row.status === "error") {
+      failed++;
+      continue;
+    }
     try {
       const fd = new FormData();
       fd.append("student_id", String(studentId));
@@ -236,14 +478,20 @@ export async function importTeachingActivities(
       if (d.lokasi) fd.append("lokasi", d.lokasi);
       if (d.tanggal) fd.append("tanggal", d.tanggal);
       if (d.tema) fd.append("tema", d.tema);
-      if (d.jumlah_peserta) fd.append("jumlah_peserta", String(d.jumlah_peserta));
+      if (d.jumlah_peserta)
+        fd.append("jumlah_peserta", String(d.jumlah_peserta));
       if (d.cerita_siswa) fd.append("cerita_siswa", d.cerita_siswa);
-      if (d.testimoni_peserta) fd.append("testimoni_peserta", d.testimoni_peserta);
+      if (d.testimoni_peserta)
+        fd.append("testimoni_peserta", d.testimoni_peserta);
       if (d.link_foto_1) fd.append("link_foto_1", d.link_foto_1);
       if (d.link_foto_2) fd.append("link_foto_2", d.link_foto_2);
-      await api.post("/teaching-activities", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      await api.post("/teaching-activities", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       success++;
-    } catch { failed++; }
+    } catch {
+      failed++;
+    }
   }
   return { success, failed };
 }
@@ -256,28 +504,51 @@ export function downloadProjectTemplate(type: "design" | "robotics") {
     [
       [`TEMPLATE IMPORT KARYA ${label.toUpperCase()}`],
       [],
-      ["judul", "deskripsi", "teknologi", "kompetensi_siswa", "link_file_flyer", "link_gambar_drive"],
-      ["Contoh Judul", "Deskripsi proyek...", "Canva / Arduino", "Kompetensi...", "https://drive.google.com/...", "https://drive.google.com/..."],
+      [
+        "judul",
+        "deskripsi",
+        "teknologi",
+        "kompetensi_siswa",
+        "link_file_flyer",
+        "link_gambar_drive",
+      ],
+      [
+        "Contoh Judul",
+        "Deskripsi proyek...",
+        "Canva / Arduino",
+        "Kompetensi...",
+        "https://drive.google.com/...",
+        "https://drive.google.com/...",
+      ],
     ],
-    `template_karya_${type}.csv`,
+    `template_karya_${type}.csv`
   );
 }
 
 export function parseProjectCsv(
   file: File,
-  callback: (rows: CsvImportRow<Partial<DesignProject | RoboticsProject>>[]) => void,
+  callback: (
+    rows: CsvImportRow<Partial<DesignProject | RoboticsProject>>[]
+  ) => void
 ) {
   const reader = new FileReader();
   reader.onload = (e) => {
     const raw = e.target?.result;
-    if (typeof raw !== "string") { callback([]); return; }
+    if (typeof raw !== "string") {
+      callback([]);
+      return;
+    }
     const allRows = parseCsvText(raw);
     const headerIdx = allRows.findIndex((r) =>
-      r.some((c) => c.trim().toLowerCase() === "judul"),
+      r.some((c) => c.trim().toLowerCase() === "judul")
     );
-    if (headerIdx === -1) { callback([]); return; }
+    if (headerIdx === -1) {
+      callback([]);
+      return;
+    }
     const header = allRows[headerIdx].map((c) => c.trim().toLowerCase());
-    const results: CsvImportRow<Partial<DesignProject | RoboticsProject>>[] = [];
+    const results: CsvImportRow<Partial<DesignProject | RoboticsProject>>[] =
+      [];
 
     for (let i = headerIdx + 1; i < allRows.length; i++) {
       const cols = allRows[i];
@@ -309,48 +580,91 @@ export async function importProjects(
   rows: CsvImportRow<Partial<DesignProject | RoboticsProject>>[],
   type: "design" | "robotics",
   studentId: number,
-  semesterId: number,
+  semesterId: number
 ): Promise<{ success: number; failed: number }> {
-  const endpoint = type === "design" ? "/design-projects" : "/robotics-projects";
+  const endpoint =
+    type === "design" ? "/design-projects" : "/robotics-projects";
   let success = 0;
   let failed = 0;
   for (const row of rows) {
-    if (row.status === "error") { failed++; continue; }
+    if (row.status === "error") {
+      failed++;
+      continue;
+    }
     try {
-      await api.post(endpoint, { student_id: studentId, semester_id: semesterId, ...row.data });
+      await api.post(endpoint, {
+        student_id: studentId,
+        semester_id: semesterId,
+        ...row.data,
+      });
       success++;
-    } catch { failed++; }
+    } catch {
+      failed++;
+    }
   }
   return { success, failed };
 }
 
-// ── YOUTUBE CSV ───────────────────────────────────────────────────────────────
+// ── YOUTUBE / VIDEO CSV ───────────────────────────────────────────────────────
 
 export function downloadYoutubeTemplate() {
   downloadCsv(
     [
-      ["TEMPLATE IMPORT VIDEO YOUTUBE"],
+      ["TEMPLATE IMPORT VIDEO (YouTube / YouTube Shorts / TikTok / LinkedIn)"],
+      [
+        "Kolom link_video mendukung: YouTube, YouTube Shorts, TikTok, LinkedIn",
+      ],
       [],
-      ["judul_video", "link_youtube", "deskripsi_video"],
-      ["Judul Video Saya", "https://youtube.com/watch?v=xxx", "Deskripsi..."],
+      ["judul_video", "link_video", "deskripsi_video"],
+      [
+        "Tutorial Coding Dasar",
+        "https://youtube.com/watch?v=xxx",
+        "Deskripsi...",
+      ],
+      [
+        "Tutorial Shorts",
+        "https://youtube.com/shorts/xxx",
+        "Deskripsi...",
+      ],
+      [
+        "Video TikTok",
+        "https://www.tiktok.com/@user/video/xxx",
+        "Deskripsi...",
+      ],
+      [
+        "Post LinkedIn",
+        "https://www.linkedin.com/posts/xxx",
+        "Deskripsi...",
+      ],
     ],
-    "template_video_youtube.csv",
+    "template_video.csv"
   );
 }
 
 export function parseYoutubeCsv(
   file: File,
-  callback: (rows: CsvImportRow<Partial<YoutubeVideo>>[]) => void,
+  callback: (rows: CsvImportRow<Partial<YoutubeVideo>>[]) => void
 ) {
   const reader = new FileReader();
   reader.onload = (e) => {
     const raw = e.target?.result;
-    if (typeof raw !== "string") { callback([]); return; }
+    if (typeof raw !== "string") {
+      callback([]);
+      return;
+    }
     const allRows = parseCsvText(raw);
+    // Cari header row: bisa "judul_video" atau "judul"
     const headerIdx = allRows.findIndex((r) =>
-      r.some((c) => c.trim().toLowerCase() === "judul_video"),
+      r.some(
+        (c) =>
+          c.trim().toLowerCase() === "judul_video" ||
+          c.trim().toLowerCase() === "judul"
+      )
     );
-    if (headerIdx === -1) { callback([]); return; }
+    if (headerIdx === -1) {
+      callback([]);
+      return;
+    }
     const header = allRows[headerIdx].map((c) => c.trim().toLowerCase());
     const results: CsvImportRow<Partial<YoutubeVideo>>[] = [];
 
@@ -359,21 +673,38 @@ export function parseYoutubeCsv(
       if (cols.every((c) => !c.trim())) continue;
       const get = (key: string) => cols[header.indexOf(key)]?.trim() ?? "";
 
+      // Support both "link_video" (new) and "link_youtube" (legacy) column names
+      const linkValue = get("link_video") || get("link_youtube");
+
       const data: Partial<YoutubeVideo> = {
-        judul_video: get("judul_video"),
-        link_youtube: get("link_youtube"),
-        deskripsi_video: get("deskripsi_video") || undefined,
+        judul_video: get("judul_video") || get("judul"),
+        link_youtube: linkValue,
+        deskripsi_video: get("deskripsi_video") || get("deskripsi") || undefined,
       };
 
       const missing: string[] = [];
       if (!data.judul_video) missing.push("judul_video");
-      if (!data.link_youtube) missing.push("link_youtube");
+      if (!data.link_youtube) missing.push("link_video");
+
+      // Validasi platform
+      let platformWarning = "";
+      if (data.link_youtube && !isValidVideoLink(data.link_youtube)) {
+        platformWarning =
+          "Link tidak dikenali sebagai YouTube/TikTok/LinkedIn";
+      }
+
+      const hasError = missing.length > 0;
+      const hasWarning = !!platformWarning;
 
       results.push({
         row: i + 1,
         data,
-        status: missing.length ? "error" : "ok",
-        message: missing.length ? `Wajib diisi: ${missing.join(", ")}` : undefined,
+        status: hasError ? "error" : hasWarning ? "warning" : "ok",
+        message: hasError
+          ? `Wajib diisi: ${missing.join(", ")}`
+          : hasWarning
+          ? platformWarning
+          : undefined,
       });
     }
     callback(results);
@@ -384,16 +715,25 @@ export function parseYoutubeCsv(
 export async function importYoutubeVideos(
   rows: CsvImportRow<Partial<YoutubeVideo>>[],
   studentId: number,
-  semesterId: number,
+  semesterId: number
 ): Promise<{ success: number; failed: number }> {
   let success = 0;
   let failed = 0;
   for (const row of rows) {
-    if (row.status === "error") { failed++; continue; }
+    if (row.status === "error") {
+      failed++;
+      continue;
+    }
     try {
-      await api.post("/youtube-videos", { student_id: studentId, semester_id: semesterId, ...row.data });
+      await api.post("/youtube-videos", {
+        student_id: studentId,
+        semester_id: semesterId,
+        ...row.data,
+      });
       success++;
-    } catch { failed++; }
+    } catch {
+      failed++;
+    }
   }
   return { success, failed };
 }
@@ -404,28 +744,41 @@ export function downloadCertificateTemplate() {
   downloadCsv(
     [
       ["TEMPLATE IMPORT SERTIFIKAT"],
-      ["Kolom gambar tidak bisa diisi via CSV. Upload gambar manual atau gunakan link_gambar_drive."],
+      [
+        "Kolom gambar tidak bisa diisi via CSV. Upload gambar manual atau gunakan link_gambar_drive.",
+      ],
       [],
       ["tema", "lingkup", "tanggal", "link_gambar_drive"],
-      ["Juara 1 Coding", "Nasional", "2025-03-10", "https://drive.google.com/..."],
+      [
+        "Juara 1 Coding",
+        "Nasional",
+        "2025-03-10",
+        "https://drive.google.com/...",
+      ],
     ],
-    "template_sertifikat.csv",
+    "template_sertifikat.csv"
   );
 }
 
 export function parseCertificateCsv(
   file: File,
-  callback: (rows: CsvImportRow<Partial<Certificate>>[]) => void,
+  callback: (rows: CsvImportRow<Partial<Certificate>>[]) => void
 ) {
   const reader = new FileReader();
   reader.onload = (e) => {
     const raw = e.target?.result;
-    if (typeof raw !== "string") { callback([]); return; }
+    if (typeof raw !== "string") {
+      callback([]);
+      return;
+    }
     const allRows = parseCsvText(raw);
     const headerIdx = allRows.findIndex((r) =>
-      r.some((c) => c.trim().toLowerCase() === "tema"),
+      r.some((c) => c.trim().toLowerCase() === "tema")
     );
-    if (headerIdx === -1) { callback([]); return; }
+    if (headerIdx === -1) {
+      callback([]);
+      return;
+    }
     const header = allRows[headerIdx].map((c) => c.trim().toLowerCase());
     const results: CsvImportRow<Partial<Certificate>>[] = [];
 
@@ -455,12 +808,15 @@ export function parseCertificateCsv(
 export async function importCertificates(
   rows: CsvImportRow<Partial<Certificate>>[],
   studentId: number,
-  semesterId: number,
+  semesterId: number
 ): Promise<{ success: number; failed: number }> {
   let success = 0;
   let failed = 0;
   for (const row of rows) {
-    if (row.status === "error") { failed++; continue; }
+    if (row.status === "error") {
+      failed++;
+      continue;
+    }
     try {
       const fd = new FormData();
       fd.append("student_id", String(studentId));
@@ -469,19 +825,24 @@ export async function importCertificates(
       if (d.tema) fd.append("tema", d.tema);
       if (d.lingkup) fd.append("lingkup", d.lingkup);
       if (d.tanggal) fd.append("tanggal", d.tanggal);
-      if (d.link_gambar_drive) fd.append("link_gambar_drive", d.link_gambar_drive);
-      await api.post("/certificates", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      if (d.link_gambar_drive)
+        fd.append("link_gambar_drive", d.link_gambar_drive);
+      await api.post("/certificates", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       success++;
-    } catch { failed++; }
+    } catch {
+      failed++;
+    }
   }
   return { success, failed };
 }
 
-// ── STUDENT SUMMARY ─────────────────────────────────────────────────────────
+// ── STUDENT SUMMARY ──────────────────────────────────────────────────────────
 
 export async function getStudentSummary(
   student_id: number,
-  semester_id: number,
+  semester_id: number
 ): Promise<StudentSummary | null> {
   try {
     const res = await api.get("/student-summary", {
@@ -493,7 +854,9 @@ export async function getStudentSummary(
   }
 }
 
-export async function upsertStudentSummary(data: Partial<StudentSummary>): Promise<void> {
+export async function upsertStudentSummary(
+  data: Partial<StudentSummary>
+): Promise<void> {
   await api.post("/student-summary", data);
 }
 
@@ -501,7 +864,7 @@ export async function upsertStudentSummary(data: Partial<StudentSummary>): Promi
 
 export async function getTeachingActivities(
   student_id: number,
-  semester_id: number,
+  semester_id: number
 ): Promise<TeachingActivity[]> {
   const res = await api.get("/teaching-activities", {
     params: { student_id, semester_id },
@@ -509,13 +872,18 @@ export async function getTeachingActivities(
   return res.data?.data ?? [];
 }
 
-export async function createTeachingActivity(formData: FormData): Promise<void> {
+export async function createTeachingActivity(
+  formData: FormData
+): Promise<void> {
   await api.post("/teaching-activities", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
 }
 
-export async function updateTeachingActivity(id: number, formData: FormData): Promise<void> {
+export async function updateTeachingActivity(
+  id: number,
+  formData: FormData
+): Promise<void> {
   await api.put(`/teaching-activities/${id}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
@@ -529,7 +897,7 @@ export async function deleteTeachingActivity(id: number): Promise<void> {
 
 export async function getDesignProjects(
   student_id: number,
-  semester_id: number,
+  semester_id: number
 ): Promise<DesignProject[]> {
   const res = await api.get("/design-projects", {
     params: { student_id, semester_id },
@@ -537,17 +905,26 @@ export async function getDesignProjects(
   return res.data?.data ?? [];
 }
 
-export async function createDesignProject(data: Partial<DesignProject> | FormData): Promise<void> {
+export async function createDesignProject(
+  data: Partial<DesignProject> | FormData
+): Promise<void> {
   if (data instanceof FormData) {
-    await api.post("/design-projects", data, { headers: { "Content-Type": "multipart/form-data" } });
+    await api.post("/design-projects", data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   } else {
     await api.post("/design-projects", data);
   }
 }
 
-export async function updateDesignProject(id: number, data: Partial<DesignProject> | FormData): Promise<void> {
+export async function updateDesignProject(
+  id: number,
+  data: Partial<DesignProject> | FormData
+): Promise<void> {
   if (data instanceof FormData) {
-    await api.put(`/design-projects/${id}`, data, { headers: { "Content-Type": "multipart/form-data" } });
+    await api.put(`/design-projects/${id}`, data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   } else {
     await api.put(`/design-projects/${id}`, data);
   }
@@ -561,7 +938,7 @@ export async function deleteDesignProject(id: number): Promise<void> {
 
 export async function getRoboticsProjects(
   student_id: number,
-  semester_id: number,
+  semester_id: number
 ): Promise<RoboticsProject[]> {
   const res = await api.get("/robotics-projects", {
     params: { student_id, semester_id },
@@ -569,9 +946,13 @@ export async function getRoboticsProjects(
   return res.data?.data ?? [];
 }
 
-export async function createRoboticsProject(data: Partial<RoboticsProject> | FormData): Promise<void> {
+export async function createRoboticsProject(
+  data: Partial<RoboticsProject> | FormData
+): Promise<void> {
   if (data instanceof FormData) {
-    await api.post("/robotics-projects", data, { headers: { "Content-Type": "multipart/form-data" } });
+    await api.post("/robotics-projects", data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   } else {
     await api.post("/robotics-projects", data);
   }
@@ -579,10 +960,12 @@ export async function createRoboticsProject(data: Partial<RoboticsProject> | For
 
 export async function updateRoboticsProject(
   id: number,
-  data: Partial<RoboticsProject> | FormData,
+  data: Partial<RoboticsProject> | FormData
 ): Promise<void> {
   if (data instanceof FormData) {
-    await api.put(`/robotics-projects/${id}`, data, { headers: { "Content-Type": "multipart/form-data" } });
+    await api.put(`/robotics-projects/${id}`, data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   } else {
     await api.put(`/robotics-projects/${id}`, data);
   }
@@ -596,7 +979,7 @@ export async function deleteRoboticsProject(id: number): Promise<void> {
 
 export async function getYoutubeVideos(
   student_id: number,
-  semester_id: number,
+  semester_id: number
 ): Promise<YoutubeVideo[]> {
   const res = await api.get("/youtube-videos", {
     params: { student_id, semester_id },
@@ -604,11 +987,16 @@ export async function getYoutubeVideos(
   return res.data?.data ?? [];
 }
 
-export async function createYoutubeVideo(data: Partial<YoutubeVideo>): Promise<void> {
+export async function createYoutubeVideo(
+  data: Partial<YoutubeVideo>
+): Promise<void> {
   await api.post("/youtube-videos", data);
 }
 
-export async function updateYoutubeVideo(id: number, data: Partial<YoutubeVideo>): Promise<void> {
+export async function updateYoutubeVideo(
+  id: number,
+  data: Partial<YoutubeVideo>
+): Promise<void> {
   await api.put(`/youtube-videos/${id}`, data);
 }
 
@@ -620,7 +1008,7 @@ export async function deleteYoutubeVideo(id: number): Promise<void> {
 
 export async function getCertificates(
   student_id: number,
-  semester_id: number,
+  semester_id: number
 ): Promise<Certificate[]> {
   const res = await api.get("/certificates", {
     params: { student_id, semester_id },
@@ -634,7 +1022,10 @@ export async function createCertificate(formData: FormData): Promise<void> {
   });
 }
 
-export async function updateCertificate(id: number, formData: FormData): Promise<void> {
+export async function updateCertificate(
+  id: number,
+  formData: FormData
+): Promise<void> {
   await api.put(`/certificates/${id}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
@@ -648,7 +1039,7 @@ export async function deleteCertificate(id: number): Promise<void> {
 
 export async function getFullPortfolio(
   student_id: number,
-  semester_id: number,
+  semester_id: number
 ): Promise<FullPortfolio | null> {
   try {
     const res = await api.get(`/students/${student_id}/portfolio`, {
@@ -660,32 +1051,7 @@ export async function getFullPortfolio(
   }
 }
 
-// ── HELPERS ──────────────────────────────────────────────────────────────────
-
-export function getYoutubeEmbedUrl(link: string): string {
-  try {
-    const url = new URL(link);
-    let videoId = "";
-    if (url.hostname.includes("youtu.be")) {
-      videoId = url.pathname.slice(1);
-    } else {
-      videoId = url.searchParams.get("v") ?? "";
-    }
-    return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : "";
-  } catch {
-    return "";
-  }
-}
-
-export function getYoutubeVideoId(link: string): string {
-  try {
-    const url = new URL(link);
-    if (url.hostname.includes("youtu.be")) return url.pathname.slice(1);
-    return url.searchParams.get("v") ?? "";
-  } catch {
-    return "";
-  }
-}
+// ── IMAGE / DRIVE HELPERS ─────────────────────────────────────────────────────
 
 export const UPLOADS_BASE_URL = "https://rapor.codestechno.com/upload";
 
@@ -700,10 +1066,8 @@ export function resolveUploadUrl(path?: string | null): string | null {
  */
 export function extractDriveFileId(url: string): string | null {
   if (!url) return null;
-  // /file/d/FILE_ID/view
   const m1 = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
   if (m1) return m1[1];
-  // ?id=FILE_ID  atau  &id=FILE_ID
   const m2 = url.match(/[?&]id=([^&]+)/);
   if (m2) return m2[1];
   return null;
@@ -722,7 +1086,10 @@ export function driveToThumbnailUrl(link: string): string {
 }
 
 /** Resolve either an uploaded file path or a Google Drive link to a displayable URL */
-export function resolveImageUrl(filePath?: string | null, driveLink?: string | null): string | null {
+export function resolveImageUrl(
+  filePath?: string | null,
+  driveLink?: string | null
+): string | null {
   if (filePath) return resolveUploadUrl(filePath);
   if (driveLink) return driveToThumbnailUrl(driveLink);
   return null;
@@ -741,7 +1108,12 @@ export function normalizeDriveLink(link: string): string {
  * UNIFIED CSV IMPORT
  * ========================================================================== */
 
-export type UnifiedCsvRowType = "teaching" | "design" | "robotics" | "youtube" | "certificate";
+export type UnifiedCsvRowType =
+  | "teaching"
+  | "design"
+  | "robotics"
+  | "youtube"
+  | "certificate";
 
 export interface UnifiedCsvRow {
   rowNumber: number;
@@ -763,13 +1135,25 @@ export interface CsvImportResult {
 const UNIFIED_TEMPLATE_HEADERS = [
   "type",
   // teaching
-  "tema", "lokasi", "tanggal", "dokumentasi",
+  "tema",
+  "lokasi",
+  "tanggal",
+  "dokumentasi",
   // design / robotics
-  "judul", "teknologi", "deskripsi", "link_project", "gambar",
-  // youtube
-  "judul_video", "link_youtube", "deskripsi_video",
+  "judul",
+  "teknologi",
+  "deskripsi",
+  "link_project",
+  "gambar",
+  // youtube / video (support multi-platform)
+  "judul_video",
+  "link_video",
+  "deskripsi_video",
   // certificate
-  "lingkup", "penyelenggara", "tahun", "sertifikat",
+  "lingkup",
+  "penyelenggara",
+  "tahun",
+  "sertifikat",
 ];
 
 export function downloadUnifiedTemplate(): void {
@@ -785,7 +1169,7 @@ export function downloadUnifiedTemplate(): void {
 
 export function parseUnifiedCsv(
   file: File,
-  callback: (rows: UnifiedCsvRow[]) => void,
+  callback: (rows: UnifiedCsvRow[]) => void
 ): void {
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -806,7 +1190,13 @@ export function parseUnifiedCsv(
       });
 
       const type = data["type"]?.toLowerCase() as UnifiedCsvRowType;
-      const validTypes: UnifiedCsvRowType[] = ["teaching", "design", "robotics", "youtube", "certificate"];
+      const validTypes: UnifiedCsvRowType[] = [
+        "teaching",
+        "design",
+        "robotics",
+        "youtube",
+        "certificate",
+      ];
 
       if (!validTypes.includes(type)) {
         rows.push({
@@ -823,13 +1213,27 @@ export function parseUnifiedCsv(
       let message: string | undefined;
 
       if (type === "teaching" && !data["tema"]) {
-        status = "warning"; message = "Kolom tema kosong";
-      } else if ((type === "design" || type === "robotics") && !data["judul"]) {
-        status = "warning"; message = "Kolom judul kosong";
-      } else if (type === "youtube" && !data["link_youtube"]) {
-        status = "error"; message = "link_youtube wajib diisi";
+        status = "warning";
+        message = "Kolom tema kosong";
+      } else if (
+        (type === "design" || type === "robotics") &&
+        !data["judul"]
+      ) {
+        status = "warning";
+        message = "Kolom judul kosong";
+      } else if (type === "youtube") {
+        // Support both "link_video" (new) and "link_youtube" (legacy)
+        const videoLink = data["link_video"] || data["link_youtube"];
+        if (!videoLink) {
+          status = "error";
+          message = "link_video wajib diisi";
+        } else if (!isValidVideoLink(videoLink)) {
+          status = "warning";
+          message = `Platform tidak dikenali untuk link: ${videoLink}`;
+        }
       } else if (type === "certificate" && !data["tema"]) {
-        status = "warning"; message = "Kolom tema kosong";
+        status = "warning";
+        message = "Kolom tema kosong";
       }
 
       rows.push({ rowNumber: i + 1, type, status, message, data });
@@ -843,15 +1247,15 @@ export function parseUnifiedCsv(
 export async function importUnifiedPortfolio(
   rows: UnifiedCsvRow[],
   studentId: string | number,
-  semesterId: string | number,
+  semesterId: string | number
 ): Promise<CsvImportResult> {
   const result: CsvImportResult = {
-    teaching:    { success: 0, failed: 0 },
-    design:      { success: 0, failed: 0 },
-    robotics:    { success: 0, failed: 0 },
-    youtube:     { success: 0, failed: 0 },
+    teaching: { success: 0, failed: 0 },
+    design: { success: 0, failed: 0 },
+    robotics: { success: 0, failed: 0 },
+    youtube: { success: 0, failed: 0 },
     certificate: { success: 0, failed: 0 },
-    total:       { success: 0, failed: 0 },
+    total: { success: 0, failed: 0 },
   };
 
   const validRows = rows.filter((r) => r.status !== "error");
@@ -863,16 +1267,21 @@ export async function importUnifiedPortfolio(
           const fd = new FormData();
           fd.append("student_id", String(studentId));
           fd.append("semester_id", String(semesterId));
-          if (row.data.tema)          fd.append("tema", row.data.tema);
-          if (row.data.lokasi)        fd.append("lokasi", row.data.lokasi);
-          if (row.data.tanggal)       fd.append("tanggal", row.data.tanggal);
-          // "dokumentasi" di CSV = link_foto_1 di API
-          if (row.data.dokumentasi)   fd.append("link_foto_1", row.data.dokumentasi);
-          if (row.data.link_foto_1)   fd.append("link_foto_1", row.data.link_foto_1);
-          if (row.data.link_foto_2)   fd.append("link_foto_2", row.data.link_foto_2);
-          if (row.data.jumlah_peserta)   fd.append("jumlah_peserta", row.data.jumlah_peserta);
-          if (row.data.cerita_siswa)     fd.append("cerita_siswa", row.data.cerita_siswa);
-          if (row.data.testimoni_peserta) fd.append("testimoni_peserta", row.data.testimoni_peserta);
+          if (row.data.tema) fd.append("tema", row.data.tema);
+          if (row.data.lokasi) fd.append("lokasi", row.data.lokasi);
+          if (row.data.tanggal) fd.append("tanggal", row.data.tanggal);
+          if (row.data.dokumentasi)
+            fd.append("link_foto_1", row.data.dokumentasi);
+          if (row.data.link_foto_1)
+            fd.append("link_foto_1", row.data.link_foto_1);
+          if (row.data.link_foto_2)
+            fd.append("link_foto_2", row.data.link_foto_2);
+          if (row.data.jumlah_peserta)
+            fd.append("jumlah_peserta", row.data.jumlah_peserta);
+          if (row.data.cerita_siswa)
+            fd.append("cerita_siswa", row.data.cerita_siswa);
+          if (row.data.testimoni_peserta)
+            fd.append("testimoni_peserta", row.data.testimoni_peserta);
           await createTeachingActivity(fd);
           result.teaching.success++;
           break;
@@ -882,16 +1291,17 @@ export async function importUnifiedPortfolio(
           const fd = new FormData();
           fd.append("student_id", String(studentId));
           fd.append("semester_id", String(semesterId));
-          if (row.data.judul)         fd.append("judul", row.data.judul);
-          if (row.data.teknologi)     fd.append("teknologi", row.data.teknologi);
-          if (row.data.deskripsi)     fd.append("deskripsi", row.data.deskripsi);
-          if (row.data.kompetensi_siswa) fd.append("kompetensi_siswa", row.data.kompetensi_siswa);
-          // "link_project" di CSV = link_file_flyer di API
-          if (row.data.link_project)  fd.append("link_file_flyer", row.data.link_project);
-          if (row.data.link_file_flyer) fd.append("link_file_flyer", row.data.link_file_flyer);
-          // "gambar" di CSV = link_gambar_drive di API
-          // Jika gambar kosong, fallback ke link_project (untuk design yang hanya isi link_project)
-          const gambarUrl = row.data.gambar || row.data.link_gambar_drive || "";
+          if (row.data.judul) fd.append("judul", row.data.judul);
+          if (row.data.teknologi) fd.append("teknologi", row.data.teknologi);
+          if (row.data.deskripsi) fd.append("deskripsi", row.data.deskripsi);
+          if (row.data.kompetensi_siswa)
+            fd.append("kompetensi_siswa", row.data.kompetensi_siswa);
+          if (row.data.link_project)
+            fd.append("link_file_flyer", row.data.link_project);
+          if (row.data.link_file_flyer)
+            fd.append("link_file_flyer", row.data.link_file_flyer);
+          const gambarUrl =
+            row.data.gambar || row.data.link_gambar_drive || "";
           if (gambarUrl) fd.append("link_gambar_drive", gambarUrl);
           if (row.type === "design") {
             await createDesignProject(fd);
@@ -903,13 +1313,15 @@ export async function importUnifiedPortfolio(
           break;
         }
         case "youtube": {
+          // Support both "link_video" (new multi-platform) and "link_youtube" (legacy)
+          const videoLink = row.data.link_video || row.data.link_youtube || "";
           await createYoutubeVideo({
             student_id: Number(studentId),
             semester_id: Number(semesterId),
             judul_video: row.data.judul_video || "",
-            link_youtube: row.data.link_youtube || "",
-            deskripsi: row.data.deskripsi_video || "",
-          } as any);
+            link_youtube: videoLink,
+            deskripsi_video: row.data.deskripsi_video || undefined,
+          });
           result.youtube.success++;
           break;
         }
@@ -917,14 +1329,16 @@ export async function importUnifiedPortfolio(
           const fd = new FormData();
           fd.append("student_id", String(studentId));
           fd.append("semester_id", String(semesterId));
-          if (row.data.tema)          fd.append("tema", row.data.tema);
-          if (row.data.lingkup)       fd.append("lingkup", row.data.lingkup);
-          if (row.data.penyelenggara) fd.append("penyelenggara", row.data.penyelenggara);
-          if (row.data.tahun)         fd.append("tahun", row.data.tahun);
-          if (row.data.tanggal)       fd.append("tanggal", row.data.tanggal);
-          // "sertifikat" di CSV = link_gambar_drive di API
-          if (row.data.sertifikat)    fd.append("link_gambar_drive", row.data.sertifikat);
-          if (row.data.link_gambar_drive) fd.append("link_gambar_drive", row.data.link_gambar_drive);
+          if (row.data.tema) fd.append("tema", row.data.tema);
+          if (row.data.lingkup) fd.append("lingkup", row.data.lingkup);
+          if (row.data.penyelenggara)
+            fd.append("penyelenggara", row.data.penyelenggara);
+          if (row.data.tahun) fd.append("tahun", row.data.tahun);
+          if (row.data.tanggal) fd.append("tanggal", row.data.tanggal);
+          if (row.data.sertifikat)
+            fd.append("link_gambar_drive", row.data.sertifikat);
+          if (row.data.link_gambar_drive)
+            fd.append("link_gambar_drive", row.data.link_gambar_drive);
           await createCertificate(fd);
           result.certificate.success++;
           break;
