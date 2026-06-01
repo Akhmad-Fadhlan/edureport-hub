@@ -858,7 +858,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
           <View style={styles.coverContent}>
             <Text style={styles.coverStudentName}>{studentName}</Text>
             <View style={styles.coverSemesterLine}>
-              <Text style={styles.coverSemesterText}>{studentClass} Grades | </Text>
+              <Text style={styles.coverSemesterText}>{studentClass} Grade | </Text>
               {semesterParts ? (
                 <>
                   <Text style={styles.coverSemesterText}>{semesterParts.number}</Text>
