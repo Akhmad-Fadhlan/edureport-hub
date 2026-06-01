@@ -1386,10 +1386,6 @@ function VideoPage({ video }: { video: ProjectVideo }) {
 
         <View style={s.competenceBox}>
           <Text style={s.competenceLabel}>COMPETENCE</Text>
-          <Text style={s.competenceText}>
-            Ananda telah membuat 1 video dengan tema tutorial IT untuk membagikan
-            pengetahuan yang telah dikuasai.
-          </Text>
           {video.deskripsi_video ? (
             <Text style={{ ...s.competenceText, marginTop: 6 }}>{video.deskripsi_video}</Text>
           ) : null}
