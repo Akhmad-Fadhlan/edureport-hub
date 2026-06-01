@@ -79,20 +79,24 @@ async function urlToDataUrl(
   const driveId = extractDriveFileId(url);
   if (driveId) return fetchViaProxy(url, proxyBase);
 
+  // Coba fetch langsung dulu (CORS)
   try {
     const res = await fetch(url, { mode: "cors" });
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch (err) {
-    console.error("urlToDataUrl error:", err);
-    return null;
+    if (res.ok) {
+      const blob = await res.blob();
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+  } catch {
+    // CORS gagal, coba via proxy
   }
+
+  // Fallback: lewat proxy (untuk URL eksternal yang blokir CORS)
+  return fetchViaProxy(url, proxyBase);
 }
 
 /* ============================================================================
@@ -214,9 +218,20 @@ function ReportsPage() {
         : null;
 
       // ── 5. Data guru + nama dari user yang login ───────────────────────────
-      const teacherRecord = Array.isArray(currentTeacher.data)
+      // Fetch ulang teacher data secara langsung agar tidak bergantung pada
+      // state hook yang mungkin belum selesai loading saat buildReport dipanggil
+      let teacherRecord = Array.isArray(currentTeacher.data)
         ? currentTeacher.data[0]
         : currentTeacher.data;
+
+      if (!teacherRecord && user?.id) {
+        try {
+          const freshTeacher = await apiGet<any[]>("/teachers", { user_id: user.id });
+          teacherRecord = Array.isArray(freshTeacher) ? freshTeacher[0] : freshTeacher;
+        } catch {
+          // biarkan teacherRecord tetap undefined
+        }
+      }
 
       // Nama TTD = nama user yang sedang login
       const teacherNama: string =
@@ -227,9 +242,7 @@ function ReportsPage() {
       const teacherJabatan: string = "Guru IT";
 
       const ttdRawUrl: string | null = teacherRecord?.tanda_tangan
-        ? teacherRecord.tanda_tangan.startsWith("http")
-          ? teacherRecord.tanda_tangan
-          : null
+        ? teacherRecord.tanda_tangan.trim() || null
         : null;
 
       const ttdDataUrl = await urlToDataUrl(
