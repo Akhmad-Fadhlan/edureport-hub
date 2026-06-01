@@ -795,11 +795,11 @@ export function parseUnifiedCsv(
       callback([]);
       return;
     }
-    const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+    const headers = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
     const rows: UnifiedCsvRow[] = [];
 
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(",").map((v) => v.trim());
+      const values = parseCsvLine(lines[i]).map((v) => v.trim());
       const data: Record<string, string> = {};
       headers.forEach((h, idx) => {
         data[h] = values[idx] ?? "";
@@ -890,8 +890,9 @@ export async function importUnifiedPortfolio(
           if (row.data.link_project)  fd.append("link_file_flyer", row.data.link_project);
           if (row.data.link_file_flyer) fd.append("link_file_flyer", row.data.link_file_flyer);
           // "gambar" di CSV = link_gambar_drive di API
-          if (row.data.gambar)        fd.append("link_gambar_drive", row.data.gambar);
-          if (row.data.link_gambar_drive) fd.append("link_gambar_drive", row.data.link_gambar_drive);
+          // Jika gambar kosong, fallback ke link_project (untuk design yang hanya isi link_project)
+          const gambarUrl = row.data.gambar || row.data.link_gambar_drive || "";
+          if (gambarUrl) fd.append("link_gambar_drive", gambarUrl);
           if (row.type === "design") {
             await createDesignProject(fd);
             result.design.success++;
