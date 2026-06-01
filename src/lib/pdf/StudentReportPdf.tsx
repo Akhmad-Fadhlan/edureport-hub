@@ -915,6 +915,13 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
         </View>
       </Page>
 
+      {/* DIVIDER PAGE (IT REPORT) */}
+      <Page size="A4" style={styles.page}>
+        {data.dividerBgDataUrl && (
+          <Image src={data.dividerBgDataUrl} style={styles.absoluteBg} />
+        )}
+      </Page>
+
       {/* REPORT PAGES */}
       {materialPages.map((pageMaterials, pageIndex) => {
         const isFirst = pageIndex === 0;
