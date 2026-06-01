@@ -330,6 +330,7 @@ function ReportsPage() {
         schoolName: "SMP IDN Boarding School",
         coverBgDataUrl,
         reportFirstBgDataUrl,
+        dividerBgDataUrl,
         // reportLastBgDataUrl tidak dikirim → halaman terakhir putih bersih
       });
     } catch (e) {
