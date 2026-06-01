@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Document,
   Page,
@@ -1108,7 +1109,7 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
     label: string;
     value: number;
     pill: PillKey;
-    Icon: (p: { n?: number }) => JSX.Element;
+    Icon: (p: { n?: number }) => React.ReactElement;
   }[] = [
     { label: "Youtube",       value: summary.ityt,     pill: "red",       Icon: IcoVideo    },
     { label: "Certificates",  value: summary.itc,      pill: "orange",    Icon: IcoCert     },
@@ -1123,7 +1124,7 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
   ];
 
   const pillStyle = (p: PillKey) => {
-    const map: Record<PillKey, object> = {
+    const map: Record<PillKey, any> = {
       red:       s.pillRed,
       orange:    s.pillOrange,
       purple:    s.pillPurple,
