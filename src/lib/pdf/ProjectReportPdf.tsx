@@ -1124,7 +1124,7 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
   ];
 
   const pillStyle = (p: PillKey) => {
-    const map: Record<PillKey, object> = {
+    const map: Record<PillKey, any> = {
       red:       s.pillRed,
       orange:    s.pillOrange,
       purple:    s.pillPurple,
