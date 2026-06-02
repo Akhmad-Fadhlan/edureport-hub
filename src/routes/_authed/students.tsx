@@ -105,23 +105,17 @@ function StudentsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isGuru = user?.role === "guru";
-  // Cabang guru dari token (string seperti "jonggol")
   const guruCabang = user?.cabang ?? null;
 
-  // ── State filter & pagination ────────────────────────────────────────────
-  const [search, setSearch]             = useState("");
+  const [search, setSearch] = useState("");
   const [cabangFilter, setCabangFilter] = useState<string>("all");
-  const [classFilter, setClassFilter]   = useState<string>("all");
-  const [page, setPage]                 = useState(1);
+  const [classFilter, setClassFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
 
-  // ── Build params API ─────────────────────────────────────────────────────
-  // Guru: backend sudah enforce cabang dari token, tapi kita juga kirim
-  // cabang di params agar filter kelas yang muncul di FE juga konsisten.
   const params: Record<string, unknown> = { page, per_page: 20 };
   if (search) params.search = search;
 
   if (isGuru) {
-    // Backend enforce dari token; parameter ini hanya untuk eksplisit
     if (guruCabang) params.cabang = guruCabang;
   } else {
     if (cabangFilter !== "all") params.cabang = cabangFilter;
@@ -133,22 +127,18 @@ function StudentsPage() {
     pagination?: { total: number; per_page: number; current_page: number; last_page: number };
   }>("/students", params);
 
-  // ── Kelas: filter sesuai cabang yang sedang aktif ────────────────────────
   const activeCabang = isGuru ? guruCabang : (cabangFilter !== "all" ? cabangFilter : null);
   const classParams: Record<string, unknown> = activeCabang ? { cabang: activeCabang } : {};
   const { data: classesData } = useApiData<Klass[]>("/classes", classParams);
 
-  // Reset page saat filter berubah
   useEffect(() => { setPage(1); }, [search, cabangFilter, classFilter]);
-  // Reset filter kelas saat cabang berubah (hanya admin)
   useEffect(() => { if (!isGuru) setClassFilter("all"); }, [cabangFilter, isGuru]);
 
-  // ── State form ───────────────────────────────────────────────────────────
-  const [open, setOpen]           = useState(false);
-  const [editing, setEditing]     = useState<Student | null>(null);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Student | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
-  const [saving, setSaving]       = useState(false);
-  const [deleting, setDeleting]   = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const [form, setForm] = useState({
@@ -156,20 +146,18 @@ function StudentsPage() {
     email: "",
     linkedin: "",
     class_id: "",
-    cabang: "",      // string cabang (enum backend)
+    cabang: "",
   });
-  const [photoFile, setPhotoFile]       = useState<File | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [deletePhoto, setDeletePhoto]   = useState(false);
+  const [deletePhoto, setDeletePhoto] = useState(false);
 
-  // Kelas yang ditampilkan di form (filter by cabang yang dipilih di form)
   const formCabang = isGuru ? (guruCabang ?? "") : form.cabang;
   const { data: formClasses } = useApiData<Klass[]>(
     "/classes",
     formCabang ? { cabang: formCabang } : {}
   );
 
-  // ── Buka form tambah ─────────────────────────────────────────────────────
   function openNew() {
     setEditing(null);
     setPhotoFile(null);
@@ -185,7 +173,6 @@ function StudentsPage() {
     setOpen(true);
   }
 
-  // ── Buka form edit ───────────────────────────────────────────────────────
   function openEdit(s: Student) {
     setEditing(s);
     setPhotoFile(null);
@@ -197,7 +184,6 @@ function StudentsPage() {
       class_id: String(s.class_id),
       cabang: s.cabang ?? (isGuru ? (guruCabang ?? "") : ""),
     });
-    // Load preview foto
     if (s.photo) {
       getStudentPhoto(s.photo).then(setPhotoPreview).catch(() => setPhotoPreview(null));
     } else {
@@ -206,7 +192,6 @@ function StudentsPage() {
     setOpen(true);
   }
 
-  // ── Handle pilih foto ────────────────────────────────────────────────────
   function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -227,22 +212,20 @@ function StudentsPage() {
     if (editing?.photo) setDeletePhoto(true);
   }
 
-  // ── Simpan ───────────────────────────────────────────────────────────────
   async function save() {
     if (saving) return;
-    if (!form.nama.trim())  { toast.error("Nama siswa wajib diisi"); return; }
-    if (!form.class_id)     { toast.error("Pilih kelas terlebih dahulu"); return; }
+    if (!form.nama.trim()) { toast.error("Nama siswa wajib diisi"); return; }
+    if (!form.class_id) { toast.error("Pilih kelas terlebih dahulu"); return; }
     if (!isGuru && !form.cabang) { toast.error("Pilih cabang terlebih dahulu"); return; }
 
     setSaving(true);
     setUploadProgress(0);
     try {
       const fd = new FormData();
-      fd.append("nama",     form.nama.trim());
-      fd.append("email",    form.email.trim());
+      fd.append("nama", form.nama.trim());
+      fd.append("email", form.email.trim());
       fd.append("linkedin", form.linkedin.trim());
       fd.append("class_id", form.class_id);
-      // Guru: backend ambil cabang dari token; admin: kirim eksplisit
       if (!isGuru && form.cabang) fd.append("cabang", form.cabang);
       if (deletePhoto) fd.append("delete_photo", "1");
       if (photoFile && photoFile.size > 0) fd.append("photo", photoFile);
@@ -252,8 +235,6 @@ function StudentsPage() {
       };
 
       if (editing) {
-        // Edit = DELETE lama, lalu INSERT baru (pseudo-transaksi)
-        // Step 1: hapus data lama berdasarkan ID yang sedang diedit
         try {
           await apiDelete(`/students/${editing.id}`);
         } catch (delErr: any) {
@@ -263,16 +244,13 @@ function StudentsPage() {
           );
         }
 
-        // Step 2: insert ulang data baru. Jika gagal -> rollback dengan re-insert data lama
         try {
-          // Sertakan ID lama agar tetap konsisten bila backend mengizinkan
           fd.append("id", String(editing.id));
           await api.post("/students", fd, {
             headers: { "Content-Type": "multipart/form-data" },
             onUploadProgress,
           });
         } catch (insErr: any) {
-          // Rollback: coba kembalikan data lama
           try {
             const rollback = new FormData();
             rollback.append("id", String(editing.id));
@@ -315,7 +293,6 @@ function StudentsPage() {
     }
   }
 
-  // ── Hapus ────────────────────────────────────────────────────────────────
   async function confirmDelete() {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -331,10 +308,8 @@ function StudentsPage() {
     }
   }
 
-  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Data Siswa</h1>
@@ -359,7 +334,6 @@ function StudentsPage() {
         </div>
       </div>
 
-      {/* Info banner untuk guru */}
       {isGuru && guruCabang && (
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-sm">
           <Info className="h-4 w-4 flex-shrink-0" />
@@ -370,7 +344,6 @@ function StudentsPage() {
         </div>
       )}
 
-      {/* Filter */}
       <Card className="p-4 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -382,7 +355,6 @@ function StudentsPage() {
           />
         </div>
 
-        {/* Filter cabang: hanya admin/superadmin */}
         {!isGuru && (
           <Select
             value={cabangFilter}
@@ -400,11 +372,7 @@ function StudentsPage() {
           </Select>
         )}
 
-        {/* Filter kelas */}
-        <Select
-          value={classFilter}
-          onValueChange={setClassFilter}
-        >
+        <Select value={classFilter} onValueChange={setClassFilter}>
           <SelectTrigger className="w-[170px]">
             <SelectValue placeholder="Semua Kelas" />
           </SelectTrigger>
@@ -417,7 +385,6 @@ function StudentsPage() {
         </Select>
       </Card>
 
-      {/* Tabel */}
       <Card className="p-0 overflow-hidden">
         <Table>
           <TableHeader>
@@ -493,7 +460,6 @@ function StudentsPage() {
           </TableBody>
         </Table>
 
-        {/* Pagination */}
         {data?.pagination && data.pagination.last_page > 1 && (
           <div className="flex items-center justify-between p-3 border-t text-sm">
             <span className="text-muted-foreground">
@@ -522,7 +488,6 @@ function StudentsPage() {
         )}
       </Card>
 
-      {/* ── Dialog Tambah / Edit ── */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -530,7 +495,6 @@ function StudentsPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-1">
-            {/* Upload Foto */}
             <div className="space-y-2">
               <Label>Foto Siswa</Label>
               <div className="flex items-center gap-4">
@@ -567,7 +531,6 @@ function StudentsPage() {
               </div>
             </div>
 
-            {/* Nama */}
             <div className="space-y-2">
               <Label>Nama Lengkap <span className="text-destructive">*</span></Label>
               <Input
@@ -578,7 +541,6 @@ function StudentsPage() {
               />
             </div>
 
-            {/* Email */}
             <div className="space-y-2">
               <Label>Email</Label>
               <Input
@@ -590,7 +552,6 @@ function StudentsPage() {
               />
             </div>
 
-            {/* LinkedIn */}
             <div className="space-y-2">
               <Label>LinkedIn</Label>
               <Input
@@ -601,7 +562,6 @@ function StudentsPage() {
               />
             </div>
 
-            {/* Cabang — hanya admin/superadmin yang bisa memilih */}
             {isGuru ? (
               <div className="space-y-2">
                 <Label>Cabang</Label>
@@ -631,7 +591,6 @@ function StudentsPage() {
               </div>
             )}
 
-            {/* Kelas */}
             <div className="space-y-2">
               <Label>Kelas <span className="text-destructive">*</span></Label>
               <Select
@@ -658,7 +617,6 @@ function StudentsPage() {
               </Select>
             </div>
 
-            {/* Progress upload */}
             {saving && uploadProgress > 0 && uploadProgress < 100 && (
               <div className="space-y-1">
                 <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -690,7 +648,6 @@ function StudentsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Konfirmasi hapus ── */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
