@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+// routes/_authed/students/import-export.tsx
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,18 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -29,8 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { api, apiPost } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useAuth } from "@/stores/auth-store";
 import { CABANG_LABEL, type Cabang } from "@/lib/cabang";
 import { toast } from "sonner";
@@ -38,12 +27,11 @@ import {
   Download,
   Upload,
   Loader2,
-  CheckCircle2,
-  XCircle,
   FileSpreadsheet,
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  ArrowLeft,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authed/students/import-export")({
@@ -71,20 +59,17 @@ interface ImportResult {
 function convertGoogleDriveToDirectUrl(url: string): string | null {
   if (!url || typeof url !== "string") return null;
   
-  // Sudah direct download link?
   if (url.includes("drive.google.com/uc?export=download") || 
       url.includes("drive.usercontent.google.com")) {
     return url;
   }
   
-  // Format share link: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
   const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
   if (fileIdMatch) {
     const fileId = fileIdMatch[1];
     return `https://drive.google.com/uc?export=download&id=${fileId}`;
   }
   
-  // Format open link: https://drive.google.com/open?id=FILE_ID
   const openIdMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
   if (openIdMatch) {
     const fileId = openIdMatch[1];
@@ -101,9 +86,7 @@ async function downloadImageFromUrl(url: string): Promise<Blob | null> {
     if (!directUrl) return null;
     
     const response = await fetch(directUrl, {
-      headers: {
-        "Cache-Control": "no-cache",
-      },
+      headers: { "Cache-Control": "no-cache" },
     });
     
     if (!response.ok) return null;
@@ -116,9 +99,8 @@ async function downloadImageFromUrl(url: string): Promise<Blob | null> {
   }
 }
 
-// Validasi gambar (ukuran, format)
+// Validasi gambar
 function validateImageBlob(blob: Blob): { valid: boolean; error?: string } {
-  // Validasi format
   const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
   if (!allowedTypes.includes(blob.type)) {
     return { 
@@ -127,7 +109,6 @@ function validateImageBlob(blob: Blob): { valid: boolean; error?: string } {
     };
   }
   
-  // Validasi ukuran (max 2MB = 2 * 1024 * 1024 bytes)
   const maxSize = 2 * 1024 * 1024;
   if (blob.size > maxSize) {
     return { 
@@ -139,28 +120,24 @@ function validateImageBlob(blob: Blob): { valid: boolean; error?: string } {
   return { valid: true };
 }
 
-// Validasi data siswa (sama dengan form manual)
+// Validasi data siswa
 function validateStudentData(data: Record<string, any>, isGuru: boolean, guruCabang: string | null): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   
-  // Validasi nama (wajib)
   if (!data.nama || typeof data.nama !== "string" || !data.nama.trim()) {
     errors.push("Nama siswa wajib diisi");
   }
   
-  // Validasi class_id (wajib)
   if (!data.class_id) {
     errors.push("Kelas wajib dipilih");
   } else if (isNaN(Number(data.class_id))) {
     errors.push("Format kelas tidak valid");
   }
   
-  // Validasi cabang untuk admin (wajib)
   if (!isGuru && !data.cabang) {
     errors.push("Cabang wajib dipilih");
   }
   
-  // Validasi email (opsional tapi format harus benar jika diisi)
   if (data.email && typeof data.email === "string" && data.email.trim()) {
     const emailRegex = /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/;
     if (!emailRegex.test(data.email.trim())) {
@@ -168,7 +145,6 @@ function validateStudentData(data: Record<string, any>, isGuru: boolean, guruCab
     }
   }
   
-  // Validasi linkedin (opsional)
   if (data.linkedin && typeof data.linkedin === "string" && data.linkedin.trim()) {
     if (!data.linkedin.includes("linkedin.com")) {
       errors.push("URL LinkedIn tidak valid (harus dari linkedin.com)");
@@ -178,24 +154,21 @@ function validateStudentData(data: Record<string, any>, isGuru: boolean, guruCab
   return { valid: errors.length === 0, errors };
 }
 
-// Konversi CSV string ke array of objects
+// Parse CSV
 function parseCSV(csvText: string): { headers: string[]; rows: Record<string, any>[] } {
   const lines = csvText.split(/\r?\n/).filter(line => line.trim());
   if (lines.length === 0) {
     throw new Error("File CSV kosong");
   }
   
-  // Parse header (baris pertama)
   const headers = parseCSVLine(lines[0]);
-  
-  // Parse data rows
   const rows: Record<string, any>[] = [];
+  
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i]);
     const row: Record<string, any> = {};
     headers.forEach((header, index) => {
       let value = values[index] || "";
-      // Trim whitespace
       if (typeof value === "string") value = value.trim();
       row[header.toLowerCase()] = value || null;
     });
@@ -232,7 +205,7 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
-// Generate CSV template
+// Generate template CSV
 function generateTemplateCSV(isGuru: boolean, guruCabang: string | null): string {
   const headers = [
     "nama",
@@ -262,7 +235,6 @@ function generateTemplateCSV(isGuru: boolean, guruCabang: string | null): string
     },
   ];
   
-  // Buat CSV content
   const csvRows = [headers.join(",")];
   
   for (const row of exampleRows) {
@@ -283,18 +255,15 @@ function generateTemplateCSV(isGuru: boolean, guruCabang: string | null): string
 // ========== MAIN COMPONENT ==========
 function ImportExportStudentsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isGuru = user?.role === "guru";
   const guruCabang = user?.cabang ?? null;
   
-  // State untuk import
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [showErrorDetails, setShowErrorDetails] = useState(false);
-  
-  // State untuk konfirmasi
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   
   // Download template
   const handleDownloadTemplate = () => {
@@ -318,13 +287,11 @@ function ImportExportStudentsPage() {
       return;
     }
     
-    // Validasi ukuran file (max 10MB)
     if (importFile.size > 10 * 1024 * 1024) {
       toast.error("Ukuran file maksimal 10MB");
       return;
     }
     
-    // Validasi ekstensi file
     if (!importFile.name.endsWith(".csv")) {
       toast.error("Hanya file CSV yang didukung");
       return;
@@ -334,11 +301,9 @@ function ImportExportStudentsPage() {
     setImportResult(null);
     
     try {
-      // Baca file CSV
       const csvText = await importFile.text();
       const { headers, rows } = parseCSV(csvText);
       
-      // Validasi header
       const requiredHeaders = [
         "nama",
         "class_id",
@@ -353,16 +318,14 @@ function ImportExportStudentsPage() {
         throw new Error(`Header yang diperlukan tidak ditemukan: ${missingHeaders.join(", ")}`);
       }
       
-      // Proses setiap baris
       const errors: ImportError[] = [];
       let successCount = 0;
       
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
-        const rowNumber = i + 2; // +2 karena baris 1 adalah header
+        const rowNumber = i + 2;
         
         try {
-          // 1. Validasi data teks
           const validation = validateStudentData(row, isGuru, guruCabang);
           if (!validation.valid) {
             validation.errors.forEach(err => {
@@ -376,23 +339,19 @@ function ImportExportStudentsPage() {
             continue;
           }
           
-          // 2. Proses gambar jika ada
           let photoFile = null;
           let photoError = null;
           
           if (row.photo_url && typeof row.photo_url === "string" && row.photo_url.trim()) {
             try {
-              // Download gambar dari URL
               const imageBlob = await downloadImageFromUrl(row.photo_url);
               if (!imageBlob) {
                 photoError = "Gagal mendownload gambar dari URL yang diberikan";
               } else {
-                // Validasi gambar
                 const imageValidation = validateImageBlob(imageBlob);
                 if (!imageValidation.valid) {
                   photoError = imageValidation.error;
                 } else {
-                  // Convert blob ke File
                   const extension = imageBlob.type.split("/")[1] || "jpg";
                   photoFile = new File([imageBlob], `temp_photo.${extension}`, { type: imageBlob.type });
                 }
@@ -412,7 +371,6 @@ function ImportExportStudentsPage() {
             continue;
           }
           
-          // 3. Siapkan FormData untuk API
           const formData = new FormData();
           formData.append("nama", row.nama.trim());
           if (row.email) formData.append("email", row.email.trim());
@@ -427,7 +385,6 @@ function ImportExportStudentsPage() {
             formData.append("photo", photoFile);
           }
           
-          // 4. Kirim ke API (menggunakan endpoint yang sama dengan input manual)
           await api.post("/students", formData, {
             headers: { "Content-Type": "multipart/form-data" },
           });
@@ -443,7 +400,6 @@ function ImportExportStudentsPage() {
         }
       }
       
-      // Tampilkan hasil
       const result: ImportResult = {
         total: rows.length,
         success: successCount,
@@ -455,8 +411,11 @@ function ImportExportStudentsPage() {
       
       if (errors.length === 0) {
         toast.success(`Berhasil mengimport ${successCount} siswa`);
-        setImportDialogOpen(false);
-        setImportFile(null);
+        setTimeout(() => {
+          setImportDialogOpen(false);
+          setImportFile(null);
+          navigate({ to: "/students" });
+        }, 1500);
       } else {
         toast.warning(`Import selesai: ${successCount} berhasil, ${errors.length} gagal`);
       }
@@ -470,12 +429,23 @@ function ImportExportStudentsPage() {
   
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Import & Export Data Siswa</h1>
-        <p className="text-sm text-muted-foreground">
-          Download template CSV, isi data, lalu import ke sistem
-        </p>
+      {/* Header with Back Button */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate({ to: "/students" })}
+          className="gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Kembali
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold">Import & Export Data Siswa</h1>
+          <p className="text-sm text-muted-foreground">
+            Download template CSV, isi data, lalu import ke sistem
+          </p>
+        </div>
       </div>
       
       {/* Cards */}
@@ -516,12 +486,10 @@ function ImportExportStudentsPage() {
               </p>
             </div>
             <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Import CSV
-                </Button>
-              </DialogTrigger>
+              <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Import CSV
+              </Button>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Import Data Siswa dari CSV</DialogTitle>
@@ -599,7 +567,7 @@ function ImportExportStudentsPage() {
                   )}
                 </div>
                 
-                <DialogFooter>
+                <div className="flex justify-end gap-3 mt-4">
                   <Button variant="outline" onClick={() => {
                     setImportDialogOpen(false);
                     setImportFile(null);
@@ -617,7 +585,7 @@ function ImportExportStudentsPage() {
                       "Import Sekarang"
                     )}
                   </Button>
-                </DialogFooter>
+                </div>
               </DialogContent>
             </Dialog>
           </div>
