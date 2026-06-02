@@ -49,7 +49,7 @@ function LoginPage() {
       <div
         className="relative hidden lg:flex flex-col justify-between p-10 text-white overflow-hidden"
         style={{
-          backgroundImage: `linear-gradient(135deg, oklch(0.32 0.09 245 / 0.82), oklch(0.22 0.08 252 / 0.92)), url(${gedungAsset.url})`,
+          backgroundImage: `linear-gradient(135deg, oklch(0.72 0.13 230 / 0.88), oklch(0.62 0.14 232 / 0.94)), url(${gedungAsset.url})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
