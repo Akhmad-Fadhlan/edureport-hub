@@ -249,10 +249,51 @@ function StudentsPage() {
       };
 
       if (editing) {
-        await api.put(`/students/${editing.id}`, fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-          onUploadProgress,
-        });
+        // Edit = DELETE lama, lalu INSERT baru (pseudo-transaksi)
+        // Step 1: hapus data lama berdasarkan ID yang sedang diedit
+        try {
+          await apiDelete(`/students/${editing.id}`);
+        } catch (delErr: any) {
+          throw new Error(
+            delErr?.response?.data?.message ||
+              "Gagal menghapus data siswa lama. Proses dibatalkan, data lama tetap utuh.",
+          );
+        }
+
+        // Step 2: insert ulang data baru. Jika gagal -> rollback dengan re-insert data lama
+        try {
+          // Sertakan ID lama agar tetap konsisten bila backend mengizinkan
+          fd.append("id", String(editing.id));
+          await api.post("/students", fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+            onUploadProgress,
+          });
+        } catch (insErr: any) {
+          // Rollback: coba kembalikan data lama
+          try {
+            const rollback = new FormData();
+            rollback.append("id", String(editing.id));
+            rollback.append("nama", editing.nama || "");
+            rollback.append("email", (editing as any).email || "");
+            rollback.append("linkedin", (editing as any).linkedin || "");
+            if ((editing as any).class_id)
+              rollback.append("class_id", String((editing as any).class_id));
+            if ((editing as any).cabang)
+              rollback.append("cabang", String((editing as any).cabang));
+            await api.post("/students", rollback, {
+              headers: { "Content-Type": "multipart/form-data" },
+            });
+            throw new Error(
+              insErr?.response?.data?.message ||
+                "Gagal menyimpan data baru. Data lama telah dipulihkan.",
+            );
+          } catch {
+            throw new Error(
+              insErr?.response?.data?.message ||
+                "Gagal menyimpan data baru dan gagal memulihkan data lama. Silakan periksa data siswa.",
+            );
+          }
+        }
       } else {
         await api.post("/students", fd, {
           headers: { "Content-Type": "multipart/form-data" },
