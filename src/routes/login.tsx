@@ -80,11 +80,10 @@ function LoginPage() {
             Kelola Rapor Digital
           </div>
           <h1 className="text-4xl xl:text-5xl font-bold leading-[1.1] tracking-tight">
-            Elegan, Presisi & <span className="text-sky-200">Profesional.</span>
+            Rapor Jagoan IT <span className="text-sky-200">IDNBS</span>
           </h1>
           <p className="mt-4 text-sm xl:text-base opacity-85 max-w-md leading-relaxed">
-            Input nilai, kelola materi, dan generate rapor PDF presisi A4 untuk
-            seluruh siswa dalam satu platform yang tenang dan modern.
+            Kelola nilai siswa jadi lebih mudah
           </p>
         </div>
 
