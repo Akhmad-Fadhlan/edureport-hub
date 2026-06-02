@@ -52,7 +52,9 @@ import {
   X,
   Loader2,
   Info,
+  FileSpreadsheet,
 } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/students")({
   component: StudentsPage,
@@ -101,6 +103,7 @@ function StudentAvatar({ photo, nama }: { photo?: string; nama: string }) {
 // ── Halaman Utama ────────────────────────────────────────────────────────────
 function StudentsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isGuru = user?.role === "guru";
   // Cabang guru dari token (string seperti "jonggol")
   const guruCabang = user?.cabang ?? null;
@@ -341,10 +344,19 @@ function StudentsPage() {
               : "Kelola data siswa semua cabang"}
           </p>
         </div>
-        <Button onClick={openNew}>
-          <Plus className="h-4 w-4 mr-2" />
-          Tambah Siswa
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate({ to: "/students/import-export" })}
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Import/Export
+          </Button>
+          <Button onClick={openNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            Tambah Siswa
+          </Button>
+        </div>
       </div>
 
       {/* Info banner untuk guru */}
