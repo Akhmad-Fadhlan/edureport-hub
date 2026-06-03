@@ -33,6 +33,15 @@ export interface ProjectRobotik {
   deskripsi?: string;
 }
 
+// TAMBAHKAN: interface untuk proyek IoT
+export interface ProjectIoT {
+  judul: string;
+  screenshot?: string | null;
+  kompetensi_siswa?: string;
+  teknologi?: string;
+  deskripsi?: string;
+}
+
 export interface ProjectVideo {
   thumbnail?: string | null;
   qr?: string | null;
@@ -82,6 +91,7 @@ export interface ProjectReportData {
   summary: ProjectSummary;
   designs: ProjectDesign[];
   robotics: ProjectRobotik[];
+  iot: ProjectIoT[];        // TAMBAHKAN: properti iot
   videos: ProjectVideo[];
   mengajar: ProjectMengajar[];
   certificates: ProjectCertificate[];
@@ -1273,31 +1283,14 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
 }
 
 /* ============================================================================
- * PROJECT PAGE
- *
- * Susunan layout:
- *
- *   ┌─────────────────────────────────────────┐
- *   │     Screenshot (gambar langsung,        │
- *   │     tanpa card wrapper, contain)        │
- *   └─────────────────────────────────────────┘
- *   ┌──────────────────┐  ┌───────────────────┐
- *   │ Student          │  │                   │
- *   │ Competence       │  │   Description     │
- *   ├──────────────────┤  │  (flex:1, mengisi │
- *   │ Technology       │  │   sisa lebar)     │
- *   └──────────────────┘  └───────────────────┘
- *
- *  • Kolom kiri (Competence + Technology): lebar mengikuti konten (flexShrink:0)
- *  • Description: flex:1, mengisi seluruh sisa lebar (tidak ada ruang kosong)
- *  • Gambar screenshot: langsung dirender tanpa View pembungkus
+ * PROJECT PAGE (untuk Design, Robotics, dan IoT)
  * ========================================================================== */
 function ProjectPage({
   project,
   type = "IT Project",
   typeLabel = "IT",
 }: {
-  project: ProjectDesign | ProjectRobotik;
+  project: ProjectDesign | ProjectRobotik | ProjectIoT;
   type?: string;
   typeLabel?: string;
 }) {
@@ -1458,7 +1451,6 @@ function MengajarPage({ item }: { item: ProjectMengajar }) {
 /* ============================================================================
  * CERTIFICATES PAGE
  * ========================================================================== */
-// SESUDAH — semua cert dalam 1 halaman, vertikal, centered
 function CertificatesPage({ certs }: { certs: ProjectCertificate[] }) {
   return (
     <Page size="A4" style={s.page}>
@@ -1501,22 +1493,32 @@ export function ProjectReportPdf({ data }: { data: ProjectReportData }) {
     <Document>
       <SummaryPage summary={data.summary} />
 
+      {/* Design Projects */}
       {data.designs.map((d, i) => (
         <ProjectPage key={`design-${i}`} project={d} type="Design Project" typeLabel="ART" />
       ))}
 
+      {/* Robotics Projects (kecuali Smart Home & Smart Greenhouse) */}
       {data.robotics.map((r, i) => (
         <ProjectPage key={`robotik-${i}`} project={r} type="Robotics Project" typeLabel="BOT" />
       ))}
 
+      {/* IOT Projects (Smart Home & Smart Greenhouse) - TAMBAHAN */}
+      {data.iot && data.iot.length > 0 && data.iot.map((r, i) => (
+        <ProjectPage key={`iot-${i}`} project={r} type="IOT Project" typeLabel="IOT" />
+      ))}
+
+      {/* Video Projects */}
       {data.videos.map((v, i) => (
         <VideoPage key={`video-${i}`} video={v} />
       ))}
 
+      {/* Mengajar Projects */}
       {data.mengajar.map((m, i) => (
         <MengajarPage key={`mengajar-${i}`} item={m} />
       ))}
 
+      {/* Certificates */}
       {data.certificates.length > 0 && (
         <CertificatesPage certs={data.certificates} />
       )}
