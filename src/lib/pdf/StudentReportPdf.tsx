@@ -723,8 +723,8 @@ function getScaleColor(nilai: number) {
 
 function splitSemesterLabel(label: string) {
   const lower = label.toLowerCase();
-  if (lower === "1st semester") return { number: "1", suffix: "st", rest: " Semester" };
-  if (lower === "2nd semester") return { number: "2", suffix: "nd", rest: " Semester" };
+  if (lower === "1st Semester") return { number: "1", suffix: "st", rest: " Semester" };
+  if (lower === "2nd Semester") return { number: "2", suffix: "nd", rest: " Semester" };
   return null;
 }
 
