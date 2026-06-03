@@ -16,6 +16,7 @@ import { Route as AuthedUsersRouteImport } from './routes/_authed/users'
 import { Route as AuthedTeachersRouteImport } from './routes/_authed/teachers'
 import { Route as AuthedSubjectsRouteImport } from './routes/_authed/subjects'
 import { Route as AuthedStudentsRouteImport } from './routes/_authed/students'
+import { Route as AuthedStudentsImportExportRouteImport } from './routes/_authed/students/import-export'
 import { Route as AuthedSemestersRouteImport } from './routes/_authed/semesters'
 import { Route as AuthedReportsRouteImport } from './routes/_authed/reports'
 import { Route as AuthedProjectReportsRouteImport } from './routes/_authed/project-reports'
@@ -26,7 +27,6 @@ import { Route as AuthedIndicatorsRouteImport } from './routes/_authed/indicator
 import { Route as AuthedGradesRouteImport } from './routes/_authed/grades'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedClassesRouteImport } from './routes/_authed/classes'
-import { Route as AuthedStudentsImportExportRouteImport } from './routes/_authed/students/import-export'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -62,6 +62,12 @@ const AuthedStudentsRoute = AuthedStudentsRouteImport.update({
   path: '/students',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedStudentsImportExportRoute =
+  AuthedStudentsImportExportRouteImport.update({
+    id: '/students/import-export',
+    path: '/students/import-export',
+    getParentRoute: () => AuthedStudentsRoute,
+  } as any)
 const AuthedSemestersRoute = AuthedSemestersRouteImport.update({
   id: '/semesters',
   path: '/semesters',
@@ -112,12 +118,6 @@ const AuthedClassesRoute = AuthedClassesRouteImport.update({
   path: '/classes',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedStudentsImportExportRoute =
-  AuthedStudentsImportExportRouteImport.update({
-    id: '/import-export',
-    path: '/import-export',
-    getParentRoute: () => AuthedStudentsRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -133,10 +133,10 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AuthedReportsRoute
   '/semesters': typeof AuthedSemestersRoute
   '/students': typeof AuthedStudentsRouteWithChildren
+  '/students/import-export': typeof AuthedStudentsImportExportRoute
   '/subjects': typeof AuthedSubjectsRoute
   '/teachers': typeof AuthedTeachersRoute
   '/users': typeof AuthedUsersRoute
-  '/students/import-export': typeof AuthedStudentsImportExportRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -152,10 +152,10 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthedReportsRoute
   '/semesters': typeof AuthedSemestersRoute
   '/students': typeof AuthedStudentsRouteWithChildren
+  '/students/import-export': typeof AuthedStudentsImportExportRoute
   '/subjects': typeof AuthedSubjectsRoute
   '/teachers': typeof AuthedTeachersRoute
   '/users': typeof AuthedUsersRoute
-  '/students/import-export': typeof AuthedStudentsImportExportRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -173,10 +173,10 @@ export interface FileRoutesById {
   '/_authed/reports': typeof AuthedReportsRoute
   '/_authed/semesters': typeof AuthedSemestersRoute
   '/_authed/students': typeof AuthedStudentsRouteWithChildren
+  '/_authed/students/import-export': typeof AuthedStudentsImportExportRoute
   '/_authed/subjects': typeof AuthedSubjectsRoute
   '/_authed/teachers': typeof AuthedTeachersRoute
   '/_authed/users': typeof AuthedUsersRoute
-  '/_authed/students/import-export': typeof AuthedStudentsImportExportRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -194,10 +194,10 @@ export interface FileRouteTypes {
     | '/reports'
     | '/semesters'
     | '/students'
+    | '/students/import-export'
     | '/subjects'
     | '/teachers'
     | '/users'
-    | '/students/import-export'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -213,10 +213,10 @@ export interface FileRouteTypes {
     | '/reports'
     | '/semesters'
     | '/students'
+    | '/students/import-export'
     | '/subjects'
     | '/teachers'
     | '/users'
-    | '/students/import-export'
   id:
     | '__root__'
     | '/'
@@ -233,10 +233,10 @@ export interface FileRouteTypes {
     | '/_authed/reports'
     | '/_authed/semesters'
     | '/_authed/students'
+    | '/_authed/students/import-export'
     | '/_authed/subjects'
     | '/_authed/teachers'
     | '/_authed/users'
-    | '/_authed/students/import-export'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -295,6 +295,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/students'
       preLoaderRoute: typeof AuthedStudentsRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/_authed/students/import-export': {
+      id: '/_authed/students/import-export'
+      path: '/students/import-export'
+      fullPath: '/students/import-export'
+      preLoaderRoute: typeof AuthedStudentsImportExportRouteImport
+      parentRoute: typeof AuthedStudentsRoute
     }
     '/_authed/semesters': {
       id: '/_authed/semesters'
@@ -366,27 +373,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedClassesRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/students/import-export': {
-      id: '/_authed/students/import-export'
-      path: '/import-export'
-      fullPath: '/students/import-export'
-      preLoaderRoute: typeof AuthedStudentsImportExportRouteImport
-      parentRoute: typeof AuthedStudentsRoute
-    }
   }
 }
-
-interface AuthedStudentsRouteChildren {
-  AuthedStudentsImportExportRoute: typeof AuthedStudentsImportExportRoute
-}
-
-const AuthedStudentsRouteChildren: AuthedStudentsRouteChildren = {
-  AuthedStudentsImportExportRoute: AuthedStudentsImportExportRoute,
-}
-
-const AuthedStudentsRouteWithChildren = AuthedStudentsRoute._addFileChildren(
-  AuthedStudentsRouteChildren,
-)
 
 interface AuthedRouteChildren {
   AuthedClassesRoute: typeof AuthedClassesRoute
@@ -424,6 +412,17 @@ const AuthedRouteChildren: AuthedRouteChildren = {
 
 const AuthedRouteWithChildren =
   AuthedRoute._addFileChildren(AuthedRouteChildren)
+
+interface AuthedStudentsRouteChildren {
+  AuthedStudentsImportExportRoute: typeof AuthedStudentsImportExportRoute
+}
+
+const AuthedStudentsRouteChildren: AuthedStudentsRouteChildren = {
+  AuthedStudentsImportExportRoute: AuthedStudentsImportExportRoute,
+}
+
+const AuthedStudentsRouteWithChildren =
+  AuthedStudentsRoute._addFileChildren(AuthedStudentsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
