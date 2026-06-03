@@ -678,7 +678,7 @@ function TeachingTab({ studentId, semesterId }: { studentId: number; semesterId:
         <Card className="p-8 text-center text-muted-foreground text-sm">Belum ada kegiatan mengajar.</Card>
       ) : (
         <div className="grid gap-3">
-          {items.map((item) => {
+        {[...items].reverse().map((item) => {
             const img1 = resolveImageUrl(item.foto_mengajar_1, item.link_foto_1);
             const img2 = resolveImageUrl(item.foto_mengajar_2, item.link_foto_2);
             return (
