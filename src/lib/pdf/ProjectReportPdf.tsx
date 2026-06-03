@@ -1,4 +1,4 @@
-import React from "react"; 
+import React from "react";
 import {
   Document,
   Page,
@@ -1110,7 +1110,7 @@ function CoverPage({ name }: { name: string }) {
 }
 
 /* ============================================================================
- * SUMMARY PAGE
+ * SUMMARY PAGE - TETAP SAMA (TIDAK DIUBAH)
  * ========================================================================== */
 function SummaryPage({ summary }: { summary: ProjectSummary }) {
   type PillKey = "red" | "orange" | "purple" | "blue" | "pink" | "indigoBlue" | "green" | "gray";
@@ -1270,7 +1270,6 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
                     <Text style={pillStyle(b.pill)}>{b.value}</Text>
                   </View>
                 ))}
-                {/* spacer untuk baris terakhir yang hanya 2 item */}
                 {rowIdx === 2 && <View style={{ flex: 2, marginLeft: 8 }} />}
               </View>
             ))}
@@ -1306,7 +1305,7 @@ function ProjectPage({
         </View>
         <Text style={s.projectSubtitle}>{project.judul}</Text>
 
-        {/* Screenshot — gambar langsung, tanpa card/View pembungkus */}
+        {/* Screenshot */}
         {project.screenshot ? (
           <Image src={project.screenshot} style={s.screenshotImg} />
         ) : (
@@ -1316,21 +1315,19 @@ function ProjectPage({
         {/* Bottom: kolom kiri (Competence + Technology) | kolom kanan (Description) */}
         <View style={{ flexDirection: "row", alignItems: "stretch" }}>
 
-          {/* Kolom kiri — lebar tepat setengah halaman */}
+          {/* Kolom kiri */}
           <View style={{ width: "50%", marginRight: 10, flexShrink: 0 }}>
-            {/* Student Competence */}
             <View style={s.competenceCard}>
               <Text style={s.cardTitle}>Student Competence</Text>
               <Text style={s.cardText}>{project.kompetensi_siswa || "-"}</Text>
             </View>
-            {/* Technology */}
             <View style={s.technologyCard}>
               <Text style={s.cardTitle}>Technology</Text>
               <Text style={s.cardText}>{project.teknologi || "-"}</Text>
             </View>
           </View>
 
-          {/* Description — flex:1 mengisi seluruh sisa lebar, tinggi stretch */}
+          {/* Description */}
           <View style={[s.descriptionCard, { alignSelf: "stretch" }]}>
             <Text style={s.cardTitle}>Description</Text>
             <Text style={s.cardText}>{project.deskripsi || "-"}</Text>
@@ -1491,6 +1488,7 @@ function CertificatesPage({ certs }: { certs: ProjectCertificate[] }) {
 export function ProjectReportPdf({ data }: { data: ProjectReportData }) {
   return (
     <Document>
+      {/* Summary Page - TIDAK DIUBAH */}
       <SummaryPage summary={data.summary} />
 
       {/* Design Projects */}
