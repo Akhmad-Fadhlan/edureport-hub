@@ -1164,12 +1164,12 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
                   Tuntas
                 </Text>
               ) : (
-                <>
+                <View>
                   <Text style={s.keteranganValue}>{summary.ittuntas}</Text>
                   <Text style={{ fontSize: 14, fontFamily: "Helvetica-Bold", color: C.text, textAlign: "center" }}>
                     Tuntas
                   </Text>
-                </>
+                </View>
               )}
             </View>
 
