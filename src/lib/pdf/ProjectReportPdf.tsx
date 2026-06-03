@@ -45,7 +45,9 @@ export interface ProjectMengajar {
   foto1?: string | null;
   foto2?: string | null;
   lokasi?: string;
-  tanggal?: string | Date | number;
+  tanggal?: string;
+  tema?: string;
+  jumlah_peserta?: number;
   cerita_siswa?: string;
   testimoni_peserta?: string;
 }
@@ -53,7 +55,11 @@ export interface ProjectMengajar {
 export interface ProjectCertificate {
   gambar?: string | null;
   lingkup?: string;
-  tanggal?: string | Date | number;
+  tanggal?: string;
+  tema?: string;
+}
+
+export interface ProjectSummary {
   nama: string;
   itpt: number;
   itpb: number;
@@ -79,45 +85,6 @@ export interface ProjectReportData {
   videos: ProjectVideo[];
   mengajar: ProjectMengajar[];
   certificates: ProjectCertificate[];
-}
-
-/* ============================================================================
- * DATE HELPER
- * ========================================================================== */
-
-/**
- * Safely formats a date value (string, Date, number/timestamp) into
- * a human-readable "DD MMM YYYY" string (e.g. "03 Jun 2026").
- * Returns "-" if the value is null/undefined/invalid.
- */
-function formatTanggal(value?: string | Date | number | null): string {
-  if (value === null || value === undefined || value === "") return "-";
-
-  let date: Date;
-
-  if (value instanceof Date) {
-    date = value;
-  } else if (typeof value === "number") {
-    // Handle Excel serial dates (typically < 100000) vs JS timestamps
-    if (value < 100000) {
-      // Excel serial date: days since 1900-01-01 (with Lotus 1-2-3 leap-year bug offset)
-      const excelEpoch = new Date(1899, 11, 30);
-      date = new Date(excelEpoch.getTime() + value * 86400000);
-    } else {
-      date = new Date(value);
-    }
-  } else {
-    // string — try parsing directly
-    date = new Date(value);
-  }
-
-  if (isNaN(date.getTime())) return String(value); // fallback: show raw value
-
-  return date.toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 /* ============================================================================
@@ -1197,12 +1164,12 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
                   Tuntas
                 </Text>
               ) : (
-                <View>
+                <>
                   <Text style={s.keteranganValue}>{summary.ittuntas}</Text>
                   <Text style={{ fontSize: 14, fontFamily: "Helvetica-Bold", color: C.text, textAlign: "center" }}>
                     Tuntas
                   </Text>
-                </View>
+                </>
               )}
             </View>
 
@@ -1408,9 +1375,9 @@ function VideoPage({ video }: { video: ProjectVideo }) {
         <View style={s.ytRow}>
           <View style={s.ytLogoBox}>
             <Text style={s.ytLogoText}>YouTube</Text>
-            {video.qr ? (
+            {video.qr && (
               <Image src={video.qr} style={{ width: 40, height: 40, marginTop: 4 }} />
-            ) : null}
+            )}
           </View>
           <View style={s.ytTitleBox}>
             <Text style={s.ytLabel}>VIDEO TITLE</Text>
@@ -1459,7 +1426,7 @@ function MengajarPage({ item }: { item: ProjectMengajar }) {
         <View style={s.metaRow}>
           {[
             { label: "Lokasi",  value: item.lokasi },
-            { label: "Tanggal", value: formatTanggal(item.tanggal) },
+            { label: "Tanggal", value: item.tanggal },
             { label: "Tema",    value: item.tema },
             { label: "Peserta", value: item.jumlah_peserta ? `${item.jumlah_peserta} Orang` : undefined },
           ]
@@ -1514,7 +1481,7 @@ function CertificatesPage({ certs }: { certs: ProjectCertificate[] }) {
               </View>
               <Text style={s.certTema}>{cert.tema || "(Tanpa tema)"}</Text>
               <Text style={s.certMeta}>
-                {[cert.lingkup, formatTanggal(cert.tanggal)].filter(Boolean).join(" • ")}
+                {[cert.lingkup, cert.tanggal].filter(Boolean).join(" • ")}
               </Text>
             </View>
           ))}
@@ -1550,9 +1517,9 @@ export function ProjectReportPdf({ data }: { data: ProjectReportData }) {
         <MengajarPage key={`mengajar-${i}`} item={m} />
       ))}
 
-      {data.certificates.length > 0 ? (
+      {data.certificates.length > 0 && (
         <CertificatesPage certs={data.certificates} />
-      ) : null}
+      )}
     </Document>
   );
 }
