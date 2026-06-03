@@ -722,8 +722,9 @@ function getScaleColor(nilai: number) {
 }
 
 function splitSemesterLabel(label: string) {
-  if (label === "1st Semester") return { number: "1", suffix: "st ", rest: " Semester" };
-  if (label === "2nd Semester") return { number: "2", suffix: "nd ", rest: " Semester" };
+  const lower = label.toLowerCase();
+  if (lower === "1st semester") return { number: "1", suffix: "st", rest: " Semester" };
+  if (lower === "2nd semester") return { number: "2", suffix: "nd", rest: " Semester" };
   return null;
 }
 
@@ -866,11 +867,11 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
             <View style={styles.coverSemesterLine}>
               <Text style={styles.coverSemesterText}>{studentClass} Grade | </Text>
               {semesterParts ? (
-                <>
+                <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
                   <Text style={styles.coverSemesterText}>{semesterParts.number}</Text>
                   <Text style={styles.coverSemesterSuffix}>{semesterParts.suffix}</Text>
                   <Text style={styles.coverSemesterText}>{semesterParts.rest}</Text>
-                </>
+                </View>
               ) : (
                 <Text style={styles.coverSemesterText}>{semesterLabel}</Text>
               )}
@@ -1005,7 +1006,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
                 {/* Last page: Comment + Skala Nilai + Teacher Signature */}
                 {isLast && (
-                  <>
+                  <View>
                     {/* Comment */}
                     <View style={styles.commentOuter}>
                       <View style={styles.commentHeader}>
@@ -1076,7 +1077,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                         </Text>
                       </View>
                     </View>
-                  </>
+                  </View>
                 )}
               </View>
 
