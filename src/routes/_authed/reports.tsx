@@ -60,13 +60,19 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
+function normalizePdfImageDataUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const normalized = value.replace("data:image\\/", "data:image/").trim();
+  return /^data:image\/(png|jpe?g);base64,/i.test(normalized) ? normalized : null;
+}
+
 async function fetchViaProxy(rawUrl: string, proxyBase: string): Promise<string | null> {
   try {
     const proxyUrl = `${proxyBase}?url=${encodeURIComponent(rawUrl)}&format=jpeg`;
     const res = await fetch(proxyUrl);
     if (!res.ok) return null;
     const json = await res.json();
-    if (json?.success && typeof json?.data === "string") return json.data;
+    if (json?.success && typeof json?.data === "string") return normalizePdfImageDataUrl(json.data);
     return null;
   } catch (err) {
     console.error("fetchViaProxy error:", err);
@@ -79,7 +85,7 @@ async function urlToDataUrl(
   proxyBase = "/api/proxy-image",
 ): Promise<string | null> {
   if (!url) return null;
-  if (url.startsWith("data:")) return url;
+  if (url.startsWith("data:")) return normalizePdfImageDataUrl(url);
 
   // Konversi Google Drive → lh3.googleusercontent.com terlebih dahulu
   const directUrl = toDirectImageUrl(url);
@@ -90,7 +96,7 @@ async function urlToDataUrl(
     try {
       const res = await fetch(directUrl, { credentials: "include" });
       if (!res.ok) return null;
-      return blobToDataUrl(await res.blob());
+      return normalizePdfImageDataUrl(await blobToDataUrl(await res.blob()));
     } catch (err) {
       console.error("urlToDataUrl (internal) error:", err);
       return null;
@@ -100,7 +106,7 @@ async function urlToDataUrl(
   // Coba fetch langsung (works untuk lh3.googleusercontent.com & URL publik lain)
   try {
     const res = await fetch(directUrl, { mode: "cors" });
-    if (res.ok) return blobToDataUrl(await res.blob());
+    if (res.ok) return normalizePdfImageDataUrl(await blobToDataUrl(await res.blob()));
   } catch {
     // CORS gagal → coba via proxy
   }
