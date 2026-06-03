@@ -1057,7 +1057,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                       {/* Right: Teacher Signature */}
                       <View style={styles.signatureSection}>
                         <Text style={styles.signatureDate}>
-                          {"19 Juni 2026"}
+                          {data.generatedDate || "Tanggal"}
                         </Text>
 
                         {ttdUrl ? (
