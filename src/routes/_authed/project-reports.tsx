@@ -451,6 +451,10 @@ function ProjectReportsPage() {
 // SET PDF DATA - TIDAK MENGUBAH SUMMARY DARI DATABASE
 // =====================================================
 
+// =====================================================
+// SET PDF DATA - LANGSUNG PAKAI NILAI DARI DATABASE
+// =====================================================
+
 setPdfData({
   summary: {
     nama: studentName,
@@ -464,16 +468,17 @@ setPdfData({
     itm: Number(summary.total_mengajar) || 0,
     itb: Number(summary.total_buku) || 0,
     itl: Number(summary.total_lomba_it) || 0,
-    // ✅ LANGSUNG AMBIL DARI DATABASE, TIDAK DIHITUNG ULANG
-    itr: Number(summary.total_robotik) || 0,     // ← dari database
-    itd: Number(summary.total_desain) || 0,
-    itg: Number((summary as any).total_game) || 8,
+    
+    // ✅ PAKAI NILAI DARI DATABASE, JANGAN DIHITUNG ULANG
+    itr: Number(summary.total_robotik) || 0,     // ← database
+    itd: Number(summary.total_desain) || 0,      // ← database
+    itg: Number((summary as any).total_game) || 0,
     itw: Number((summary as any).total_website) || 1,
-    iti: Number((summary as any).total_iot) || 0, // ← dari database
+    iti: Number((summary as any).total_iot) || 0, // ← database (jika ada field ini)
   },
   designs: designsWithImg,
-  robotics: robotikProjects,   // hasil filter untuk halaman Robotics Projects
-  iot: iotProjects,             // hasil filter untuk halaman IOT Projects
+  robotics: robotikProjects,   // untuk tampilan halaman (filter berdasarkan judul)
+  iot: iotProjects,             // untuk tampilan halaman (filter berdasarkan judul)
   videos: videosWithThumb,
   mengajar: teachingsWithPhotos,
   certificates: certsWithImg,
