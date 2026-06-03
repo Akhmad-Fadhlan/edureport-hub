@@ -631,17 +631,23 @@ const styles = StyleSheet.create({
 function toDirectImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
 
-  const driveFileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
+  const normalized = url.replace("data:image\\/", "data:image/").trim();
+
+  if (normalized.startsWith("data:")) {
+    return /^data:image\/(png|jpe?g);base64,/i.test(normalized) ? normalized : null;
+  }
+
+  const driveFileMatch = normalized.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
   if (driveFileMatch) {
     return `https://lh3.googleusercontent.com/d/${driveFileMatch[1]}`;
   }
 
-  const driveIdMatch = url.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([^&]+)/);
+  const driveIdMatch = normalized.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([^&]+)/);
   if (driveIdMatch) {
     return `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}`;
   }
 
-  return url;
+  return normalized;
 }
 
 function truncateText(text: string, maxLength = 26): string {
