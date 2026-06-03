@@ -855,7 +855,7 @@ function ProjectTab({ type, studentId, semesterId }: { type: ProjectType; studen
         <Card className="p-8 text-center text-muted-foreground text-sm">Belum ada karya {label.toLowerCase()}.</Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {items.map((item) => {
+      {[...items].reverse().map((item) => {
             const imgUrl = resolveImageUrl(item.gambar_proyek, item.link_gambar_drive);
             return (
               <Card key={item.id} className="overflow-hidden">
