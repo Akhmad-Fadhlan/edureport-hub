@@ -1,4 +1,4 @@
-import React from "react"; 
+import React from "react";
 import {
   Document,
   Page,
@@ -1110,7 +1110,8 @@ function CoverPage({ name }: { name: string }) {
 }
 
 /* ============================================================================
- * SUMMARY PAGE - TETAP SAMA (TIDAK DIUBAH)
+ * SUMMARY PAGE - TETAP MENGGUNAKAN DATA DARI DATABASE
+ * (summary.itr untuk Robotic, summary.iti untuk IoT)
  * ========================================================================== */
 function SummaryPage({ summary }: { summary: ProjectSummary }) {
   type PillKey = "red" | "orange" | "purple" | "blue" | "pink" | "indigoBlue" | "green" | "gray";
@@ -1127,6 +1128,7 @@ function SummaryPage({ summary }: { summary: ProjectSummary }) {
     { label: "Website",       value: summary.itw ?? 0, pill: "blue",      Icon: IcoWebsite  },
     { label: "IDN Mengajar",  value: summary.itm,      pill: "indigoBlue",Icon: IcoMengajar },
     { label: "Karya Buku",    value: summary.itb,      pill: "pink",      Icon: IcoBuku     },
+    // AMBIL DARI DATABASE: summary.itr dan summary.iti
     { label: "Robotic",       value: summary.itr,      pill: "indigoBlue",Icon: IcoRobot    },
     { label: "IoT",           value: summary.iti ?? 0, pill: "green",     Icon: IcoIoT      },
     { label: "Competitions",  value: summary.itl,      pill: "gray",      Icon: IcoLomba    },
@@ -1488,7 +1490,7 @@ function CertificatesPage({ certs }: { certs: ProjectCertificate[] }) {
 export function ProjectReportPdf({ data }: { data: ProjectReportData }) {
   return (
     <Document>
-      {/* Summary Page - TIDAK DIUBAH */}
+      {/* Summary Page - data dari database (summary.itr & summary.iti) */}
       <SummaryPage summary={data.summary} />
 
       {/* Design Projects */}
