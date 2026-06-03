@@ -447,33 +447,37 @@ function ProjectReportsPage() {
       // SET PDF DATA DENGAN NILAI YANG DIHITUNG ULANG
       // =====================================================
       
-      setPdfData({
-        summary: {
-          nama: studentName,
-          itpt: Number(summary.total_tercapai) || 0,
-          itpb: Number(summary.belum_tercapai) || 0,
-          itsl: Number(summary.selesai) || 0,
-          itbl: Number(summary.belum_selesai) || 0,
-          ittuntas: Number(summary.tuntas) || 0,
-          ityt: Number(summary.total_video_youtube) || 0,
-          itc: Number(summary.total_sertifikat) || 0,
-          itm: Number(summary.total_mengajar) || 0,
-          itb: Number(summary.total_buku) || 0,
-          itl: Number(summary.total_lomba_it) || 0,
-          // GANTI: pakai hasil filter, bukan dari summary
-          itr: totalRobotik,      // total robotik (hasil filter)
-          itd: Number(summary.total_desain) || 0,
-          itg: Number((summary as any).total_game) || 8,
-          itw: Number((summary as any).total_website) || 1,
-          iti: totalIot,          // total IoT (hasil filter)
-        },
-        designs: designsWithImg,
-        robotics: robotikProjects,   // hanya proyek robotik
-        iot: iotProjects,             // proyek IoT (Smart Home, Smart Greenhouse)
-        videos: videosWithThumb,
-        mengajar: teachingsWithPhotos,
-        certificates: certsWithImg,
-      });
+// =====================================================
+// SET PDF DATA - TIDAK MENGUBAH SUMMARY DARI DATABASE
+// =====================================================
+
+setPdfData({
+  summary: {
+    nama: studentName,
+    itpt: Number(summary.total_tercapai) || 0,
+    itpb: Number(summary.belum_tercapai) || 0,
+    itsl: Number(summary.selesai) || 0,
+    itbl: Number(summary.belum_selesai) || 0,
+    ittuntas: Number(summary.tuntas) || 0,
+    ityt: Number(summary.total_video_youtube) || 0,
+    itc: Number(summary.total_sertifikat) || 0,
+    itm: Number(summary.total_mengajar) || 0,
+    itb: Number(summary.total_buku) || 0,
+    itl: Number(summary.total_lomba_it) || 0,
+    // ✅ LANGSUNG AMBIL DARI DATABASE, TIDAK DIHITUNG ULANG
+    itr: Number(summary.total_robotik) || 0,     // ← dari database
+    itd: Number(summary.total_desain) || 0,
+    itg: Number((summary as any).total_game) || 8,
+    itw: Number((summary as any).total_website) || 1,
+    iti: Number((summary as any).total_iot) || 0, // ← dari database
+  },
+  designs: designsWithImg,
+  robotics: robotikProjects,   // hasil filter untuk halaman Robotics Projects
+  iot: iotProjects,             // hasil filter untuk halaman IOT Projects
+  videos: videosWithThumb,
+  mengajar: teachingsWithPhotos,
+  certificates: certsWithImg,
+});
 
       toast.success("Rapor project berhasil digenerate!");
     } catch (e) {
