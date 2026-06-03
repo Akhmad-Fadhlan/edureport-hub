@@ -472,7 +472,7 @@ setPdfData({
     // ✅ PAKAI NILAI DARI DATABASE, JANGAN DIHITUNG ULANG
     itr: Number(summary.total_robotik) || 0,     // ← database
     itd: Number(summary.total_desain) || 0,      // ← database
-    itg: Number((summary as any).total_game) || 0,
+    itg: Number((summary as any).total_game) || 8,
     itw: Number((summary as any).total_website) || 1,
     iti: Number((summary as any).total_iot) || 0, // ← database (jika ada field ini)
   },
