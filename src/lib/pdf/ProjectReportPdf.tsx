@@ -1375,9 +1375,9 @@ function VideoPage({ video }: { video: ProjectVideo }) {
         <View style={s.ytRow}>
           <View style={s.ytLogoBox}>
             <Text style={s.ytLogoText}>YouTube</Text>
-            {video.qr && (
+            {video.qr ? (
               <Image src={video.qr} style={{ width: 40, height: 40, marginTop: 4 }} />
-            )}
+            ) : null}
           </View>
           <View style={s.ytTitleBox}>
             <Text style={s.ytLabel}>VIDEO TITLE</Text>
@@ -1517,9 +1517,9 @@ export function ProjectReportPdf({ data }: { data: ProjectReportData }) {
         <MengajarPage key={`mengajar-${i}`} item={m} />
       ))}
 
-      {data.certificates.length > 0 && (
+      {data.certificates.length > 0 ? (
         <CertificatesPage certs={data.certificates} />
-      )}
+      ) : null}
     </Document>
   );
 }
