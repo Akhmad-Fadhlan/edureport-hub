@@ -858,9 +858,9 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
     <Document>
       {/* COVER PAGE */}
       <Page size="A4" style={styles.page}>
-        {data.coverBgDataUrl && (
+        {data.coverBgDataUrl ? (
           <Image src={data.coverBgDataUrl} style={styles.absoluteBg} fixed />
-        )}
+        ) : null}
         <View style={styles.pageContent}>
           <View style={styles.coverContent}>
             <Text style={styles.coverStudentName}>{studentName}</Text>
@@ -924,9 +924,9 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
       {/* DIVIDER PAGE (IT REPORT) */}
       <Page size="A4" style={styles.page} wrap={false}>
-        {data.dividerBgDataUrl && (
+        {data.dividerBgDataUrl ? (
           <Image src={data.dividerBgDataUrl} style={styles.absoluteBg} fixed />
-        )}
+        ) : null}
       </Page>
 
       {/* REPORT PAGES */}
@@ -938,7 +938,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
         return (
           <Page key={pageIndex} size="A4" style={styles.page} wrap={false}>
-            {bgUrl && <Image src={bgUrl} style={styles.absoluteBg} fixed />}
+            {bgUrl ? <Image src={bgUrl} style={styles.absoluteBg} fixed /> : null}
 
             <View style={styles.pageContent}>
               <View
@@ -949,7 +949,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 ]}
               >
                 {/* Student Card - only on first page */}
-                {isFirst && (
+                {isFirst ? (
                   <View style={styles.studentCard}>
                     <View style={styles.scLeft}>
                       <View style={styles.scPhotoWrap}>
@@ -966,11 +966,11 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                         <Text style={styles.detailText}>
                           {truncateText(data.student.email)}
                         </Text>
-                        {data.student.linkedin && (
+                        {data.student.linkedin ? (
                           <Text style={styles.detailText}>
                             {truncateText(data.student.linkedin)}
                           </Text>
-                        )}
+                        ) : null}
                       </View>
                     </View>
                     <View style={styles.scRight}>
@@ -980,7 +980,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                       </View>
                     </View>
                   </View>
-                )}
+                ) : null}
 
                 {/* Material Cards */}
                 {pageMaterials.map((material) => {
@@ -1005,7 +1005,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 })}
 
                 {/* Last page: Comment + Skala Nilai + Teacher Signature */}
-                {isLast && (
+                {isLast ? (
                   <View>
                     {/* Comment */}
                     <View style={styles.commentOuter}>
@@ -1058,7 +1058,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                       {/* Right: Teacher Signature */}
                       <View style={styles.signatureSection}>
                         <Text style={styles.signatureDate}>
-                          {data.generatedDate}
+                          {data.generatedDate || "Tanggal"}
                         </Text>
 
                         {ttdUrl ? (
@@ -1078,7 +1078,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                       </View>
                     </View>
                   </View>
-                )}
+                ) : null}
               </View>
 
               <Text
