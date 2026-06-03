@@ -21,6 +21,7 @@ import {
 import coverBgUrlikhwan from "@/assets/cover-bg1.png";
 import coverBgUrlakhwat from "@/assets/cover-bg2.png";
 import reportFirstBgUrl from "@/assets/report-first.png";
+import dividerBgUrl from "@/assets/report-divider.png";
 
 export const Route = createFileRoute("/_authed/reports")({
   component: ReportsPage,
@@ -286,9 +287,10 @@ function ReportsPage() {
       const isAkhwat = selectedClass?.cabang?.toLowerCase() === "akhwat";
       const activeCoverBgUrl = isAkhwat ? coverBgUrlakhwat : coverBgUrlikhwan;
 
-      const [coverBgDataUrl, reportFirstBgDataUrl] = await Promise.all([
+      const [coverBgDataUrl, reportFirstBgDataUrl, dividerBgDataUrl] = await Promise.all([
         urlToDataUrl(activeCoverBgUrl),
         urlToDataUrl(reportFirstBgUrl),
+        urlToDataUrl(dividerBgUrl),
         // reportLastBgUrl TIDAK di-fetch — halaman terakhir putih bersih
       ]);
 
@@ -328,6 +330,7 @@ function ReportsPage() {
         schoolName: "SMP IDN Boarding School",
         coverBgDataUrl,
         reportFirstBgDataUrl,
+        dividerBgDataUrl,
         // reportLastBgDataUrl tidak dikirim → halaman terakhir putih bersih
       });
     } catch (e) {
