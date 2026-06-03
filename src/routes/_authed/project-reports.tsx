@@ -87,7 +87,6 @@ function extractGoogleDriveFileId(url: string): string | null {
 
 /**
  * Fetch gambar dari Google Drive via proxy
- * Menggunakan fetch langsung untuk menghindari double /api/ prefix
  */
 async function fetchViaProxy(url: string): Promise<string | null> {
   try {
@@ -97,7 +96,6 @@ async function fetchViaProxy(url: string): Promise<string | null> {
       return null;
     }
     
-    // Gunakan fetch langsung ke endpoint proxy
     const proxyUrl = `https://rapor.codestechno.com/api/proxy-image?url=https://drive.google.com/file/d/${fileId}/view&format=jpeg`;
     
     console.log('Fetching via proxy:', proxyUrl);
@@ -116,7 +114,6 @@ async function fetchViaProxy(url: string): Promise<string | null> {
     const result = await response.json();
     console.log('Proxy response success:', !!result.success);
     
-    // Response dari backend: { success: true, data: "data:image/png;base64,..." }
     if (result.success && result.data) {
       const dataUrl = result.data;
       if (typeof dataUrl === 'string' && dataUrl.startsWith('data:image/')) {
@@ -135,7 +132,6 @@ async function fetchViaProxy(url: string): Promise<string | null> {
 
 /**
  * Fetch URL biasa (bukan Google Drive) langsung dari browser menjadi data URL.
- * Pakai credentials: "omit" agar tidak konflik dengan CORS wildcard (*).
  */
 async function urlToDataUrl(url: string | null | undefined): Promise<string | null> {
   if (!url) return null;
@@ -332,7 +328,6 @@ function ProjectReportsPage() {
         "Siswa";
 
       // Resolve design screenshots
-      // Priority: link_file_flyer → gambar_proyek (uploaded file) → link_gambar_drive
       const designsWithImg = await Promise.all(
         designs.map(async (d) => {
           console.log('Processing design:', d.judul);
@@ -357,7 +352,6 @@ function ProjectReportsPage() {
       );
 
       // Resolve robotics screenshots
-      // Priority: link_file_flyer → gambar_proyek (uploaded file) → link_gambar_drive
       const roboticsWithImg = await Promise.all(
         robotics.map(async (r) => {
           let screenshot: string | null = null;
@@ -380,6 +374,27 @@ function ProjectReportsPage() {
         }),
       );
 
+      // =====================================================
+      // PISAHKAN ROBOTIK DAN IOT BERDASARKAN JUDUL
+      // =====================================================
+      
+      // Daftar keyword untuk proyek IoT
+      const iotKeywords = ['Smart Home', 'Smarthome', 'Smart House', 'Smart Greenhouse', 'Greenhouse'];
+      
+      // Filter proyek Robotik (yang bukan IoT)
+      const robotikProjects = roboticsWithImg.filter(r => 
+        !iotKeywords.some(keyword => r.judul?.includes(keyword))
+      );
+      
+      // Filter proyek IoT
+      const iotProjects = roboticsWithImg.filter(r => 
+        iotKeywords.some(keyword => r.judul?.includes(keyword))
+      );
+      
+      // Hitung ulang total berdasarkan hasil filter
+      const totalRobotik = robotikProjects.length;
+      const totalIot = iotProjects.length;
+
       // Resolve youtube thumbnails
       const videosWithThumb = await Promise.all(
         videos.map(async (v) => ({
@@ -392,7 +407,6 @@ function ProjectReportsPage() {
       );
 
       // Resolve teaching photos
-      // Priority: foto_mengajar_X (uploaded file) → link_foto_X (Google Drive / URL)
       const teachingsWithPhotos = await Promise.all(
         teachings.map(async (t) => {
           const foto1 = t.foto_mengajar_1
@@ -415,7 +429,6 @@ function ProjectReportsPage() {
       );
 
       // Resolve certificate images
-      // Priority: gambar_sertifikat (uploaded file) → link_gambar_drive
       const certsWithImg = await Promise.all(
         certs.map(async (c) => {
           const gambar = c.gambar_sertifikat
@@ -430,6 +443,10 @@ function ProjectReportsPage() {
         }),
       );
 
+      // =====================================================
+      // SET PDF DATA DENGAN NILAI YANG DIHITUNG ULANG
+      // =====================================================
+      
       setPdfData({
         summary: {
           nama: studentName,
@@ -443,14 +460,16 @@ function ProjectReportsPage() {
           itm: Number(summary.total_mengajar) || 0,
           itb: Number(summary.total_buku) || 0,
           itl: Number(summary.total_lomba_it) || 0,
-          itr: Number(summary.total_robotik) || 0,
+          // GANTI: pakai hasil filter, bukan dari summary
+          itr: totalRobotik,      // total robotik (hasil filter)
           itd: Number(summary.total_desain) || 0,
           itg: Number((summary as any).total_game) || 8,
           itw: Number((summary as any).total_website) || 1,
-          iti: Number((summary as any).total_iot) || 0,
+          iti: totalIot,          // total IoT (hasil filter)
         },
         designs: designsWithImg,
-        robotics: roboticsWithImg,
+        robotics: robotikProjects,   // hanya proyek robotik
+        iot: iotProjects,             // proyek IoT (Smart Home, Smart Greenhouse)
         videos: videosWithThumb,
         mengajar: teachingsWithPhotos,
         certificates: certsWithImg,
