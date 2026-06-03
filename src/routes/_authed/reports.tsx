@@ -294,7 +294,7 @@ function ReportsPage() {
         // reportLastBgUrl TIDAK di-fetch — halaman terakhir putih bersih
       ]);
 
-    const generatedDate = "19 Juni 2026";
+    const generatedDate = "19 Juni 2026"; 
 
       // ── 8. Set state ───────────────────────────────────────────────────────
       setPdfData({
