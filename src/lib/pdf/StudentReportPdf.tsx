@@ -916,9 +916,9 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
       </Page>
 
       {/* DIVIDER PAGE (IT REPORT) */}
-      <Page size="A4" style={styles.page}>
+      <Page size="A4" style={styles.page} wrap={false}>
         {data.dividerBgDataUrl && (
-          <Image src={data.dividerBgDataUrl} style={styles.absoluteBg} />
+          <Image src={data.dividerBgDataUrl} style={styles.absoluteBg} fixed />
         )}
       </Page>
 
