@@ -294,11 +294,7 @@ function ReportsPage() {
         // reportLastBgUrl TIDAK di-fetch — halaman terakhir putih bersih
       ]);
 
-      const generatedDate = new Date().toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+      const generatedDate = "19 Juni 2026";
 
       // ── 8. Set state ───────────────────────────────────────────────────────
       setPdfData({
