@@ -631,23 +631,17 @@ const styles = StyleSheet.create({
 function toDirectImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
 
-  const normalized = url.replace("data:image\\/", "data:image/").trim();
-
-  if (normalized.startsWith("data:")) {
-    return /^data:image\/(png|jpe?g);base64,/i.test(normalized) ? normalized : null;
-  }
-
-  const driveFileMatch = normalized.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
+  const driveFileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
   if (driveFileMatch) {
     return `https://lh3.googleusercontent.com/d/${driveFileMatch[1]}`;
   }
 
-  const driveIdMatch = normalized.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([^&]+)/);
+  const driveIdMatch = url.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([^&]+)/);
   if (driveIdMatch) {
     return `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}`;
   }
 
-  return normalized;
+  return url;
 }
 
 function truncateText(text: string, maxLength = 26): string {
@@ -722,9 +716,8 @@ function getScaleColor(nilai: number) {
 }
 
 function splitSemesterLabel(label: string) {
-  const lower = label.toLowerCase();
-  if (lower === "1st Semester") return { number: "1", suffix: "st", rest: " Semester" };
-  if (lower === "2nd Semester") return { number: "2", suffix: "nd", rest: " Semester" };
+  if (label === "1st Semester") return { number: "1", suffix: "st ", rest: " Semester" };
+  if (label === "2nd Semester") return { number: "2", suffix: "nd ", rest: " Semester" };
   return null;
 }
 
@@ -858,20 +851,20 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
     <Document>
       {/* COVER PAGE */}
       <Page size="A4" style={styles.page}>
-        {data.coverBgDataUrl ? (
+        {data.coverBgDataUrl && (
           <Image src={data.coverBgDataUrl} style={styles.absoluteBg} fixed />
-        ) : null}
+        )}
         <View style={styles.pageContent}>
           <View style={styles.coverContent}>
             <Text style={styles.coverStudentName}>{studentName}</Text>
             <View style={styles.coverSemesterLine}>
               <Text style={styles.coverSemesterText}>{studentClass} Grade | </Text>
               {semesterParts ? (
-                <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+                <>
                   <Text style={styles.coverSemesterText}>{semesterParts.number}</Text>
                   <Text style={styles.coverSemesterSuffix}>{semesterParts.suffix}</Text>
                   <Text style={styles.coverSemesterText}>{semesterParts.rest}</Text>
-                </View>
+                </>
               ) : (
                 <Text style={styles.coverSemesterText}>{semesterLabel}</Text>
               )}
@@ -923,10 +916,10 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
       </Page>
 
       {/* DIVIDER PAGE (IT REPORT) */}
-      <Page size="A4" style={styles.page} wrap={false}>
-        {data.dividerBgDataUrl ? (
-          <Image src={data.dividerBgDataUrl} style={styles.absoluteBg} fixed />
-        ) : null}
+      <Page size="A4" style={styles.page}>
+        {data.dividerBgDataUrl && (
+          <Image src={data.dividerBgDataUrl} style={styles.absoluteBg} />
+        )}
       </Page>
 
       {/* REPORT PAGES */}
@@ -938,7 +931,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
         return (
           <Page key={pageIndex} size="A4" style={styles.page} wrap={false}>
-            {bgUrl ? <Image src={bgUrl} style={styles.absoluteBg} fixed /> : null}
+            {bgUrl && <Image src={bgUrl} style={styles.absoluteBg} fixed />}
 
             <View style={styles.pageContent}>
               <View
@@ -949,7 +942,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 ]}
               >
                 {/* Student Card - only on first page */}
-                {isFirst ? (
+                {isFirst && (
                   <View style={styles.studentCard}>
                     <View style={styles.scLeft}>
                       <View style={styles.scPhotoWrap}>
@@ -966,11 +959,11 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                         <Text style={styles.detailText}>
                           {truncateText(data.student.email)}
                         </Text>
-                        {data.student.linkedin ? (
+                        {data.student.linkedin && (
                           <Text style={styles.detailText}>
                             {truncateText(data.student.linkedin)}
                           </Text>
-                        ) : null}
+                        )}
                       </View>
                     </View>
                     <View style={styles.scRight}>
@@ -980,7 +973,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                       </View>
                     </View>
                   </View>
-                ) : null}
+                )}
 
                 {/* Material Cards */}
                 {pageMaterials.map((material) => {
@@ -1005,8 +998,8 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 })}
 
                 {/* Last page: Comment + Skala Nilai + Teacher Signature */}
-                {isLast ? (
-                  <View>
+                {isLast && (
+                  <>
                     {/* Comment */}
                     <View style={styles.commentOuter}>
                       <View style={styles.commentHeader}>
@@ -1077,8 +1070,8 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                         </Text>
                       </View>
                     </View>
-                  </View>
-                ) : null}
+                  </>
+                )}
               </View>
 
               <Text
