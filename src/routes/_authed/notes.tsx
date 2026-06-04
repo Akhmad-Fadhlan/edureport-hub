@@ -347,7 +347,7 @@ function NotesPage() {
           <SelectTrigger className="w-[260px]">
             <SelectValue placeholder="Pilih Semester" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-60 overflow-y-auto">
             <SelectItem value="all">Semua Semester</SelectItem>
             {(Array.isArray(semesters.data) ? semesters.data : []).map((s) => (
               <SelectItem key={s.id} value={String(s.id)}>
