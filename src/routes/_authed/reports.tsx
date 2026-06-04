@@ -114,14 +114,14 @@ async function urlToDataUrl(
  * ========================================================================== */
 
 function ReportsPage() {
-  const { isGuru, getCabangId, user } = useAuth();
+  const { isGuru, getCabang, user } = useAuth();
   const guruMode = isGuru();
-  const cabangId = getCabangId();
+  const cabang = getCabang();
 
   const semesters = useApiData<any[]>("/semesters");
 
   const classParams: any = {};
-  if (guruMode && cabangId) classParams.cabang_id = cabangId;
+  if (guruMode && cabang) classParams.cabang = cabang;
   const classes = useApiData<any[]>("/classes", classParams);
 
   const currentTeacher = useApiData<any[]>(
@@ -142,7 +142,7 @@ function ReportsPage() {
 
   const students = useApiData<{ items: any[] }>(
     classId ? "/students" : null,
-    { class_id: classId, per_page: 200, ...(guruMode && cabangId ? { cabang_id: cabangId } : {}) },
+    { class_id: classId, per_page: 200, ...(guruMode && cabang ? { cabang: cabang } : {}) },
   );
 
   const [building, setBuilding] = useState(false);
