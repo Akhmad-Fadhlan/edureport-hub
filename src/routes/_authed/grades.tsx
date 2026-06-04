@@ -447,27 +447,15 @@ function ImportDialog({
 /* ─── Main Page ──────────────────────────────────────────────────────────── */
 
 function GradesPage() {
-  const { isGuru, getCabangId, user } = useAuth();
+  const { isGuru, getCabang, user } = useAuth();
   const guruMode = isGuru();
-  const cabangId = getCabangId();
+  const cabang = getCabang();
 
   const semesters   = useApiData<any[]>("/semesters");
-  
-  // Mapping cabang_id ke enum cabang
-  const getCabangEnum = (id: number | null): string | null => {
-    const mapping: Record<number, string> = {
-      1: 'jonggol',
-      2: 'pamijahan',
-      3: 'akhwat',
-      4: 'solo',
-      5: 'sentul'
-    };
-    return id ? mapping[id] || null : null;
-  };
 
   const classParams: any = {};
-  if (guruMode && cabangId) {
-    classParams.cabang = getCabangEnum(cabangId);
+  if (guruMode && cabang) {
+    classParams.cabang = cabang;
   }
   const classes = useApiData<any[]>("/classes", classParams);
 
@@ -504,7 +492,7 @@ function GradesPage() {
 
   const studentParams: any = { per_page: 200 };
   if (classId)              studentParams.class_id  = classId;
-  if (guruMode && cabangId) studentParams.cabang = getCabangEnum(cabangId);
+  if (guruMode && cabang) studentParams.cabang = cabang;
   const students = useApiData<{ items: any[] }>(classId ? "/students" : null, studentParams);
 
   // ============================================================
