@@ -3,7 +3,39 @@ import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/render
 /* ============================================================================
  * TYPES
  * ========================================================================== */
- 
+
+/* ============================================================================
+ * PRINT CSS — inject this into the page that renders the PDF viewer.
+ *
+ * Usage in your React component:
+ *   import { PRINT_PORTRAIT_CSS } from "./StudentReportPdf";
+ *   useEffect(() => {
+ *     const style = document.createElement("style");
+ *     style.textContent = PRINT_PORTRAIT_CSS;
+ *     document.head.appendChild(style);
+ *     return () => document.head.removeChild(style);
+ *   }, []);
+ *
+ * Or add it globally in your index.css / globals.css.
+ * ========================================================================== */
+export const PRINT_PORTRAIT_CSS = `
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+@media print {
+  html, body {
+    width: 210mm;
+    height: 297mm;
+  }
+  iframe, embed, object {
+    width: 210mm !important;
+    height: 297mm !important;
+    page-break-inside: avoid;
+  }
+}
+`;
+
 export interface PdfIndicator {
   id: number;
   kode: string;
@@ -153,6 +185,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     fontFamily: "Helvetica",
     color: TEXT,
+    // Explicit dimensions lock the PDF MediaBox to A4 portrait (595×842 pt).
+    // This prevents printer drivers from auto-rotating pages when content
+    // height > width is not explicitly declared in the page dictionary.
+    width: 595,
+    height: 842,
+    minWidth: 595,
+    maxWidth: 595,
+    minHeight: 842,
+    maxHeight: 842,
   },
 
   absoluteBg: {
@@ -216,11 +257,15 @@ const styles = StyleSheet.create({
     color: "#334155", marginBottom: 14,
   },
 
-  // Base report body — applied to every report page (middle pages)
+  // Base report body — middle pages
+  // maxHeight clips content so it never pushes page beyond 842pt (which causes
+  // printer drivers to auto-rotate to landscape).
   reportBody: {
     paddingTop: PAD_TOP_MIDDLE,
     paddingHorizontal: 42,
     paddingBottom: PAD_BOT_MIDDLE,
+    maxHeight: 842,
+    overflow: "hidden",
   },
 
   // Overrides for first / last pages
@@ -691,7 +736,11 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   const totalPages    = materialPages.length;
 
   return (
-    <Document pageLayout="singlePage">
+    <Document
+      pageLayout="singlePage"
+      creator="StudentReport"
+      producer="react-pdf"
+    >
 
       {/* ── COVER ──────────────────────────────────────────────────────────── */}
       <Page size={[595, 842]} orientation="portrait" style={styles.page}>
