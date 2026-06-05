@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
- 
+
 /* ============================================================================
  * TYPES
  * ========================================================================== */
@@ -76,10 +76,15 @@ const SOFT   = "#f8fafc";
 const PAGE_H = 842;
 
 // Page padding
-const PAD_TOP_FIRST = 80;
-const PAD_TOP_REST  = 55;
-const PAD_BOT_LAST  = 20;
-const PAD_BOT_REST  = 40;
+// - first : larger top for bg image aesthetic
+// - middle: tight top+bottom — no decorative elements, maximize card space
+// - last  : tight bottom, normal top
+const PAD_TOP_FIRST  = 80;
+const PAD_TOP_MIDDLE = 28;   // was 55 — reduced to remove excess top space
+const PAD_TOP_LAST   = 28;   // same as middle
+const PAD_BOT_MIDDLE = 24;   // was 40 — reduced to remove excess bottom space
+const PAD_BOT_LAST   = 20;
+const PAD_BOT_FIRST  = 28;
 
 // Fixed block heights (measured from rendered components)
 // Student card: photoWrap(85) + scInfo paddingTop(10) + scName(18+12mb) +
@@ -105,15 +110,21 @@ type PageType = "first" | "middle" | "last" | "firstlast";
  * Total fixed overhead (pt) consumed by non-indicator content on a given page.
  */
 function pageFixedOverhead(pageType: PageType): number {
-  const padTop = pageType === "first" || pageType === "firstlast"
-    ? PAD_TOP_FIRST : PAD_TOP_REST;
-  const padBot = pageType === "last" || pageType === "firstlast"
-    ? PAD_BOT_LAST : PAD_BOT_REST;
-  const studentCard = pageType === "first" || pageType === "firstlast"
-    ? STUDENT_CARD_H : 0;
-  const commentBlock = pageType === "last" || pageType === "firstlast"
-    ? COMMENT_BLOCK_H : 0;
-  // 2 cards × (header + paddingV + marginBottom)
+  let padTop: number;
+  let padBot: number;
+
+  if (pageType === "first") {
+    padTop = PAD_TOP_FIRST; padBot = PAD_BOT_FIRST;
+  } else if (pageType === "last") {
+    padTop = PAD_TOP_LAST; padBot = PAD_BOT_LAST;
+  } else if (pageType === "firstlast") {
+    padTop = PAD_TOP_FIRST; padBot = PAD_BOT_LAST;
+  } else {
+    padTop = PAD_TOP_MIDDLE; padBot = PAD_BOT_MIDDLE;
+  }
+
+  const studentCard  = pageType === "first" || pageType === "firstlast" ? STUDENT_CARD_H  : 0;
+  const commentBlock = pageType === "last"  || pageType === "firstlast" ? COMMENT_BLOCK_H : 0;
   const cardsOverhead = 2 * (CARD_HEADER_H + CARD_PADDING_V + CARD_MARGIN_B);
 
   return padTop + padBot + studentCard + commentBlock + cardsOverhead;
@@ -202,16 +213,16 @@ const styles = StyleSheet.create({
     color: "#334155", marginBottom: 14,
   },
 
-  // Base report body — applied to every report page
+  // Base report body — applied to every report page (middle pages)
   reportBody: {
-    paddingTop: PAD_TOP_REST,
+    paddingTop: PAD_TOP_MIDDLE,
     paddingHorizontal: 42,
-    paddingBottom: PAD_BOT_REST,
+    paddingBottom: PAD_BOT_MIDDLE,
   },
 
   // Overrides for first / last pages
   reportBodyFirst: { paddingTop: PAD_TOP_FIRST },
-  reportBodyLast:  { paddingBottom: PAD_BOT_LAST },
+  reportBodyLast:  { paddingTop: PAD_TOP_LAST, paddingBottom: PAD_BOT_LAST },
 
   // ── Student Card ─────────────────────────────────────────────────────────
   studentCard: {
