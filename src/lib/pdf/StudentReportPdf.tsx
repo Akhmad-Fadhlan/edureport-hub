@@ -822,8 +822,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                       </View>
                     </View>
                    <View style={styles.scRight}>
-<View style={{ alignItems: "center", paddingRight: 33, paddingTop: 28 }}>
-  <Text style={{ fontSize: 9, color: MUTED, marginBottom: 4 }}>Nilai Rata-rata</Text>
+<View style={{ alignItems: "center" }}>
   <Text style={styles.scAvgValue}>{overallAvg.toFixed(2)}</Text>
   <View style={[styles.scAvgBadge, { backgroundColor: badgeColor }]}>
     <Text style={styles.scAvgBadgeText}>{badgeLabel}</Text>
