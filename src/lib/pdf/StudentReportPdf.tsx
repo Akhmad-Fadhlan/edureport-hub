@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     paddingLeft: 25, fontSize: 10.5, color: MUTED, marginBottom: 10,
   },
 
- scRight: { alignItems: "flex-end", paddingRight: 33, paddingTop: 28 },
+ scRight: { alignItems: "flex-end", paddingRight: 25, paddingTop: 28 },
 //    scRight: { 
 //   width: 150,
 //   paddingTop: 28,
