@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router"; 
 import { useEffect, useMemo, useState } from "react";
-import { Card } from "@/components/ui/card"; 
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -86,33 +86,36 @@ interface Klass {
 
 function NotesPage() {
   const { user } = useAuth();
-
+  // ── Pola identik dengan students.tsx ────────────────────────────────────
   const isGuru = user?.role === "guru";
-  const guruCabang = user?.cabang ?? null;
+  const guruCabang = user?.cabang ?? null; // string enum, mis. "jonggol"
 
-  // ── Filter state — empty string = "no filter selected" (avoids "all" identifier collision after minification) ──
-  const [semesterId, setSemesterId]     = useState<string>("");
-  const [cabangFilter, setCabangFilter] = useState<string>("");
-  const [classFilter, setClassFilter]   = useState<string>("");
+  // ── Filter state ─────────────────────────────────────────────────────────
+  const [semesterId, setSemesterId]     = useState<string>("all");
+  const [cabangFilter, setCabangFilter] = useState<string>("all");
+  const [classFilter, setClassFilter]   = useState<string>("all");
 
-  // ── Build params API ──────────────────────────────────────────────────────
+  // ── Build params API — sama persis pola students.tsx ────────────────────
+  // Untuk /notes, /students, /classes: kirim cabang sebagai string enum
   const cabangParam: string | null = isGuru
-    ? guruCabang
-    : (cabangFilter || null);
+    ? guruCabang                                      // guru: paksa cabang dari token
+    : (cabangFilter !== "all" ? cabangFilter : null); // admin: opsional dari filter
 
+  // Params untuk fetch notes
   const notesParams: Record<string, unknown> = {};
   if (cabangParam) notesParams.cabang = cabangParam;
-  if (semesterId)  notesParams.semester_id = semesterId;
+  if (semesterId !== "all") notesParams.semester_id = semesterId;
 
+  // Params untuk fetch students & classes (sama, tanpa semester)
   const listParams: Record<string, unknown> = {};
   if (cabangParam) listParams.cabang = cabangParam;
 
   // ── Data fetch ────────────────────────────────────────────────────────────
-  const semesters   = useApiData<any[]>("/semesters");
+  const semesters = useApiData<any[]>("/semesters");
   const classesData = useApiData<Klass[]>("/classes", listParams);
   const studentsData = useApiData<{ items: Student[]; pagination?: any }>(
     "/students",
-    { per_page: 9999, ...listParams }
+    { per_page: "all", ...listParams }
   );
   const {
     data: rawNotesData,
@@ -121,13 +124,14 @@ function NotesPage() {
     error: notesError,
   } = useApiData<any>("/notes", notesParams);
 
-  // ── Reset filters when cabang changes ────────────────────────────────────
+  // Reset filter kelas & page saat cabang berubah (hanya admin)
   useEffect(() => {
-    if (!isGuru) setClassFilter("");
+    if (!isGuru) setClassFilter("all");
   }, [cabangFilter, isGuru]);
 
+  // Reset semester/class filter saat cabang berubah
   useEffect(() => {
-    setSemesterId("");
+    setSemesterId("all");
   }, [cabangParam]);
 
   // ── Teacher ID dari user login ────────────────────────────────────────────
@@ -175,26 +179,29 @@ function NotesPage() {
 
   // ── Filter lokal per kelas ────────────────────────────────────────────────
   const filtered = useMemo(() => {
-    if (!classFilter) return notesData;
-    return notesData.filter((n) => {
-      const s = studentMap.get(n.student_id);
-      return s && String(s.class_id) === classFilter;
-    });
+    let rows = notesData;
+    if (classFilter !== "all") {
+      rows = rows.filter((n) => {
+        const s = studentMap.get(n.student_id);
+        return s && String(s.class_id) === classFilter;
+      });
+    }
+    return rows;
   }, [notesData, classFilter, studentMap]);
 
   // ── Form state ────────────────────────────────────────────────────────────
-  const [open, setOpen]                 = useState(false);
-  const [editing, setEditing]           = useState<Note | null>(null);
+  const [open, setOpen]             = useState(false);
+  const [editing, setEditing]       = useState<Note | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Note | null>(null);
-  const [form, setForm]                 = useState({ student_id: "", semester_id: "", catatan: "" });
-  const [saving, setSaving]             = useState(false);
-  const [deleting, setDeleting]         = useState(false);
+  const [form, setForm]             = useState({ student_id: "", semester_id: "", catatan: "" });
+  const [saving, setSaving]         = useState(false);
+  const [deleting, setDeleting]     = useState(false);
 
   function openNew() {
     setEditing(null);
     setForm({
       student_id: "",
-      semester_id: semesterId || "",
+      semester_id: semesterId !== "all" ? semesterId : "",
       catatan: "",
     });
     setOpen(true);
@@ -210,15 +217,11 @@ function NotesPage() {
     setOpen(true);
   }
 
-  // ── Dropdown siswa: semua siswa, sorted per kelas lalu nama ──────────────
+  // Siswa yang tampil di dropdown form: filter per kelas aktif
   const studentsForForm = useMemo(() => {
-    return [...allStudents].sort((a, b) => {
-      const kelasA = a.nama_kelas ?? "";
-      const kelasB = b.nama_kelas ?? "";
-      if (kelasA !== kelasB) return kelasA.localeCompare(kelasB);
-      return (a.nama ?? "").localeCompare(b.nama ?? "");
-    });
-  }, [allStudents]);
+    if (classFilter === "all") return allStudents;
+    return allStudents.filter((s) => String(s.class_id) === classFilter);
+  }, [allStudents, classFilter]);
 
   async function save() {
     if (!form.student_id || !form.semester_id || !form.catatan.trim()) {
@@ -232,10 +235,10 @@ function NotesPage() {
     setSaving(true);
     try {
       const payload = {
-        student_id:  parseInt(form.student_id),
+        student_id: parseInt(form.student_id),
         semester_id: parseInt(form.semester_id),
-        teacher_id:  teacherId,
-        catatan:     form.catatan.trim(),
+        teacher_id: teacherId,
+        catatan: form.catatan.trim(),
       };
       if (editing) {
         await apiPut(`/notes/${editing.id}`, payload);
@@ -286,17 +289,13 @@ function NotesPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Catatan Siswa</h1>
-          <p className="text-sm text-muted-foreground">
-            Kelola catatan perkembangan siswa per semester
-          </p>
+          <p className="text-sm text-muted-foreground">Kelola catatan perkembangan siswa per semester</p>
         </div>
         <Card className="p-8 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Gagal Memuat Data</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            {(typeof notesError === "string"
-              ? notesError
-              : (notesError as any)?.message) ||
+            {(typeof notesError === "string" ? notesError : (notesError as any)?.message) ||
               "Terjadi kesalahan saat menghubungi server"}
           </p>
           <div className="space-x-2">
@@ -330,14 +329,13 @@ function NotesPage() {
         </Button>
       </div>
 
-      {/* Info banner untuk guru */}
+      {/* Info banner untuk guru — identik dengan students.tsx */}
       {isGuru && guruCabang && (
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-sm">
           <Info className="h-4 w-4 flex-shrink-0" />
           <span>
             Anda login sebagai <strong>Guru</strong>. Hanya catatan siswa dari cabang{" "}
-            <strong>{CABANG_LABEL[guruCabang as Cabang] ?? guruCabang}</strong> yang
-            ditampilkan.
+            <strong>{CABANG_LABEL[guruCabang as Cabang] ?? guruCabang}</strong> yang ditampilkan.
           </span>
         </div>
       )}
@@ -347,10 +345,10 @@ function NotesPage() {
         {/* Filter Semester */}
         <Select value={semesterId} onValueChange={setSemesterId}>
           <SelectTrigger className="w-[260px]">
-            <SelectValue placeholder="Semua Semester" />
+            <SelectValue placeholder="Pilih Semester" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">Semua Semester</SelectItem>
+          <SelectContent className="max-h-60 overflow-y-auto">
+            <SelectItem value="all">Semua Semester</SelectItem>
             {(Array.isArray(semesters.data) ? semesters.data : []).map((s) => (
               <SelectItem key={s.id} value={String(s.id)}>
                 {s.nama_semester || `${s.tahun_ajaran} - Semester ${s.semester}`}
@@ -365,14 +363,14 @@ function NotesPage() {
             value={cabangFilter}
             onValueChange={(v) => {
               setCabangFilter(v);
-              setClassFilter("");
+              setClassFilter("all");
             }}
           >
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Semua Cabang" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Semua Cabang</SelectItem>
+            <SelectContent className="max-h-60 overflow-y-auto">
+              <SelectItem value="all">Semua Cabang</SelectItem>
               {CABANG_LIST.map((c) => (
                 <SelectItem key={c} value={c}>
                   {CABANG_LABEL[c]}
@@ -387,8 +385,8 @@ function NotesPage() {
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Semua Kelas" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">Semua Kelas</SelectItem>
+          <SelectContent className="max-h-60 overflow-y-auto">
+            <SelectItem value="all">Semua Kelas</SelectItem>
             {(Array.isArray(classesData.data) ? classesData.data : []).map((k) => (
               <SelectItem key={k.id} value={String(k.id)}>
                 {k.nama_kelas}
@@ -413,15 +411,15 @@ function NotesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {notesLoading &&
+            {notesLoading && (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
                   <TableCell colSpan={isGuru ? 6 : 7}>
                     <div className="h-8 bg-muted animate-pulse rounded" />
                   </TableCell>
                 </TableRow>
-              ))}
-
+              ))
+            )}
             {!notesLoading && filtered.length === 0 && (
               <TableRow>
                 <TableCell
@@ -432,7 +430,6 @@ function NotesPage() {
                 </TableCell>
               </TableRow>
             )}
-
             {!notesLoading &&
               filtered.map((n: Note) => {
                 const student = studentMap.get(n.student_id);
@@ -492,9 +489,7 @@ function NotesPage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>
-              {editing ? "Edit Catatan" : "Tambah Catatan Baru"}
-            </DialogTitle>
+            <DialogTitle>{editing ? "Edit Catatan" : "Tambah Catatan Baru"}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -539,7 +534,7 @@ function NotesPage() {
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih semester" />
                 </SelectTrigger>
-                <SelectContent className="max-h-60 overflow-y-auto">
+                <SelectContent>
                   {(Array.isArray(semesters.data) ? semesters.data : []).map((s) => (
                     <SelectItem key={s.id} value={String(s.id)}>
                       {s.nama_semester || `${s.tahun_ajaran} - Semester ${s.semester}`}
@@ -562,27 +557,18 @@ function NotesPage() {
                 className="resize-none"
                 disabled={saving}
               />
-              <p className="text-xs text-muted-foreground">
-                {form.catatan.length} karakter
-              </p>
+              <p className="text-xs text-muted-foreground">{form.catatan.length} karakter</p>
             </div>
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={saving}
-            >
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
               Batal
             </Button>
             <Button
               onClick={save}
               disabled={
-                !form.student_id ||
-                !form.semester_id ||
-                !form.catatan.trim() ||
-                saving
+                !form.student_id || !form.semester_id || !form.catatan.trim() || saving
               }
             >
               {saving ? (
