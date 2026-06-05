@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router"; 
 import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea"; 
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -369,7 +369,7 @@ function NotesPage() {
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Semua Cabang" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-60 overflow-y-auto">
               <SelectItem value="all">Semua Cabang</SelectItem>
               {CABANG_LIST.map((c) => (
                 <SelectItem key={c} value={c}>
@@ -385,7 +385,7 @@ function NotesPage() {
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Semua Kelas" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-60 overflow-y-auto">
             <SelectItem value="all">Semua Kelas</SelectItem>
             {(Array.isArray(classesData.data) ? classesData.data : []).map((k) => (
               <SelectItem key={k.id} value={String(k.id)}>
@@ -506,7 +506,7 @@ function NotesPage() {
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih siswa" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-60 overflow-y-auto">
                   {studentsForForm.length === 0 && (
                     <SelectItem value="_empty" disabled>
                       Tidak ada siswa tersedia
