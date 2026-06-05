@@ -1,11 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";  
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";  
-import { 
-  Dialog, 
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -84,34 +84,43 @@ interface Klass {
   cabang: string;
 }
 
+// ── Helper: normalisasi berbagai bentuk response siswa ──────────────────────
+function extractStudents(res: unknown): Student[] {
+  if (!res) return [];
+  if (Array.isArray(res)) return res as Student[];
+  const obj = res as Record<string, unknown>;
+  if (obj.items && Array.isArray(obj.items)) return obj.items as Student[];
+  if (obj.data && Array.isArray(obj.data)) return obj.data as Student[];
+  return [];
+}
+
 function NotesPage() {
   const { user } = useAuth();
-  // ── Pola identik dengan students.tsx ────────────────────────────────────
-  const isGuru = user?.role === "guru";
-  const guruCabang = user?.cabang ?? null; // string enum, mis. "jonggol"
 
-  // ── Filter state ─────────────────────────────────────────────────────────
+  // ── Role & cabang dari token ──────────────────────────────────────────────
+  const isGuru = user?.role === "guru";
+  const guruCabang = user?.cabang ?? null;
+
+  // ── Filter state ──────────────────────────────────────────────────────────
   const [semesterId, setSemesterId]     = useState<string>("all");
   const [cabangFilter, setCabangFilter] = useState<string>("all");
   const [classFilter, setClassFilter]   = useState<string>("all");
 
-  // ── Build params API — sama persis pola students.tsx ────────────────────
-  // Untuk /notes, /students, /classes: kirim cabang sebagai string enum
+  // ── Resolusi cabang aktif ─────────────────────────────────────────────────
   const cabangParam: string | null = isGuru
-    ? guruCabang                                      // guru: paksa cabang dari token
-    : (cabangFilter !== "all" ? cabangFilter : null); // admin: opsional dari filter
+    ? guruCabang
+    : cabangFilter !== "all" ? cabangFilter : null;
 
-  // Params untuk fetch notes
+  // ── Params API ────────────────────────────────────────────────────────────
   const notesParams: Record<string, unknown> = {};
-  if (cabangParam) notesParams.cabang = cabangParam;
+  if (cabangParam)          notesParams.cabang      = cabangParam;
   if (semesterId !== "all") notesParams.semester_id = semesterId;
 
-  // Params untuk fetch students & classes (sama, tanpa semester)
   const listParams: Record<string, unknown> = {};
   if (cabangParam) listParams.cabang = cabangParam;
 
   // ── Data fetch ────────────────────────────────────────────────────────────
-  const semesters = useApiData<any[]>("/semesters");
+  const semesters  = useApiData<any[]>("/semesters");
   const classesData = useApiData<Klass[]>("/classes", listParams);
   const studentsData = useApiData<{ items: Student[]; pagination?: any }>(
     "/students",
@@ -124,12 +133,11 @@ function NotesPage() {
     error: notesError,
   } = useApiData<any>("/notes", notesParams);
 
-  // Reset filter kelas & page saat cabang berubah (hanya admin)
+  // ── Reset filter saat cabang berubah ──────────────────────────────────────
   useEffect(() => {
     if (!isGuru) setClassFilter("all");
   }, [cabangFilter, isGuru]);
 
-  // Reset semester/class filter saat cabang berubah
   useEffect(() => {
     setSemesterId("all");
   }, [cabangParam]);
@@ -155,7 +163,7 @@ function NotesPage() {
     })();
   }, [user, cabangParam]);
 
-  // ── Normalize data ────────────────────────────────────────────────────────
+  // ── Normalize notes ───────────────────────────────────────────────────────
   const notesData = useMemo<Note[]>(() => {
     if (!rawNotesData) return [];
     if (Array.isArray(rawNotesData)) return rawNotesData;
@@ -163,13 +171,8 @@ function NotesPage() {
     return [];
   }, [rawNotesData]);
 
-  const allStudents = useMemo<Student[]>(() => {
-    const raw = studentsData.data;
-    if (!raw) return [];
-    if (Array.isArray(raw)) return raw;
-    if (raw.items && Array.isArray(raw.items)) return raw.items;
-    return [];
-  }, [studentsData.data]);
+  // ── Normalize students ────────────────────────────────────────────────────
+  const allStudents = useMemo<Student[]>(() => extractStudents(studentsData.data), [studentsData.data]);
 
   const studentMap = useMemo(() => {
     const m = new Map<number, Student>();
@@ -179,47 +182,50 @@ function NotesPage() {
 
   // ── Filter lokal per kelas ────────────────────────────────────────────────
   const filtered = useMemo(() => {
-    let rows = notesData;
-    if (classFilter !== "all") {
-      rows = rows.filter((n) => {
-        const s = studentMap.get(n.student_id);
-        return s && String(s.class_id) === classFilter;
-      });
-    }
-    return rows;
+    if (classFilter === "all") return notesData;
+    return notesData.filter((n) => {
+      const s = studentMap.get(n.student_id);
+      return s && String(s.class_id) === classFilter;
+    });
   }, [notesData, classFilter, studentMap]);
 
-  // ── Form state untuk dialog (SAMA PERSIS dengan portofolio) ───────────────
-  const [open, setOpen]             = useState(false);
-  const [editing, setEditing]       = useState<Note | null>(null);
+  // ── Form state ────────────────────────────────────────────────────────────
+  const [open, setOpen]                 = useState(false);
+  const [editing, setEditing]           = useState<Note | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Note | null>(null);
-  const [form, setForm]             = useState({ student_id: "", semester_id: "", catatan: "" });
-  const [saving, setSaving]         = useState(false);
-  const [deleting, setDeleting]     = useState(false);
-  
-  // State untuk dropdown kelas dan siswa di dialog (SAMA PERSIS dengan portofolio)
-  const [formClassId, setFormClassId] = useState<string>("");
-  const [formStudents, setFormStudents] = useState<Student[]>([]);
+  const [form, setForm]                 = useState({ student_id: "", semester_id: "", catatan: "" });
+  const [saving, setSaving]             = useState(false);
+  const [deleting, setDeleting]         = useState(false);
+
+  // State dropdown kelas & siswa di dialog
+  const [formClassId, setFormClassId]             = useState<string>("");
+  const [formStudents, setFormStudents]           = useState<Student[]>([]);
   const [loadingFormStudents, setLoadingFormStudents] = useState(false);
 
-  // Fungsi untuk load siswa berdasarkan kelas yang dipilih di form (SAMA PERSIS dengan portofolio)
+  // ── Load siswa berdasarkan kelas yang dipilih di form ─────────────────────
   const loadFormStudents = useCallback(async (classId: string) => {
     if (!classId || classId === "all") {
       setFormStudents([]);
       return;
     }
-    
+
     setLoadingFormStudents(true);
     try {
       const params: Record<string, unknown> = {
         class_id: classId,
-        per_page: 1000
+        per_page: 1000,
       };
-      // if (cabangParam) params.cabang = cabangParam;
-      
-      const res = await apiGet<{ items: Student[] }>("/students", params);
-      const students = res?.items || [];
+      if (cabangParam) params.cabang = cabangParam;
+
+      const res = await apiGet<unknown>("/students", params);
+      const students = extractStudents(res);
       setFormStudents(students);
+
+      if (students.length === 0) {
+        toast.warning(
+          `Tidak ada siswa di kelas ini${cabangParam ? ` (cabang ${cabangParam})` : ""}`
+        );
+      }
     } catch (error) {
       console.error("Gagal load siswa:", error);
       setFormStudents([]);
@@ -228,64 +234,8 @@ function NotesPage() {
       setLoadingFormStudents(false);
     }
   }, [cabangParam]);
-// Tambahkan useEffect untuk debugging data students
-useEffect(() => {
-  console.log("=== DEBUGGING STUDENTS DATA ===");
-  console.log("allStudents:", allStudents);
-  console.log("Jumlah allStudents:", allStudents.length);
-  console.log("classFilter:", classFilter);
-  console.log("cabangParam:", cabangParam);
-  console.log("isGuru:", isGuru);
-  console.log("guruCabang:", guruCabang);
-  
-  // Log detail setiap student
-  allStudents.forEach(s => {
-    console.log(`Student: ${s.nama}, Class ID: ${s.class_id}, Cabang: ${s.cabang}`);
-  });
-}, [allStudents, classFilter, cabangParam, isGuru, guruCabang]);
 
-// Debug untuk loadFormStudents
-const loadFormStudents = useCallback(async (classId: string) => {
-  if (!classId || classId === "all") {
-    console.log("No class selected, skipping load");
-    setFormStudents([]);
-    return;
-  }
-  
-  console.log("=== LOADING STUDENTS FOR CLASS ===");
-  console.log("classId:", classId);
-  console.log("cabangParam:", cabangParam);
-  
-  setLoadingFormStudents(true);
-  try {
-    const params: Record<string, unknown> = {
-      class_id: classId,
-      per_page: 1000
-    };
-    if (cabangParam) params.cabang = cabangParam;
-    
-    console.log("Request params:", params);
-    
-    const res = await apiGet<{ items: Student[] }>("/students", params);
-    console.log("Response from server:", res);
-    
-    const students = res?.items || [];
-    console.log(`Found ${students.length} students:`, students.map(s => ({ id: s.id, nama: s.nama, class_id: s.class_id, cabang: s.cabang })));
-    
-    setFormStudents(students);
-    
-    if (students.length === 0) {
-      toast.warning(`Tidak ada siswa ditemukan di kelas ini${cabangParam ? ` untuk cabang ${cabangParam}` : ''}`);
-    }
-  } catch (error) {
-    console.error("Gagal load siswa:", error);
-    setFormStudents([]);
-    toast.error("Gagal memuat data siswa");
-  } finally {
-    setLoadingFormStudents(false);
-  }
-}, [cabangParam]);
-  // Effect untuk load siswa ketika formClassId berubah (SAMA PERSIS dengan portofolio)
+  // Reload siswa ketika formClassId berubah
   useEffect(() => {
     if (formClassId && formClassId !== "all") {
       loadFormStudents(formClassId);
@@ -294,10 +244,11 @@ const loadFormStudents = useCallback(async (classId: string) => {
     }
   }, [formClassId, loadFormStudents]);
 
+  // ── Buka dialog tambah ────────────────────────────────────────────────────
   function openNew() {
     setEditing(null);
-    setFormClassId(""); // Reset pilihan kelas
-    setFormStudents([]); // Reset daftar siswa
+    setFormClassId("");
+    setFormStudents([]);
     setForm({
       student_id: "",
       semester_id: semesterId !== "all" ? semesterId : "",
@@ -306,17 +257,15 @@ const loadFormStudents = useCallback(async (classId: string) => {
     setOpen(true);
   }
 
+  // ── Buka dialog edit ──────────────────────────────────────────────────────
   function openEdit(n: Note) {
     setEditing(n);
-    // Untuk edit, kita perlu mencari kelas dari siswa yang diedit
     const student = studentMap.get(n.student_id);
     const studentClassId = student ? String(student.class_id) : "";
-    
+
     setFormClassId(studentClassId);
-    if (studentClassId) {
-      loadFormStudents(studentClassId); // Load siswa dari kelas tersebut
-    }
-    
+    // loadFormStudents akan terpanggil otomatis via useEffect di atas
+
     setForm({
       student_id: String(n.student_id),
       semester_id: String(n.semester_id),
@@ -325,6 +274,7 @@ const loadFormStudents = useCallback(async (classId: string) => {
     setOpen(true);
   }
 
+  // ── Simpan (tambah / edit) ────────────────────────────────────────────────
   async function save() {
     if (!formClassId || !form.student_id || !form.semester_id || !form.catatan.trim()) {
       toast.error("Lengkapi kelas, siswa, semester, dan catatan");
@@ -337,10 +287,10 @@ const loadFormStudents = useCallback(async (classId: string) => {
     setSaving(true);
     try {
       const payload = {
-        student_id: parseInt(form.student_id),
+        student_id:  parseInt(form.student_id),
         semester_id: parseInt(form.semester_id),
-        teacher_id: teacherId,
-        catatan: form.catatan.trim(),
+        teacher_id:  teacherId,
+        catatan:     form.catatan.trim(),
       };
       if (editing) {
         await apiPut(`/notes/${editing.id}`, payload);
@@ -358,6 +308,7 @@ const loadFormStudents = useCallback(async (classId: string) => {
     }
   }
 
+  // ── Hapus ─────────────────────────────────────────────────────────────────
   async function confirmDelete() {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -397,8 +348,9 @@ const loadFormStudents = useCallback(async (classId: string) => {
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Gagal Memuat Data</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            {(typeof notesError === "string" ? notesError : (notesError as any)?.message) ||
-              "Terjadi kesalahan saat menghubungi server"}
+            {(typeof notesError === "string"
+              ? notesError
+              : (notesError as any)?.message) || "Terjadi kesalahan saat menghubungi server"}
           </p>
           <div className="space-x-2">
             <Button onClick={() => window.location.reload()} variant="outline">
@@ -431,7 +383,7 @@ const loadFormStudents = useCallback(async (classId: string) => {
         </Button>
       </div>
 
-      {/* Info banner untuk guru — identik dengan students.tsx */}
+      {/* Info banner guru */}
       {isGuru && guruCabang && (
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-sm">
           <Info className="h-4 w-4 flex-shrink-0" />
@@ -513,15 +465,15 @@ const loadFormStudents = useCallback(async (classId: string) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {notesLoading && (
+            {notesLoading &&
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
                   <TableCell colSpan={isGuru ? 6 : 7}>
                     <div className="h-8 bg-muted animate-pulse rounded" />
                   </TableCell>
                 </TableRow>
-              ))
-            )}
+              ))}
+
             {!notesLoading && filtered.length === 0 && (
               <TableRow>
                 <TableCell
@@ -532,6 +484,7 @@ const loadFormStudents = useCallback(async (classId: string) => {
                 </TableCell>
               </TableRow>
             )}
+
             {!notesLoading &&
               filtered.map((n: Note) => {
                 const student = studentMap.get(n.student_id);
@@ -587,7 +540,7 @@ const loadFormStudents = useCallback(async (classId: string) => {
         </Table>
       </Card>
 
-      {/* ── Dialog Tambah / Edit ── SAMA PERSIS DENGAN PORTOFOLIO ── */}
+      {/* ── Dialog Tambah / Edit ─────────────────────────────────────────────── */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -595,16 +548,16 @@ const loadFormStudents = useCallback(async (classId: string) => {
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Pilih Kelas - SAMA PERSIS dengan portofolio */}
+            {/* Pilih Kelas */}
             <div className="space-y-2">
-              <Label>Kelas</Label>
-              <Select 
-                value={formClassId} 
+              <Label>Kelas <span className="text-destructive">*</span></Label>
+              <Select
+                value={formClassId}
                 onValueChange={(v) => {
                   setFormClassId(v);
-                  setForm({ ...form, student_id: "" }); // Reset siswa saat ganti kelas
+                  setForm((prev) => ({ ...prev, student_id: "" }));
                 }}
-                disabled={saving || !!editing} // Disable saat edit
+                disabled={saving || !!editing}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih kelas" />
@@ -619,33 +572,42 @@ const loadFormStudents = useCallback(async (classId: string) => {
               </Select>
             </div>
 
-            {/* Pilih Siswa - SAMA PERSIS dengan portofolio */}
+            {/* Pilih Siswa */}
             <div className="space-y-2">
               <Label>
                 Siswa <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={form.student_id}
-                onValueChange={(v) => setForm({ ...form, student_id: v })}
-                disabled={saving || !formClassId}
+                onValueChange={(v) => setForm((prev) => ({ ...prev, student_id: v }))}
+                disabled={saving || !formClassId || loadingFormStudents}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={!formClassId ? "Pilih kelas terlebih dahulu" : "Pilih siswa"} />
+                  <SelectValue
+                    placeholder={
+                      !formClassId
+                        ? "Pilih kelas terlebih dahulu"
+                        : loadingFormStudents
+                        ? "Memuat siswa..."
+                        : "Pilih siswa"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent className="max-h-60 overflow-y-auto">
                   {loadingFormStudents ? (
-                    <div className="flex items-center justify-center py-4">
+                    <div className="flex items-center justify-center py-4 gap-2 text-sm text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="ml-2">Memuat siswa...</span>
+                      Memuat siswa...
                     </div>
                   ) : formStudents.length === 0 ? (
-                    <SelectItem value="_empty" disabled>
+                    <div className="py-4 text-center text-sm text-muted-foreground">
                       Tidak ada siswa di kelas ini
-                    </SelectItem>
+                    </div>
                   ) : (
                     formStudents.map((s) => (
                       <SelectItem key={s.id} value={String(s.id)}>
-                        {s.nama} {s.nama_kelas ? `(${s.nama_kelas})` : ""}
+                        {s.nama}
+                        {s.nama_kelas ? ` (${s.nama_kelas})` : ""}
                       </SelectItem>
                     ))
                   )}
@@ -660,7 +622,7 @@ const loadFormStudents = useCallback(async (classId: string) => {
               </Label>
               <Select
                 value={form.semester_id}
-                onValueChange={(v) => setForm({ ...form, semester_id: v })}
+                onValueChange={(v) => setForm((prev) => ({ ...prev, semester_id: v }))}
                 disabled={saving}
               >
                 <SelectTrigger>
@@ -684,7 +646,7 @@ const loadFormStudents = useCallback(async (classId: string) => {
               <Textarea
                 rows={6}
                 value={form.catatan}
-                onChange={(e) => setForm({ ...form, catatan: e.target.value })}
+                onChange={(e) => setForm((prev) => ({ ...prev, catatan: e.target.value }))}
                 placeholder="Tulis catatan untuk siswa..."
                 className="resize-none"
                 disabled={saving}
@@ -700,7 +662,11 @@ const loadFormStudents = useCallback(async (classId: string) => {
             <Button
               onClick={save}
               disabled={
-                !formClassId || !form.student_id || !form.semester_id || !form.catatan.trim() || saving
+                !formClassId ||
+                !form.student_id ||
+                !form.semester_id ||
+                !form.catatan.trim() ||
+                saving
               }
             >
               {saving ? (
@@ -716,7 +682,7 @@ const loadFormStudents = useCallback(async (classId: string) => {
         </DialogContent>
       </Dialog>
 
-      {/* ── Konfirmasi Hapus ── */}
+      {/* ── Konfirmasi Hapus ─────────────────────────────────────────────────── */}
       <AlertDialog
         open={!!deleteTarget}
         onOpenChange={(v) => !v && setDeleteTarget(null)}
