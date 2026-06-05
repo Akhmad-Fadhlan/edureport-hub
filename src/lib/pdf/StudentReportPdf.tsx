@@ -285,6 +285,23 @@ const styles = StyleSheet.create({
   detailText: {
     paddingLeft: 25, fontSize: 10.5, color: MUTED, marginBottom: 10,
   },
+     scRightBase: {
+    alignItems: "flex-end",
+    paddingTop: 28,
+  },
+  
+  scRightSangatMemuaskan: {
+    paddingRight: 20,
+  },
+  
+  scRightSangatBaik: {
+    paddingRight: 33,
+  },
+  
+  // Default/fallback style
+  scRightDefault: {
+    paddingRight: 22,
+  },
 
  scRight: { alignItems: "flex-end", paddingRight: 25, paddingTop: 28 },
 //    scRight: { 
@@ -821,7 +838,11 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                         )}
                       </View>
                     </View>
-                   <View style={styles.scRight}>
+                       <View style={[
+                        styles.scRightBase,
+                        badgeLabel === "Sangat Memuaskan" && styles.scRightSangatMemuaskan,
+                        badgeLabel === "Sangat Baik" && styles.scRightSangatBaik
+                      ]}>
 <View style={{ alignItems: "center" }}>
   <Text style={styles.scAvgValue}>{overallAvg.toFixed(2)}</Text>
   <View style={[styles.scAvgBadge, { backgroundColor: badgeColor }]}>
