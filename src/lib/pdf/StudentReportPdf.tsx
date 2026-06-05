@@ -129,11 +129,10 @@ const CARD_PADDING_V = 24;
 const CARD_MARGIN_B  = 14;
 
 const IND_ROW_MIN_H = 22;
-const IND_ROW_MAX_H = 34;
 
 type PageType = "first" | "middle" | "last" | "firstlast";
 
-function pageFixedOverhead(pageType: PageType): number {
+function pageFixedOverhead(pageType: PageType, numMaterials = 2): number {
   let padTop: number;
   let padBot: number;
 
@@ -149,17 +148,20 @@ function pageFixedOverhead(pageType: PageType): number {
 
   const studentCard  = pageType === "first" || pageType === "firstlast" ? STUDENT_CARD_H  : 0;
   const commentBlock = pageType === "last"  || pageType === "firstlast" ? COMMENT_BLOCK_H : 0;
-  const cardsOverhead = 2 * (CARD_HEADER_H + CARD_PADDING_V + CARD_MARGIN_B);
+  // overhead per jumlah card aktual di halaman ini (bisa 1 atau 2)
+  const cardsOverhead = numMaterials * (CARD_HEADER_H + CARD_PADDING_V + CARD_MARGIN_B);
 
   return padTop + padBot + studentCard + commentBlock + cardsOverhead;
 }
 
+// Hitung indRowH per-halaman agar rows mengisi penuh ruang yang tersedia.
+// Tidak ada batas atas (IND_ROW_MAX_H dihapus) — row membesar sampai mengisi halaman.
 function calcIndRowHeight(mats: PdfMaterial[], pageType: PageType): number {
   const totalInds    = mats.reduce((s, m) => s + m.indicators.length, 0);
-  const fixed        = pageFixedOverhead(pageType);
+  const fixed        = pageFixedOverhead(pageType, mats.length);
   const availForRows = PAGE_H - fixed;
-  const ideal        = totalInds > 0 ? availForRows / totalInds : IND_ROW_MAX_H;
-  return Math.max(IND_ROW_MIN_H, Math.min(IND_ROW_MAX_H, ideal));
+  const ideal        = totalInds > 0 ? availForRows / totalInds : IND_ROW_MIN_H;
+  return Math.max(IND_ROW_MIN_H, ideal); // tidak ada batas atas — mengisi halaman
 }
 
 /* ============================================================================
@@ -238,14 +240,13 @@ const styles = StyleSheet.create({
     color: "#334155", marginBottom: 14,
   },
 
-  // FIX: flex:1 agar reportBody bisa stretch penuh dalam pageContent
+  // FIX: flex:1 agar reportBody stretch penuh dalam pageContent
   reportBody: {
     flex: 1,
+    flexDirection: "column",
     paddingTop: PAD_TOP_MIDDLE,
     paddingHorizontal: 42,
     paddingBottom: PAD_BOT_MIDDLE,
-    maxHeight: 841.89,
-    overflow: "hidden",
   },
 
   reportBodyFirst: { paddingTop: PAD_TOP_FIRST },
@@ -314,6 +315,7 @@ const styles = StyleSheet.create({
     borderColor: "#dbe4f0",
     overflow: "hidden",
     marginBottom: CARD_MARGIN_B,
+    // flex diset dinamis via inline style di MaterialCard
   },
 
   compHeader: {
@@ -336,7 +338,7 @@ const styles = StyleSheet.create({
     fontSize: 11, fontFamily: "Helvetica-Bold", color: "#111827",
   },
 
-  compIndicators: { paddingVertical: 12 },
+  compIndicators: { flex: 1, paddingVertical: 8 },
 
   indRow: {
     flexDirection: "row",
@@ -636,17 +638,26 @@ function SkalaRow({ range, label, badgeColor, bgColor, textStyle }: {
 /* ============================================================================
  * MATERIAL CARD
  * ========================================================================== */
-function MaterialCard({ material, indRowH }: { material: PdfMaterial; indRowH: number }) {
+function MaterialCard({
+  material,
+  flexGrow,
+}: {
+  material: PdfMaterial;
+  flexGrow: number;
+}) {
   const avg = calculateMaterialAverage([material]);
   return (
-    <View style={styles.compSection}>
+    // flex: flexGrow agar card berbagi sisa ruang proporsional jumlah indikator
+    <View style={[styles.compSection, { flex: flexGrow }]}>
       <View style={styles.compHeader}>
         <Text style={styles.compTitleText}>{material.judul}</Text>
         <Text style={styles.compScoreText}>{avg.toFixed(1)}</Text>
       </View>
+      {/* compIndicators flex:1 → mengisi sisa tinggi card setelah header */}
       <View style={styles.compIndicators}>
         {material.indicators.map((ind, idx) => (
-          <View key={ind.id} style={[styles.indRow, { height: indRowH }]}>
+          // flex:1 per row → tinggi terbagi rata di dalam card
+          <View key={ind.id} style={[styles.indRow, { flex: 1 }]}>
             <Text style={styles.indNum}>{idx + 1}</Text>
             <Text style={styles.indText} numberOfLines={2}>{ind.deskripsi}</Text>
             <ProgressBar nilai={ind.nilai ?? 0} max={ind.nilai_max} />
@@ -687,22 +698,6 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   const totalPages    = materialPages.length;
 
   const PAGE_SIZE: [number, number] = [595.28, 841.89];
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // FIX 1: Hitung globalIndRowH sekali dari SEMUA halaman.
-  // Ambil nilai minimum agar semua halaman pakai row height yang sama
-  // (halaman paling "penuh" yang menentukan).
-  // ─────────────────────────────────────────────────────────────────────────
-  const globalIndRowH = materialPages.reduce((minH, pageMats, idx) => {
-    const isFirst     = idx === 0;
-    const isLast      = idx === totalPages - 1;
-    const isFirstLast = isFirst && isLast;
-    const pt: PageType = isFirstLast ? "firstlast"
-      : isFirst ? "first"
-      : isLast  ? "last"
-      : "middle";
-    return Math.min(minH, calcIndRowHeight(pageMats, pt));
-  }, IND_ROW_MAX_H);
 
   return (
     <Document
@@ -838,22 +833,26 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                   </View>
                 )}
 
-                {/* Material cards — pakai globalIndRowH agar tinggi seragam */}
-                {pageMaterials.map((material) => (
-                  <MaterialCard
-                    key={material.id}
-                    material={material}
-                    indRowH={globalIndRowH}  {/* FIX 1: pakai global, bukan lokal */}
-                  />
-                ))}
+                {/* Material cards — flex container mengisi sisa ruang halaman.
+                 * Di halaman terakhir, cards TIDAK diberi flex:1 penuh karena
+                 * harus berbagi ruang dengan comment+TTD block di bawah.
+                 * Di halaman lainnya, cards flex:1 mengisi seluruh sisa ruang. */}
+                <View style={isLast
+                  ? { flexDirection: "column" }
+                  : { flex: 1, flexDirection: "column" }
+                }>
+                  {pageMaterials.map((material) => (
+                    <MaterialCard
+                      key={material.id}
+                      material={material}
+                      flexGrow={material.indicators.length}
+                    />
+                  ))}
+                </View>
 
-                {/* ─────────────────────────────────────────────────────────
-                 * FIX 2: Comment & TTD di halaman terakhir.
-                 * Bungkus dengan flex:1 + justifyContent:"flex-end" agar
-                 * selalu terdorong ke bawah halaman, sesuai margin yang ada.
-                 * ───────────────────────────────────────────────────────── */}
+                {/* Comment & TTD — hanya di halaman terakhir, di bawah cards */}
                 {isLast && (
-                  <View style={{ flex: 1, justifyContent: "flex-end" }}>
+                  <View style={{ marginTop: "auto" }}>
                     <View style={styles.commentOuter}>
                       <View style={styles.commentHeader}>
                         <Text style={styles.commentTitle}>Comment</Text>
