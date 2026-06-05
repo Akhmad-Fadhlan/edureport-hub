@@ -3,7 +3,7 @@ import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/render
 /* ============================================================================
  * TYPES
  * ========================================================================== */
-
+ 
 export interface PdfIndicator {
   id: number;
   kode: string;
