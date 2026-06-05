@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";  
+import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
 
 /* ============================================================================
  * TYPES
@@ -29,28 +29,21 @@ export interface PdfReportData {
     photoDataUrl?: string | null;
     nama_kelas?: string;
   };
-
   semester: {
     nama_semester: string;
     tahun_ajaran: string;
     semester?: number;
   };
-
   teacher?: {
     nama: string;
     jabatan?: string;
     ttdDataUrl?: string | null;
   };
-
   generatedDate?: string;
-
   materials: PdfMaterial[];
-
   note?: string | null;
   comment?: string | null;
-
   schoolName?: string;
-
   coverBgDataUrl?: string | null;
   reportFirstBgDataUrl?: string | null;
   reportLastBgDataUrl?: string | null;
@@ -68,7 +61,49 @@ const MUTED  = "#64748b";
 const SOFT   = "#f8fafc";
 
 /* ============================================================================
- * STYLES
+ * A4 LAYOUT CONSTANTS (unit: pt)
+ * A4 = 595 x 842 pt
+ * ========================================================================== */
+
+// Usable height setelah padding per jenis halaman
+// First  : paddingTop=80, paddingBottom=40 → 842-120 = 722
+// Middle : paddingTop=55, paddingBottom=40 → 842- 95 = 747
+// Last   : paddingTop=55, paddingBottom=20 → 842- 75 = 767
+//   dikurangi student card ~115 (first only)
+//   dikurangi comment+bottom ~200 (last only)
+const USABLE: Record<"first" | "middle" | "last" | "firstlast", number> = {
+  first:     722 - 115,          // 607  — ada student card, tidak ada comment
+  middle:    747,                 // 747
+  last:      767 - 200,          // 567  — ada comment+bottom, tidak ada student card
+  firstlast: 722 - 115 - 200,    // 407  — ada keduanya (hanya 1 halaman total)
+};
+
+// Fixed heights per card (tidak bergantung jumlah indicator)
+const CARD_HEADER_H   = 40;  // compHeader
+const CARD_PADDING_V  = 24;  // paddingVertical compIndicators (12 atas + 12 bawah)
+const CARD_MARGIN_B   = 14;  // marginBottom compSection
+const IND_ROW_MIN_H   = 22;  // minimum tinggi per indicator row
+const IND_ROW_MAX_H   = 34;  // normal/default tinggi per indicator row
+
+/**
+ * Hitung tinggi indicator row yang ideal agar 2 material muat di 1 halaman A4.
+ * Mengembalikan nilai antara IND_ROW_MIN_H dan IND_ROW_MAX_H.
+ */
+function calcIndRowHeight(
+  mats: PdfMaterial[],
+  pageType: "first" | "middle" | "last" | "firstlast"
+): number {
+  const usable     = USABLE[pageType];
+  const totalInds  = mats.reduce((s, m) => s + m.indicators.length, 0);
+  const fixedH     = mats.length * (CARD_HEADER_H + CARD_PADDING_V + CARD_MARGIN_B);
+  const availForInds = usable - fixedH;
+  const ideal      = totalInds > 0 ? availForInds / totalInds : IND_ROW_MAX_H;
+  // Clamp antara min dan max
+  return Math.max(IND_ROW_MIN_H, Math.min(IND_ROW_MAX_H, ideal));
+}
+
+/* ============================================================================
+ * STATIC STYLES
  * ========================================================================== */
 
 const styles = StyleSheet.create({
@@ -77,35 +112,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     fontFamily: "Helvetica",
     color: TEXT,
-    width: "100%",
-    height: "100%",
   },
 
   absoluteBg: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
+    top: 0, left: 0,
+    width: "100%", height: "100%",
     objectFit: "cover",
   },
 
-  pageContent: {
-    flex: 1,
-    position: "relative",
-  },
+  pageContent: { flex: 1, position: "relative" },
 
-  coverContent: {
-    position: "relative",
-    width: "100%",
-    height: "100%",
-  },
+  coverContent: { position: "relative", width: "100%", height: "100%" },
 
   coverStudentName: {
     position: "absolute",
-    bottom: 78,
-    left: 0,
-    right: 0,
+    bottom: 78, left: 0, right: 0,
     fontSize: 18,
     color: "#ffffff",
     fontFamily: "Helvetica-Bold",
@@ -115,81 +137,50 @@ const styles = StyleSheet.create({
 
   coverSemesterLine: {
     position: "absolute",
-    bottom: 50,
-    left: 0,
-    right: 0,
+    bottom: 50, left: 0, right: 0,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "flex-start",
   },
 
   coverSemesterText: {
-    fontSize: 14,
-    color: "#ffffff",
-    fontFamily: "Helvetica",
-    letterSpacing: 0.5,
+    fontSize: 14, color: "#ffffff",
+    fontFamily: "Helvetica", letterSpacing: 0.5,
   },
 
   coverSemesterSuffix: {
-    fontSize: 8,
-    color: "#ffffff",
-    fontFamily: "Helvetica",
-    lineHeight: 1,
-    marginTop: -1,
+    fontSize: 8, color: "#ffffff",
+    fontFamily: "Helvetica", lineHeight: 1, marginTop: -1,
   },
 
-  forewordPage: {
-    paddingTop: 70,
-    paddingHorizontal: 60,
-    paddingBottom: 60,
-  },
+  forewordPage: { paddingTop: 70, paddingHorizontal: 60, paddingBottom: 60 },
 
   forewordHeading: {
-    fontSize: 28,
-    fontFamily: "Helvetica-Bold",
-    color: NAVY,
-    marginBottom: 2,
+    fontSize: 28, fontFamily: "Helvetica-Bold",
+    color: NAVY, marginBottom: 2,
   },
 
-  forewordSubheading: {
-    fontSize: 14,
-    color: NAVY,
-    marginBottom: 28,
-  },
+  forewordSubheading: { fontSize: 14, color: NAVY, marginBottom: 28 },
 
   forewordParagraph: {
-    fontSize: 11,
-    lineHeight: 1.9,
-    textAlign: "justify",
-    color: "#334155",
-    marginBottom: 14,
-    textIndent: 30,
+    fontSize: 11, lineHeight: 1.9, textAlign: "justify",
+    color: "#334155", marginBottom: 14, textIndent: 30,
   },
 
   forewordParagraphNoIndent: {
-    fontSize: 11,
-    lineHeight: 1.9,
-    textAlign: "justify",
-    color: "#334155",
-    marginBottom: 14,
+    fontSize: 11, lineHeight: 1.9, textAlign: "justify",
+    color: "#334155", marginBottom: 14,
   },
 
-  /* ── REPORT BODY ──────────────────────────────────────────────────────── */
   reportBody: {
     paddingTop: 55,
     paddingHorizontal: 42,
     paddingBottom: 40,
   },
 
-  reportBodyFirst: {
-    paddingTop: 80,
-  },
+  reportBodyFirst:    { paddingTop: 80 },
+  reportBodyLast:     { paddingBottom: 20 },
 
-  reportBodyLast: {
-    paddingBottom: 20,
-  },
-
-  /* ── STUDENT CARD ─────────────────────────────────────────────────────── */
   studentCard: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -197,91 +188,55 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 
-  scLeft: {
-    flexDirection: "row",
-    flex: 1,
-  },
+  scLeft:   { flexDirection: "row", flex: 1 },
 
   scPhotoWrap: {
-    width: 82,
-    height: 85,
-    borderRadius: 10,
-    overflow: "hidden",
+    width: 82, height: 85,
+    borderRadius: 10, overflow: "hidden",
     backgroundColor: "#e2e8f0",
-    marginTop: 13,
-    marginLeft: 2,
+    marginTop: 13, marginLeft: 2,
   },
 
-  scPhoto: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-  },
+  scPhoto: { width: "100%", height: "100%", objectFit: "cover" },
 
   avatarPlaceholder: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
+    width: "100%", height: "100%",
+    justifyContent: "center", alignItems: "center",
     backgroundColor: "#94a3b8",
   },
 
   avatarInitials: {
-    fontSize: 28,
-    color: "#ffffff",
-    fontFamily: "Helvetica-Bold",
+    fontSize: 28, color: "#ffffff", fontFamily: "Helvetica-Bold",
   },
 
-  scInfo: {
-    marginLeft: 14,
-    paddingTop: 10,
-    flex: 1,
-  },
+  scInfo: { marginLeft: 14, paddingTop: 10, flex: 1 },
 
   scName: {
-    paddingTop: 10,
-    fontSize: 18,
-    fontFamily: "Helvetica-Bold",
-    color: NAVY,
-    marginBottom: 12,
+    paddingTop: 10, fontSize: 18,
+    fontFamily: "Helvetica-Bold", color: NAVY, marginBottom: 12,
   },
 
   detailText: {
-    paddingLeft: 25,
-    fontSize: 10.5,
-    color: MUTED,
-    marginBottom: 10,
+    paddingLeft: 25, fontSize: 10.5, color: MUTED, marginBottom: 10,
   },
 
-  scRight: {
-    alignItems: "flex-end",
-    paddingRight: 33,
-    paddingTop: 28,
-  },
+  scRight: { alignItems: "flex-end", paddingRight: 33, paddingTop: 28 },
 
   scAvgValue: {
-    fontSize: 38,
-    lineHeight: 1,
-    fontFamily: "Helvetica-Bold",
-    color: NAVY,
-    marginBottom: 8,
-    paddingRight: 5,
+    fontSize: 38, lineHeight: 1,
+    fontFamily: "Helvetica-Bold", color: NAVY,
+    marginBottom: 8, paddingRight: 5,
   },
 
   scAvgBadge: {
-    borderRadius: 20,
-    paddingLeft: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    borderRadius: 20, paddingLeft: 5,
+    paddingHorizontal: 12, paddingVertical: 5,
   },
 
   scAvgBadgeText: {
-    color: "#ffffff",
-    fontSize: 10,
-    fontFamily: "Helvetica-Bold",
+    color: "#ffffff", fontSize: 10, fontFamily: "Helvetica-Bold",
   },
 
-  /* ── MATERIAL CARD ────────────────────────────────────────────────────── */
   compSection: {
     backgroundColor: "#ffffff",
     borderRadius: 10,
@@ -303,56 +258,44 @@ const styles = StyleSheet.create({
   },
 
   compTitleText: {
-    fontSize: 12,
-    fontFamily: "Helvetica-Bold",
-    color: NAVY,
-    flex: 1,
-    marginRight: 10,
+    fontSize: 12, fontFamily: "Helvetica-Bold",
+    color: NAVY, flex: 1, marginRight: 10,
   },
 
   compScoreText: {
-    fontSize: 11,
-    fontFamily: "Helvetica-Bold",
-    color: "#111827",
+    fontSize: 11, fontFamily: "Helvetica-Bold", color: "#111827",
   },
 
-  compIndicators: {
-    paddingVertical: 12,
-  },
+  compIndicators: { paddingVertical: 12 },
 
   indRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",       // center agar progress bar sejajar tengah teks
     paddingHorizontal: 12,
-    marginBottom: 12,
   },
 
   indNum: {
-    width: 22,
-    height: 22,
+    width: 20, height: 20,
     borderRadius: 4,
     backgroundColor: SOFT,
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: "Helvetica-Bold",
     color: NAVY,
     textAlign: "center",
-    paddingTop: 5,
+    paddingTop: 4,
+    flexShrink: 0,
   },
 
   indText: {
     flex: 1,
-    fontSize: 8.5,
-    lineHeight: 1.45,
+    fontSize: 8,
+    lineHeight: 1.35,
     color: "#334155",
-    marginLeft: 8,
-    marginRight: 24,
+    marginLeft: 7,
+    marginRight: 18,
   },
 
-  /* ── PROGRESS BAR ─────────────────────────────────────────────────────── */
-  progressWrapper: {
-    width: 130,
-    flexShrink: 0,
-  },
+  progressWrapper: { width: 124, flexShrink: 0 },
 
   progressBarWrap: {
     flexDirection: "row",
@@ -362,50 +305,34 @@ const styles = StyleSheet.create({
 
   progressSegmentsRow: {
     flexDirection: "row",
-    width: 86,
+    width: 82,
     gap: 2,
   },
 
   progressSegment: {
-    width: 14,
-    height: 8,
-    borderRadius: 10,
+    width: 13, height: 7, borderRadius: 10,
   },
 
   progressSegmentPartial: {
-    width: 14,
-    height: 8,
-    borderRadius: 10,
-    overflow: "hidden",
-    flexDirection: "row",
+    width: 13, height: 7, borderRadius: 10,
+    overflow: "hidden", flexDirection: "row",
   },
 
-  progressSegmentPartialFill: {
-    height: 8,
-    backgroundColor: ORANGE,
-  },
-
-  progressSegmentPartialEmpty: {
-    height: 8,
-    backgroundColor: "#dbe4f0",
-  },
+  progressSegmentPartialFill:  { height: 7, backgroundColor: ORANGE },
+  progressSegmentPartialEmpty: { height: 7, backgroundColor: "#dbe4f0" },
 
   progressValue: {
-    width: 34,
-    height: 20,
-    borderRadius: 5,
+    width: 32, height: 18,
+    borderRadius: 4,
     backgroundColor: ORANGE,
     justifyContent: "center",
     alignItems: "center",
   },
 
   progressValueText: {
-    color: "#ffffff",
-    fontSize: 9,
-    fontFamily: "Helvetica-Bold",
+    color: "#ffffff", fontSize: 8, fontFamily: "Helvetica-Bold",
   },
 
-  /* ── COMMENT ──────────────────────────────────────────────────────────── */
   commentOuter: {
     borderRadius: 8,
     borderWidth: 1,
@@ -414,15 +341,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-  commentHeader: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-  },
+  commentHeader: { paddingVertical: 10, paddingHorizontal: 14 },
 
   commentTitle: {
-    fontSize: 12,
-    fontFamily: "Helvetica-Bold",
-    color: TEXT,
+    fontSize: 12, fontFamily: "Helvetica-Bold", color: TEXT,
   },
 
   commentBody: {
@@ -430,16 +352,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#e2e8f0",
     padding: 14,
-    minHeight: 60,
+    minHeight: 56,
   },
 
-  commentText: {
-    fontSize: 10,
-    color: "#475569",
-    lineHeight: 1.6,
-  },
+  commentText: { fontSize: 10, color: "#475569", lineHeight: 1.6 },
 
-  /* ── BOTTOM SECTION (skala + TTD) ─────────────────────────────────────── */
   bottomSection: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -450,86 +367,44 @@ const styles = StyleSheet.create({
     borderTopColor: "#e2e8f0",
   },
 
-  scaleSection: {
-    flex: 1,
-    paddingRight: 20,
-  },
+  scaleSection: { flex: 1, paddingRight: 20 },
 
   scaleTitle: {
-    fontSize: 10,
-    fontFamily: "Helvetica-Bold",
-    color: TEXT,
-    marginBottom: 8,
+    fontSize: 10, fontFamily: "Helvetica-Bold",
+    color: TEXT, marginBottom: 8,
   },
 
   scaleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-    gap: 6,
+    flexDirection: "row", alignItems: "center",
+    marginBottom: 6, gap: 6,
   },
 
   scaleBadge: {
-    width: 52,
-    borderRadius: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-    alignItems: "center",
+    width: 52, borderRadius: 4,
+    paddingVertical: 4, paddingHorizontal: 6, alignItems: "center",
   },
 
   scaleBadgeText: {
-    fontSize: 8,
-    fontFamily: "Helvetica-Bold",
-    color: "#ffffff",
+    fontSize: 8, fontFamily: "Helvetica-Bold", color: "#ffffff",
   },
 
   scaleLabel: {
-    flex: 1,
-    borderRadius: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    flex: 1, borderRadius: 4, paddingVertical: 4, paddingHorizontal: 8,
   },
 
-  scaleLabelTextRed: {
-    fontSize: 8,
-    fontFamily: "Helvetica-Bold",
-    color: "#dc2626",
-  },
+  scaleLabelTextRed:    { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#dc2626" },
+  scaleLabelTextOrange: { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#ea580c" },
+  scaleLabelTextBlue:   { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#2563eb" },
+  scaleLabelTextGreen:  { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#16a34a" },
 
-  scaleLabelTextOrange: {
-    fontSize: 8,
-    fontFamily: "Helvetica-Bold",
-    color: "#ea580c",
-  },
-
-  scaleLabelTextBlue: {
-    fontSize: 8,
-    fontFamily: "Helvetica-Bold",
-    color: "#2563eb",
-  },
-
-  scaleLabelTextGreen: {
-    fontSize: 8,
-    fontFamily: "Helvetica-Bold",
-    color: "#16a34a",
-  },
-
-  /* ── SIGNATURE ────────────────────────────────────────────────────────── */
-  signatureSection: {
-    alignItems: "center",
-    minWidth: 160,
-  },
+  signatureSection: { alignItems: "center", minWidth: 160 },
 
   signatureDate: {
-    fontSize: 9,
-    color: MUTED,
-    marginBottom: 2,
-    textAlign: "center",
+    fontSize: 9, color: MUTED, marginBottom: 2, textAlign: "center",
   },
 
   signaturePlaceholder: {
-    width: 130,
-    height: 65,
+    width: 130, height: 60,
     backgroundColor: "#f1f5f9",
     borderRadius: 4,
     borderWidth: 1,
@@ -540,32 +415,22 @@ const styles = StyleSheet.create({
   },
 
   signatureImage: {
-    width: 130,
-    height: 65,
-    objectFit: "contain",
-    marginBottom: 8,
+    width: 130, height: 60, objectFit: "contain", marginBottom: 8,
   },
 
   signatureName: {
-    fontSize: 10,
-    fontFamily: "Helvetica-Bold",
-    color: NAVY,
-    textAlign: "center",
+    fontSize: 10, fontFamily: "Helvetica-Bold",
+    color: NAVY, textAlign: "center",
   },
 
   signatureRole: {
-    fontSize: 8,
-    color: MUTED,
-    textAlign: "center",
-    marginTop: 2,
+    fontSize: 8, color: MUTED, textAlign: "center", marginTop: 2,
   },
 
   pageNumber: {
     position: "absolute",
-    bottom: 14,
-    right: 24,
-    fontSize: 9,
-    color: "#64748b",
+    bottom: 14, right: 24,
+    fontSize: 9, color: "#64748b",
   },
 });
 
@@ -576,11 +441,9 @@ const styles = StyleSheet.create({
 function toDirectImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   const driveFileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
-  if (driveFileMatch)
-    return `https://lh3.googleusercontent.com/d/${driveFileMatch[1]}`;
+  if (driveFileMatch) return `https://lh3.googleusercontent.com/d/${driveFileMatch[1]}`;
   const driveIdMatch = url.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([^&]+)/);
-  if (driveIdMatch)
-    return `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}`;
+  if (driveIdMatch) return `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}`;
   return url;
 }
 
@@ -640,85 +503,23 @@ function splitSemesterLabel(label: string) {
   return null;
 }
 
-/**
- * Estimasi tinggi sebuah material card dalam satuan pt (points).
- * Dipakai untuk memutuskan apakah material muat di satu halaman bersama lainnya.
- *
- * A4 usable height (842pt total):
- *   - Halaman first : paddingTop 80 + paddingBottom 40 = 120pt overhead
- *                     + student card ~115pt  → sisa ~607pt
- *   - Halaman middle: paddingTop 55 + paddingBottom 40 =  95pt overhead → sisa ~747pt
- *   - Halaman last  : paddingTop 55 + paddingBottom 20 =  75pt overhead
- *                     + comment ~100pt + bottom ~100pt → sisa ~567pt
- */
-const PAGE_H        = 842;   // A4 height in pt
-const PADDING_FIRST = 80 + 40;   // paddingTop + paddingBottom for first page
-const PADDING_MID   = 55 + 40;
-const PADDING_LAST  = 55 + 20;
-const STUDENT_CARD_H = 115;
-const COMMENT_BOTTOM_H = 210; // comment + bottomSection
-
-const COMP_HEADER_H = 40;    // compHeader
-const IND_ROW_H     = 32;    // each indicator row (approx)
-const COMP_MARGIN   = 14;    // marginBottom on compSection
-
-function estimateMaterialHeight(m: PdfMaterial): number {
-  return COMP_HEADER_H + m.indicators.length * IND_ROW_H + 24 + COMP_MARGIN;
-}
-
-/**
- * Kelompokkan materials ke dalam halaman dengan mempertimbangkan tinggi
- * konten agar tidak overflow A4.
- */
-function groupMaterialsIntoPages(
-  materials: PdfMaterial[],
-  totalMaterials: number
-): PdfMaterial[][] {
-  const pages: PdfMaterial[][] = [];
-  let current: PdfMaterial[] = [];
-  let usedHeight = 0;
-
-  const getAvailableHeight = (pageIdx: number) => {
-    const isFirstPage = pageIdx === 0;
-    // Semua halaman bisa jadi last, hitung konservatif
-    const overhead = isFirstPage
-      ? PADDING_FIRST + STUDENT_CARD_H
-      : PADDING_MID;
-    return PAGE_H - overhead - COMMENT_BOTTOM_H - 20; // -20 safety margin
-  };
-
-  let pageIdx = 0;
-
-  for (const mat of materials) {
-    const matH = estimateMaterialHeight(mat);
-    const available = getAvailableHeight(pageIdx);
-
-    if (current.length > 0 && usedHeight + matH > available) {
-      // Halaman penuh, simpan dan mulai baru
-      pages.push(current);
-      pageIdx++;
-      current = [mat];
-      usedHeight = matH;
-    } else {
-      current.push(mat);
-      usedHeight += matH;
-    }
-  }
-
-  if (current.length > 0) pages.push(current);
-  return pages;
+/** Selalu 2 material per halaman, kecuali sisa 1 */
+function chunkMaterials<T>(arr: T[], size = 2): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) result.push(arr.slice(i, i + size));
+  return result;
 }
 
 /* ============================================================================
- * PROGRESS BAR
+ * PROGRESS BAR — ukuran dikompres sedikit agar muat
  * ========================================================================== */
 
 function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
-  const totalSegs  = 5;
-  const exactFill  = (nilai / max) * totalSegs;
-  const fullSegs   = Math.floor(exactFill);
-  const partial    = exactFill - fullSegs;
-  const color      = getScaleColor(nilai);
+  const totalSegs = 5;
+  const exactFill = (nilai / max) * totalSegs;
+  const fullSegs  = Math.floor(exactFill);
+  const partial   = exactFill - fullSegs;
+  const color     = getScaleColor(nilai);
 
   return (
     <View style={styles.progressWrapper}>
@@ -731,7 +532,7 @@ function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
               return (
                 <View key={i} style={styles.progressSegmentPartial}>
                   <View style={[styles.progressSegmentPartialFill, { backgroundColor: color, width: `${partial * 100}%` }]} />
-                  <View style={[styles.progressSegmentPartialEmpty,  { width: `${(1 - partial) * 100}%` }]} />
+                  <View style={[styles.progressSegmentPartialEmpty, { width: `${(1 - partial) * 100}%` }]} />
                 </View>
               );
             } else {
@@ -748,12 +549,10 @@ function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
 }
 
 /* ============================================================================
- * SKALA NILAI ROW
+ * SKALA ROW
  * ========================================================================== */
 
-function SkalaRow({
-  range, label, badgeColor, bgColor, textStyle,
-}: {
+function SkalaRow({ range, label, badgeColor, bgColor, textStyle }: {
   range: string; label: string; badgeColor: string; bgColor: string; textStyle: any;
 }) {
   return (
@@ -769,10 +568,16 @@ function SkalaRow({
 }
 
 /* ============================================================================
- * MATERIAL CARD
+ * MATERIAL CARD — indRowH adaptif
  * ========================================================================== */
 
-function MaterialCard({ material }: { material: PdfMaterial }) {
+function MaterialCard({
+  material,
+  indRowH,
+}: {
+  material: PdfMaterial;
+  indRowH: number;
+}) {
   const avg = calculateMaterialAverage([material]);
   return (
     <View style={styles.compSection}>
@@ -782,9 +587,12 @@ function MaterialCard({ material }: { material: PdfMaterial }) {
       </View>
       <View style={styles.compIndicators}>
         {material.indicators.map((ind, idx) => (
-          <View key={ind.id} style={styles.indRow}>
+          <View
+            key={ind.id}
+            style={[styles.indRow, { height: indRowH, marginBottom: 0 }]}
+          >
             <Text style={styles.indNum}>{idx + 1}</Text>
-            <Text style={styles.indText}>{ind.deskripsi}</Text>
+            <Text style={styles.indText} numberOfLines={2}>{ind.deskripsi}</Text>
             <ProgressBar nilai={ind.nilai || 0} max={ind.nilai_max} />
           </View>
         ))}
@@ -803,30 +611,31 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   const badgeLabel  = getBadgeLabel(overallAvg);
   const studentName = data.student.nama || "-";
 
-  // Resolve kelas label
   const namaKelasRaw = data.student.nama_kelas || "-";
   const kelasMatch   = namaKelasRaw.match(/^(\d+)/);
   const kelasNum     = kelasMatch ? parseInt(kelasMatch[1]) : null;
   const studentClass = kelasNum === 7 || kelasNum === 8 ? String(kelasNum) : namaKelasRaw;
 
-  // Resolve semester label
   let semesterLabel = data.semester.nama_semester || "";
   const semNum  = data.semester.semester;
   const lower   = (data.semester.nama_semester || "").toLowerCase();
-  if (semNum === 1 || lower.includes("ganjil"))                          semesterLabel = "1st semester";
-  else if (semNum === 2 || lower.includes("genap") || lower.includes("gasal")) semesterLabel = "2nd semester";
+  if (semNum === 1 || lower.includes("ganjil"))
+    semesterLabel = "1st semester";
+  else if (semNum === 2 || lower.includes("genap") || lower.includes("gasal"))
+    semesterLabel = "2nd semester";
 
   const semesterParts = splitSemesterLabel(semesterLabel);
   const photoUrl      = toDirectImageUrl(data.student.photoDataUrl);
   const ttdUrl        = toDirectImageUrl(data.teacher?.ttdDataUrl);
 
-  // ── Smart grouping: 1 material per halaman kalau besar, 2 kalau kecil ──
-  const materialPages = groupMaterialsIntoPages(data.materials, data.materials.length);
+  // Selalu 2 material per halaman
+  const materialPages = chunkMaterials(data.materials, 2);
+  const totalPages    = materialPages.length;
 
   return (
     <Document>
 
-      {/* ── COVER PAGE ────────────────────────────────────────────────────── */}
+      {/* ── COVER ─────────────────────────────────────────────────────────── */}
       <Page size="A4" style={styles.page}>
         {data.coverBgDataUrl && (
           <Image src={data.coverBgDataUrl} style={styles.absoluteBg} fixed />
@@ -850,7 +659,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
         </View>
       </Page>
 
-      {/* ── FOREWORD PAGE ─────────────────────────────────────────────────── */}
+      {/* ── FOREWORD ──────────────────────────────────────────────────────── */}
       <Page size="A4" style={styles.page}>
         <View style={styles.forewordPage}>
           <Text style={styles.forewordHeading}>Foreword</Text>
@@ -863,45 +672,53 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
           </Text>
           <Text style={styles.forewordParagraphNoIndent}>
             Kami benar-benar merasa tertantang untuk mewujudkan naskah laporan ini sebagai
-            bagian dari bentuk kewajiban kami sebagai guru untuk melaporkan pencapaian yang telah
-            siswa dapatkan selama satu semester.
+            bagian dari bentuk kewajiban kami sebagai guru untuk melaporkan pencapaian yang
+            telah siswa dapatkan selama satu semester.
           </Text>
           <Text style={styles.forewordParagraphNoIndent}>
-            Berdasarkan pembelajaran selama satu semester siswa mengalami berbagai perkembangan yang
-            wajib kami laporkan kepada wali siswa gunanya sebagai motivasi bagi seluruh elemen baik
-            guru, siswa, wali siswa untuk mewujudkan tujuan kita bersama yang sesuai dengan slogan
-            SMP - SMK IDN Boarding School yaitu "Expert Factory".
+            Berdasarkan pembelajaran selama satu semester siswa mengalami berbagai perkembangan
+            yang wajib kami laporkan kepada wali siswa gunanya sebagai motivasi bagi seluruh
+            elemen baik guru, siswa, wali siswa untuk mewujudkan tujuan kita bersama yang sesuai
+            dengan slogan SMP - SMK IDN Boarding School yaitu "Expert Factory".
           </Text>
           <Text style={styles.forewordParagraphNoIndent}>
             Kami juga menyampaikan ucapan terima kasih kepada seluruh elemen terkait yang telah
             memberikan sumbangsih terwujudnya laporan pencapaian siswa pada semester ini, kami
-            menyadari bahwa masih banyak kekurangan dalam penyajian laporan ini, karena itu, kami
-            berharap agar pembaca berkenan menyampaikan masukan yang membangun.
+            menyadari bahwa masih banyak kekurangan dalam penyajian laporan ini, karena itu,
+            kami berharap agar pembaca berkenan menyampaikan masukan yang membangun.
           </Text>
           <Text style={styles.forewordParagraphNoIndent}>
-            Akhir kata, kami berharap agar laporan ini dapat membawa manfaat kepada pembaca. Secara
-            khusus, kami berharap semoga laporan ini dapat menginspirasi siswa agar menjadi generasi
-            yang siap menghadapi perubahan teknologi kedepannya yang disertai dengan akhlak yang
-            baik.
+            Akhir kata, kami berharap agar laporan ini dapat membawa manfaat kepada pembaca.
+            Secara khusus, kami berharap semoga laporan ini dapat menginspirasi siswa agar
+            menjadi generasi yang siap menghadapi perubahan teknologi kedepannya yang disertai
+            dengan akhlak yang baik.
           </Text>
         </View>
       </Page>
 
-      {/* ── DIVIDER PAGE (IT REPORT) ───────────────────────────────────────── */}
+      {/* ── DIVIDER ───────────────────────────────────────────────────────── */}
       <Page size="A4" style={styles.page}>
         {data.dividerBgDataUrl && (
           <Image src={data.dividerBgDataUrl} style={styles.absoluteBg} />
         )}
       </Page>
 
-      {/* ── REPORT PAGES ──────────────────────────────────────────────────── */}
+      {/* ── REPORT PAGES — selalu 2 material, layout adaptif ────────────── */}
       {materialPages.map((pageMaterials, pageIndex) => {
-        const isFirst = pageIndex === 0;
-        const isLast  = pageIndex === materialPages.length - 1;
+        const isFirst    = pageIndex === 0;
+        const isLast     = pageIndex === totalPages - 1;
+        const isFirstLast = isFirst && isLast;   // hanya 1 halaman total
 
-        // Background: first page pakai reportFirstBgDataUrl,
-        // last page (kalau beda dari first) pakai reportLastBgDataUrl,
-        // halaman tengah tidak pakai background gambar
+        // Tentukan pageType untuk kalkulasi indRowH
+        const pageType = isFirstLast ? "firstlast"
+          : isFirst ? "first"
+          : isLast  ? "last"
+          : "middle";
+
+        // Hitung tinggi row secara adaptif agar 2 card muat A4
+        const indRowH = calcIndRowHeight(pageMaterials, pageType);
+
+        // Background
         const bgUrl: string | null = isFirst
           ? (data.reportFirstBgDataUrl ?? null)
           : isLast
@@ -910,10 +727,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
         return (
           <Page key={pageIndex} size="A4" style={styles.page} wrap={false}>
-            {/* Background image */}
-            {bgUrl && (
-              <Image src={bgUrl} style={styles.absoluteBg} />
-            )}
+            {bgUrl && <Image src={bgUrl} style={styles.absoluteBg} />}
 
             <View style={styles.pageContent}>
               <View
@@ -923,7 +737,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                   isLast  ? styles.reportBodyLast  : {},
                 ]}
               >
-                {/* ── Student Card — hanya halaman pertama ── */}
+                {/* Student Card — hanya halaman pertama */}
                 {isFirst && (
                   <View style={styles.studentCard}>
                     <View style={styles.scLeft}>
@@ -953,15 +767,18 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                   </View>
                 )}
 
-                {/* ── Material Cards ── */}
+                {/* 2 Material Cards per halaman */}
                 {pageMaterials.map((material) => (
-                  <MaterialCard key={material.id} material={material} />
+                  <MaterialCard
+                    key={material.id}
+                    material={material}
+                    indRowH={indRowH}
+                  />
                 ))}
 
-                {/* ── Last page: Comment + Skala Nilai + TTD Guru ── */}
+                {/* Last page: Comment + Skala + TTD */}
                 {isLast && (
                   <>
-                    {/* Comment */}
                     <View style={styles.commentOuter}>
                       <View style={styles.commentHeader}>
                         <Text style={styles.commentTitle}>Comment</Text>
@@ -974,18 +791,15 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                       </View>
                     </View>
 
-                    {/* Bottom: Skala Nilai + TTD Guru */}
                     <View style={styles.bottomSection}>
-                      {/* Skala Nilai */}
                       <View style={styles.scaleSection}>
                         <Text style={styles.scaleTitle}>Skala Nilai Rata-rata :</Text>
-                        <SkalaRow range="0 - 2.4"  label="Butuh Perbaikan"   badgeColor="#dc2626" bgColor="#fee2e2" textStyle={styles.scaleLabelTextRed}    />
-                        <SkalaRow range="2.5 - 3.5" label="Cukup"            badgeColor="#ea580c" bgColor="#ffedd5" textStyle={styles.scaleLabelTextOrange} />
-                        <SkalaRow range="3.6 - 4.5" label="Sangat Baik"      badgeColor="#2563eb" bgColor="#dbeafe" textStyle={styles.scaleLabelTextBlue}   />
-                        <SkalaRow range="4.6 - 5"   label="Sangat Memuaskan" badgeColor="#16a34a" bgColor="#dcfce7" textStyle={styles.scaleLabelTextGreen}  />
+                        <SkalaRow range="0 - 2.4"   label="Butuh Perbaikan"   badgeColor="#dc2626" bgColor="#fee2e2" textStyle={styles.scaleLabelTextRed}    />
+                        <SkalaRow range="2.5 - 3.5"  label="Cukup"            badgeColor="#ea580c" bgColor="#ffedd5" textStyle={styles.scaleLabelTextOrange} />
+                        <SkalaRow range="3.6 - 4.5"  label="Sangat Baik"      badgeColor="#2563eb" bgColor="#dbeafe" textStyle={styles.scaleLabelTextBlue}   />
+                        <SkalaRow range="4.6 - 5"    label="Sangat Memuaskan" badgeColor="#16a34a" bgColor="#dcfce7" textStyle={styles.scaleLabelTextGreen}  />
                       </View>
 
-                      {/* TTD Guru */}
                       <View style={styles.signatureSection}>
                         <Text style={styles.signatureDate}>{data.generatedDate || "Tanggal"}</Text>
                         {ttdUrl ? (
@@ -1003,7 +817,6 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                 )}
               </View>
 
-              {/* Page number */}
               <Text
                 style={styles.pageNumber}
                 render={({ pageNumber }) => `${pageNumber}`}
