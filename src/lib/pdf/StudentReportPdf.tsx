@@ -292,18 +292,21 @@ scAvgValue: {
   fontSize: 38, lineHeight: 1,
   fontFamily: "Helvetica-Bold", color: NAVY,
   marginBottom: 8,
-  // paddingRight: 5  ← pastikan sudah dihapus
+  textAlign: "center",
+  minWidth: 100,
 },
 
 scAvgBadge: {
   borderRadius: 20,
   paddingHorizontal: 12,
   paddingVertical: 5,
-  marginRight: 5,  // ← geser badge ke kanan sejajar angka
+  minWidth: 100,
+  alignItems: "center",
 },
 
 scAvgBadgeText: {
   color: "#ffffff", fontSize: 10, fontFamily: "Helvetica-Bold",
+  textAlign: "center",
 },
 
   compSection: {
