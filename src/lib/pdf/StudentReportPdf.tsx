@@ -287,10 +287,9 @@ const styles = StyleSheet.create({
   },
 
 scRight: { 
-  paddingRight: 33, 
+  width: 150,
   paddingTop: 28,
-  justifyContent: "flex-end",
-  alignItems: "flex-end",
+  alignItems: "center",
 },
 
 scAvgValue: {
@@ -822,12 +821,13 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                       </View>
                     </View>
                    <View style={styles.scRight}>
-                     <View style={{ alignItems: "center" }}>
-                       <Text style={styles.scAvgValue}>{overallAvg.toFixed(2)}</Text>
-                       <View style={[styles.scAvgBadge, { backgroundColor: badgeColor }]}>
-                         <Text style={styles.scAvgBadgeText}>{badgeLabel}</Text>
-                       </View>
-                     </View>
+<View style={{ alignItems: "center", paddingRight: 33, paddingTop: 28 }}>
+  <Text style={{ fontSize: 9, color: MUTED, marginBottom: 4 }}>Nilai Rata-rata</Text>
+  <Text style={styles.scAvgValue}>{overallAvg.toFixed(2)}</Text>
+  <View style={[styles.scAvgBadge, { backgroundColor: badgeColor }]}>
+    <Text style={styles.scAvgBadgeText}>{badgeLabel}</Text>
+  </View>
+</View>
                    </View>
                  </View>
                )}
