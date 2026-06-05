@@ -215,7 +215,7 @@ function NotesPage() {
         class_id: classId,
         per_page: 1000
       };
-      if (cabangParam) params.cabang = cabangParam;
+      // if (cabangParam) params.cabang = cabangParam;
       
       const res = await apiGet<{ items: Student[] }>("/students", params);
       const students = res?.items || [];
