@@ -294,14 +294,18 @@ const styles = StyleSheet.create({
     marginBottom: 8, paddingRight: 5,
   },
 
-  scAvgBadge: {
-    borderRadius: 20, paddingLeft: 5,
-    paddingHorizontal: 12, paddingVertical: 5,
-  },
+scAvgBadge: {
+  borderRadius: 20,
+  paddingLeft: 5,
+  paddingHorizontal: 12, paddingVertical: 5,
+  alignItems: "center",    // ← tambahkan ini
+  alignSelf: "flex-end",   // ← pastikan tidak stretch
+},
 
-  scAvgBadgeText: {
-    color: "#ffffff", fontSize: 10, fontFamily: "Helvetica-Bold",
-  },
+scAvgBadgeText: {
+  color: "#ffffff", fontSize: 10, fontFamily: "Helvetica-Bold",
+  textAlign: "center",     // ← tambahkan ini
+},
 
   compSection: {
     backgroundColor: "#ffffff",
@@ -455,13 +459,13 @@ const styles = StyleSheet.create({
   },
 
   scaleLabel: {
-    flex: 1, borderRadius: 4, paddingVertical: 4, paddingHorizontal: 8,alignItems: "center",  // ← tambahkan ini
+    flex: 1, borderRadius: 4, paddingVertical: 4, paddingHorizontal: 8, // ← tambahkan ini
   },
 
-scaleLabelTextRed:    { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#dc2626", textAlign: "center" },
-scaleLabelTextOrange: { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#ea580c", textAlign: "center" },
-scaleLabelTextBlue:   { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#2563eb", textAlign: "center" },
-scaleLabelTextGreen:  { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#16a34a", textAlign: "center" },
+scaleLabelTextRed:    { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#dc2626"},
+scaleLabelTextOrange: { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#ea580c"},
+scaleLabelTextBlue:   { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#2563eb"},
+scaleLabelTextGreen:  { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#16a34a"},
 
   signatureSection: { alignItems: "center", minWidth: 160 },
 
