@@ -228,7 +228,63 @@ function NotesPage() {
       setLoadingFormStudents(false);
     }
   }, [cabangParam]);
+// Tambahkan useEffect untuk debugging data students
+useEffect(() => {
+  console.log("=== DEBUGGING STUDENTS DATA ===");
+  console.log("allStudents:", allStudents);
+  console.log("Jumlah allStudents:", allStudents.length);
+  console.log("classFilter:", classFilter);
+  console.log("cabangParam:", cabangParam);
+  console.log("isGuru:", isGuru);
+  console.log("guruCabang:", guruCabang);
+  
+  // Log detail setiap student
+  allStudents.forEach(s => {
+    console.log(`Student: ${s.nama}, Class ID: ${s.class_id}, Cabang: ${s.cabang}`);
+  });
+}, [allStudents, classFilter, cabangParam, isGuru, guruCabang]);
 
+// Debug untuk loadFormStudents
+const loadFormStudents = useCallback(async (classId: string) => {
+  if (!classId || classId === "all") {
+    console.log("No class selected, skipping load");
+    setFormStudents([]);
+    return;
+  }
+  
+  console.log("=== LOADING STUDENTS FOR CLASS ===");
+  console.log("classId:", classId);
+  console.log("cabangParam:", cabangParam);
+  
+  setLoadingFormStudents(true);
+  try {
+    const params: Record<string, unknown> = {
+      class_id: classId,
+      per_page: 1000
+    };
+    if (cabangParam) params.cabang = cabangParam;
+    
+    console.log("Request params:", params);
+    
+    const res = await apiGet<{ items: Student[] }>("/students", params);
+    console.log("Response from server:", res);
+    
+    const students = res?.items || [];
+    console.log(`Found ${students.length} students:`, students.map(s => ({ id: s.id, nama: s.nama, class_id: s.class_id, cabang: s.cabang })));
+    
+    setFormStudents(students);
+    
+    if (students.length === 0) {
+      toast.warning(`Tidak ada siswa ditemukan di kelas ini${cabangParam ? ` untuk cabang ${cabangParam}` : ''}`);
+    }
+  } catch (error) {
+    console.error("Gagal load siswa:", error);
+    setFormStudents([]);
+    toast.error("Gagal memuat data siswa");
+  } finally {
+    setLoadingFormStudents(false);
+  }
+}, [cabangParam]);
   // Effect untuk load siswa ketika formClassId berubah (SAMA PERSIS dengan portofolio)
   useEffect(() => {
     if (formClassId && formClassId !== "all") {
