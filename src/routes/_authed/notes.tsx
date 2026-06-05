@@ -3,9 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea"; 
+import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
+  Dialog, 
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -115,7 +115,7 @@ function NotesPage() {
   const classesData = useApiData<Klass[]>("/classes", listParams);
   const studentsData = useApiData<{ items: Student[]; pagination?: any }>(
     "/students",
-    { per_page: 500, ...listParams }
+    { per_page: all, ...listParams }
   );
   const {
     data: rawNotesData,
