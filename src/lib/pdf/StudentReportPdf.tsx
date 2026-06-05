@@ -2,7 +2,7 @@ import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/render
 
 /* ============================================================================
  * TYPES
- * ========================================================================== */ 
+ * ========================================================================== */
 
 export interface PdfIndicator {
   id: number;
@@ -158,8 +158,11 @@ const styles = StyleSheet.create({
   absoluteBg: {
     position: "absolute",
     top: 0, left: 0,
-    width: "100%", height: "100%",
-    objectFit: "cover",
+    // Use explicit pt values (595×842) instead of "100%" to guarantee the image
+    // never exceeds the page dimensions — prevents landscape inference by viewers.
+    width: 595,
+    height: 842,
+    objectFit: "fill",
   },
 
   pageContent: { flex: 1, position: "relative" },
@@ -688,10 +691,10 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   const totalPages    = materialPages.length;
 
   return (
-    <Document>
+    <Document pageLayout="singlePage">
 
       {/* ── COVER ──────────────────────────────────────────────────────────── */}
-      <Page size="A4" style={styles.page}>
+      <Page size={[595, 842]} orientation="portrait" style={styles.page}>
         {data.coverBgDataUrl && (
           <Image src={data.coverBgDataUrl} style={styles.absoluteBg} fixed />
         )}
@@ -715,7 +718,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
       </Page>
 
       {/* ── FOREWORD ───────────────────────────────────────────────────────── */}
-      <Page size="A4" style={styles.page}>
+      <Page size={[595, 842]} orientation="portrait" style={styles.page}>
         <View style={styles.forewordPage}>
           <Text style={styles.forewordHeading}>Foreword</Text>
           <Text style={styles.forewordSubheading}>Prakata</Text>
@@ -752,7 +755,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
       </Page>
 
       {/* ── DIVIDER ────────────────────────────────────────────────────────── */}
-      <Page size="A4" style={styles.page}>
+      <Page size={[595, 842]} orientation="portrait" style={styles.page}>
         {data.dividerBgDataUrl && (
           <Image src={data.dividerBgDataUrl} style={styles.absoluteBg} />
         )}
@@ -782,11 +785,9 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
         return (
           <Page
             key={pageIndex}
-            size="A4"
+            size={[595, 842]}
+            orientation="portrait"
             style={styles.page}
-            // wrap={false} prevents react-pdf from splitting this page's content
-            // across multiple physical pages. Combined with the adaptive indRowH
-            // calculation above, everything is guaranteed to fit on one A4 sheet.
             wrap={false}
           >
             {bgUrl && <Image src={bgUrl} style={styles.absoluteBg} />}
