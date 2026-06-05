@@ -1,5 +1,5 @@
-import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer"; 
-   
+import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
+  
 /* ============================================================================
  * PRINT CSS
  * ========================================================================== */
@@ -833,86 +833,96 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                   </View>
                 )}
 
-                {/* Material cards — flex container mengisi sisa ruang halaman.
-                 * Di halaman terakhir, cards TIDAK diberi flex:1 penuh karena
-                 * harus berbagi ruang dengan comment+TTD block di bawah.
-                 * Di halaman lainnya, cards flex:1 mengisi seluruh sisa ruang. */}
-                <View style={isLast
-                  ? { flexDirection: "column" }
-                  : { flex: 1, flexDirection: "column" }
-                }>
-                  {pageMaterials.map((material) => (
-                    <MaterialCard
-                      key={material.id}
-                      material={material}
-                      flexGrow={material.indicators.length}
-                    />
-                  ))}
-                </View>
+                {/* ── Cards + Comment layout ──────────────────────────────
+                 * Wrapper flex:1 agar mengisi seluruh sisa halaman.
+                 * Di halaman non-last: cards saja, flex:1 → mengisi penuh.
+                 * Di halaman last: cards di atas, comment+TTD absolute bottom.
+                 * ─────────────────────────────────────────────────────────── */}
+                <View style={{ flex: 1, flexDirection: "column" }}>
 
-                {/* Comment & TTD — hanya di halaman terakhir, di bawah cards */}
-                {isLast && (
-                  <View style={{ marginTop: "auto" }}>
-                    <View style={styles.commentOuter}>
-                      <View style={styles.commentHeader}>
-                        <Text style={styles.commentTitle}>Comment</Text>
-                      </View>
-                      <View style={styles.commentBody}>
-                        <Text style={styles.commentText}>
-                          {data.comment ||
-                            "Disini akan tampil feedback dari guru pengampu tentang progres mapping skill dan ability siswa dalam pelajaran bahasa inggris dan praktek nya."}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.bottomSection}>
-                      <View style={styles.scaleSection}>
-                        <Text style={styles.scaleTitle}>Skala Nilai Rata-rata :</Text>
-                        <SkalaRow
-                          range="0 - 2.4"
-                          label="Butuh Perbaikan"
-                          badgeColor="#dc2626"
-                          bgColor="#fee2e2"
-                          textStyle={styles.scaleLabelTextRed}
-                        />
-                        <SkalaRow
-                          range="2.5 - 3.5"
-                          label="Cukup"
-                          badgeColor="#ea580c"
-                          bgColor="#ffedd5"
-                          textStyle={styles.scaleLabelTextOrange}
-                        />
-                        <SkalaRow
-                          range="3.6 - 4.5"
-                          label="Sangat Baik"
-                          badgeColor="#2563eb"
-                          bgColor="#dbeafe"
-                          textStyle={styles.scaleLabelTextBlue}
-                        />
-                        <SkalaRow
-                          range="4.6 - 5"
-                          label="Sangat Memuaskan"
-                          badgeColor="#16a34a"
-                          bgColor="#dcfce7"
-                          textStyle={styles.scaleLabelTextGreen}
-                        />
-                      </View>
-
-                      <View style={styles.signatureSection}>
-                        <Text style={styles.signatureDate}>{data.generatedDate || "Tanggal"}</Text>
-                        {ttdUrl ? (
-                          <Image src={ttdUrl} style={styles.signatureImage} />
-                        ) : (
-                          <View style={styles.signaturePlaceholder}>
-                            <Text style={{ fontSize: 8, color: MUTED }}>TTD</Text>
-                          </View>
-                        )}
-                        <Text style={styles.signatureName}>{data.teacher?.nama || "Nama Guru"}</Text>
-                        <Text style={styles.signatureRole}>{data.teacher?.jabatan || "Guru"}</Text>
-                      </View>
-                    </View>
+                  {/* Cards — selalu flex:1 agar mengisi sisa, kecuali halaman
+                   * last di mana cards cukup mengikuti konten (auto height)
+                   * supaya comment+TTD bisa ditempatkan di bawah. */}
+                  <View style={isLast
+                    ? { flexDirection: "column" }
+                    : { flex: 1, flexDirection: "column" }
+                  }>
+                    {pageMaterials.map((material) => (
+                      <MaterialCard
+                        key={material.id}
+                        material={material}
+                        flexGrow={material.indicators.length}
+                      />
+                    ))}
                   </View>
-                )}
+
+                  {/* Comment & TTD — flex:1 agar mengisi sisa ruang di bawah
+                   * cards, dengan justifyContent:"flex-end" agar konten
+                   * menempel ke bawah halaman (sesuai paddingBottom margin). */}
+                  {isLast && (
+                    <View style={{ flex: 1, justifyContent: "flex-end" }}>
+                      <View style={styles.commentOuter}>
+                        <View style={styles.commentHeader}>
+                          <Text style={styles.commentTitle}>Comment</Text>
+                        </View>
+                        <View style={styles.commentBody}>
+                          <Text style={styles.commentText}>
+                            {data.comment ||
+                              "Disini akan tampil feedback dari guru pengampu tentang progres mapping skill dan ability siswa dalam pelajaran bahasa inggris dan praktek nya."}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.bottomSection}>
+                        <View style={styles.scaleSection}>
+                          <Text style={styles.scaleTitle}>Skala Nilai Rata-rata :</Text>
+                          <SkalaRow
+                            range="0 - 2.4"
+                            label="Butuh Perbaikan"
+                            badgeColor="#dc2626"
+                            bgColor="#fee2e2"
+                            textStyle={styles.scaleLabelTextRed}
+                          />
+                          <SkalaRow
+                            range="2.5 - 3.5"
+                            label="Cukup"
+                            badgeColor="#ea580c"
+                            bgColor="#ffedd5"
+                            textStyle={styles.scaleLabelTextOrange}
+                          />
+                          <SkalaRow
+                            range="3.6 - 4.5"
+                            label="Sangat Baik"
+                            badgeColor="#2563eb"
+                            bgColor="#dbeafe"
+                            textStyle={styles.scaleLabelTextBlue}
+                          />
+                          <SkalaRow
+                            range="4.6 - 5"
+                            label="Sangat Memuaskan"
+                            badgeColor="#16a34a"
+                            bgColor="#dcfce7"
+                            textStyle={styles.scaleLabelTextGreen}
+                          />
+                        </View>
+
+                        <View style={styles.signatureSection}>
+                          <Text style={styles.signatureDate}>{data.generatedDate || "Tanggal"}</Text>
+                          {ttdUrl ? (
+                            <Image src={ttdUrl} style={styles.signatureImage} />
+                          ) : (
+                            <View style={styles.signaturePlaceholder}>
+                              <Text style={{ fontSize: 8, color: MUTED }}>TTD</Text>
+                            </View>
+                          )}
+                          <Text style={styles.signatureName}>{data.teacher?.nama || "Nama Guru"}</Text>
+                          <Text style={styles.signatureRole}>{data.teacher?.jabatan || "Guru"}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  )}
+
+                </View>
               </View>
 
               <Text
