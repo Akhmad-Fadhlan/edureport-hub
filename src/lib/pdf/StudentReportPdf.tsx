@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   scAvgValue: {
     fontSize: 38, lineHeight: 1,
     fontFamily: "Helvetica-Bold", color: NAVY,
-    marginBottom: 8, paddingRight: 5,
+    marginBottom: 8,
   },
 
 scAvgBadge: {
@@ -822,7 +822,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                     <View style={styles.scRight}>
                       <Text style={styles.scAvgValue}>{overallAvg.toFixed(2)}</Text>
                       <View style={[styles.scAvgBadge, { backgroundColor: badgeColor }]}>
-                        <Text style={styles.scAvgBadgeText}>{badgeLabel}</Text>
+                        <Text style={[styles.scAvgBadgeText, { textAlign: "center", width: "100%" }]}>{badgeLabel}</Text>
                       </View>
                     </View>
                   </View>
