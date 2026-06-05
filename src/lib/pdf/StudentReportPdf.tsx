@@ -286,7 +286,12 @@ const styles = StyleSheet.create({
     paddingLeft: 25, fontSize: 10.5, color: MUTED, marginBottom: 10,
   },
 
-scRight: { alignItems: "center", paddingRight: 33, paddingTop: 28 },
+scRight: { 
+  alignItems: "center",      // ← pertahankan ini (buat angka & badge sejajar)
+  alignSelf: "flex-end",     // ← tambahkan ini (buat blok tetap di kanan)
+  paddingRight: 33, 
+  paddingTop: 28 
+},
 
 scAvgValue: {
   fontSize: 38, lineHeight: 1,
