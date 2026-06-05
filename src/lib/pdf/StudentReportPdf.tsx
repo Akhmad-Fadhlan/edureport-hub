@@ -286,18 +286,20 @@ const styles = StyleSheet.create({
     paddingLeft: 25, fontSize: 10.5, color: MUTED, marginBottom: 10,
   },
 
-  scRight: { alignItems: "flex-end", paddingRight: 33, paddingTop: 28 },
+scRight: { alignItems: "flex-end", paddingRight: 33, paddingTop: 28 },
 
-  scAvgValue: {
-    fontSize: 38, lineHeight: 1,
-    fontFamily: "Helvetica-Bold", color: NAVY,
-    marginBottom: 8,
-  },
+scAvgValue: {
+  fontSize: 38, lineHeight: 1,
+  fontFamily: "Helvetica-Bold", color: NAVY,
+  marginBottom: 8,
+  // paddingRight: 5  ← pastikan sudah dihapus
+},
 
 scAvgBadge: {
   borderRadius: 20,
   paddingHorizontal: 12,
   paddingVertical: 5,
+  marginRight: 5,  // ← geser badge ke kanan sejajar angka
 },
 
 scAvgBadgeText: {
