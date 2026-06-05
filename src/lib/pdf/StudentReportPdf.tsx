@@ -112,7 +112,7 @@ const SOFT   = "#f8fafc";
 /* ============================================================================
  * A4 LAYOUT CONSTANTS (unit: pt)
  * ========================================================================== */
-const PAGE_H = 842;
+const PAGE_H = 841.89;
 
 const PAD_TOP_FIRST  = 80;
 const PAD_TOP_MIDDLE = 28;
@@ -171,24 +171,23 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     fontFamily: "Helvetica",
     color: TEXT,
-    // FIX: Gunakan angka eksplisit untuk lock A4 portrait.
-    // Tambah aspectRatio sebagai hint tambahan untuk viewer.
-  width: 595.28,
-  height: 841.89,
-  minWidth: 595.28,
-  maxWidth: 595.28,
-  minHeight: 841.89,
-  maxHeight: 841.89,
+    width: 595.28,
+    height: 841.89,
+    minWidth: 595.28,
+    maxWidth: 595.28,
+    minHeight: 841.89,
+    maxHeight: 841.89,
   },
 
   absoluteBg: {
     position: "absolute",
     top: 0, left: 0,
-    width: 595,
-    height: 842,
+    width: 595.28,
+    height: 841.89,
     objectFit: "fill",
   },
 
+  // FIX: flex: 1 agar pageContent bisa stretch penuh dan flex children bekerja
   pageContent: { flex: 1, position: "relative" },
   coverContent: { position: "relative", width: "100%", height: "100%" },
 
@@ -239,12 +238,13 @@ const styles = StyleSheet.create({
     color: "#334155", marginBottom: 14,
   },
 
+  // FIX: flex:1 agar reportBody bisa stretch penuh dalam pageContent
   reportBody: {
+    flex: 1,
     paddingTop: PAD_TOP_MIDDLE,
     paddingHorizontal: 42,
     paddingBottom: PAD_BOT_MIDDLE,
-    // FIX: maxHeight + overflow hidden mencegah konten meluap dari halaman A4
-    maxHeight: 842,
+    maxHeight: 841.89,
     overflow: "hidden",
   },
 
@@ -686,9 +686,23 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   const materialPages = chunkMaterials(data.materials, 2);
   const totalPages    = materialPages.length;
 
-  // FIX: Gunakan "A4" bukan [595, 842] — react-pdf punya definisi mediabox
-  // baku untuk "A4" yang lebih stabil di semua viewer & printer driver.
   const PAGE_SIZE: [number, number] = [595.28, 841.89];
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // FIX 1: Hitung globalIndRowH sekali dari SEMUA halaman.
+  // Ambil nilai minimum agar semua halaman pakai row height yang sama
+  // (halaman paling "penuh" yang menentukan).
+  // ─────────────────────────────────────────────────────────────────────────
+  const globalIndRowH = materialPages.reduce((minH, pageMats, idx) => {
+    const isFirst     = idx === 0;
+    const isLast      = idx === totalPages - 1;
+    const isFirstLast = isFirst && isLast;
+    const pt: PageType = isFirstLast ? "firstlast"
+      : isFirst ? "first"
+      : isLast  ? "last"
+      : "middle";
+    return Math.min(minH, calcIndRowHeight(pageMats, pt));
+  }, IND_ROW_MAX_H);
 
   return (
     <Document
@@ -698,7 +712,6 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
     >
 
       {/* ── COVER ────────────────────────────────────────────────────────── */}
-      {/* FIX: tambahkan wrap={false} di semua page agar tidak auto-split */}
       <Page size={PAGE_SIZE} orientation="portrait" wrap={false} style={styles.page}>
         {data.coverBgDataUrl && (
           <Image src={data.coverBgDataUrl} style={styles.absoluteBg} fixed />
@@ -770,14 +783,6 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
       {materialPages.map((pageMaterials, pageIndex) => {
         const isFirst     = pageIndex === 0;
         const isLast      = pageIndex === totalPages - 1;
-        const isFirstLast = isFirst && isLast;
-
-        const pageType: PageType = isFirstLast ? "firstlast"
-          : isFirst ? "first"
-          : isLast  ? "last"
-          : "middle";
-
-        const indRowH = calcIndRowHeight(pageMaterials, pageType);
 
         const bgUrl: string | null = isFirst
           ? (data.reportFirstBgDataUrl ?? null)
@@ -803,6 +808,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                   isLast  ? styles.reportBodyLast  : {},
                 ]}
               >
+                {/* Student card — hanya di halaman pertama */}
                 {isFirst && (
                   <View style={styles.studentCard}>
                     <View style={styles.scLeft}>
@@ -832,16 +838,22 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                   </View>
                 )}
 
+                {/* Material cards — pakai globalIndRowH agar tinggi seragam */}
                 {pageMaterials.map((material) => (
                   <MaterialCard
                     key={material.id}
                     material={material}
-                    indRowH={indRowH}
+                    indRowH={globalIndRowH}  {/* FIX 1: pakai global, bukan lokal */}
                   />
                 ))}
 
+                {/* ─────────────────────────────────────────────────────────
+                 * FIX 2: Comment & TTD di halaman terakhir.
+                 * Bungkus dengan flex:1 + justifyContent:"flex-end" agar
+                 * selalu terdorong ke bawah halaman, sesuai margin yang ada.
+                 * ───────────────────────────────────────────────────────── */}
                 {isLast && (
-                  <>
+                  <View style={{ flex: 1, justifyContent: "flex-end" }}>
                     <View style={styles.commentOuter}>
                       <View style={styles.commentHeader}>
                         <Text style={styles.commentTitle}>Comment</Text>
@@ -900,7 +912,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                         <Text style={styles.signatureRole}>{data.teacher?.jabatan || "Guru"}</Text>
                       </View>
                     </View>
-                  </>
+                  </View>
                 )}
               </View>
 
