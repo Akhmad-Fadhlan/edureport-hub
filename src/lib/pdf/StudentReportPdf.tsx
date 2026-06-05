@@ -1,59 +1,9 @@
-import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";  
-  
-/* ============================================================================
- * PRINT CSS
- * ========================================================================== */
-export const PRINT_PORTRAIT_CSS = `
-@page {
-  size: 210mm 297mm portrait;
-  orientation: portrait;
-  margin: 0 !important;
-}
-@media print {
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
-  }
-  html, body {
-    width: 210mm !important;
-    height: 297mm !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-  }
-  body > *:not(#pdf-root):not([data-pdf-container]) {
-    display: none !important;
-  }
-  #pdf-root, [data-pdf-container] {
-    position: fixed !important;
-    top: 0 !important; left: 0 !important;
-    width: 210mm !important;
-    height: 297mm !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  iframe, embed, object {
-    width: 210mm !important;
-    height: 297mm !important;
-    border: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-  canvas {
-    max-width: 210mm !important;
-    max-height: 297mm !important;
-    page-break-after: always !important;
-    break-after: page !important;
-  }
-}
-`;
+import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
 
 /* ============================================================================
  * TYPES
  * ========================================================================== */
+ 
 export interface PdfIndicator {
   id: number;
   kode: string;
@@ -103,6 +53,7 @@ export interface PdfReportData {
 /* ============================================================================
  * COLORS
  * ========================================================================== */
+
 const NAVY   = "#1e3a8a";
 const ORANGE = "#f59e0b";
 const TEXT   = "#1e293b";
@@ -111,28 +62,54 @@ const SOFT   = "#f8fafc";
 
 /* ============================================================================
  * A4 LAYOUT CONSTANTS (unit: pt)
+ * A4 = 595 x 842 pt
+ *
+ * Rumus: usable rows = 842 - paddingTop - paddingBottom - fixed sections
+ *
+ * paddingTop   : first=80, middle/last=55
+ * paddingBottom: last=20, others=40
+ * Student card : ~152pt (first only) — diukur dari komponen aktual
+ * Comment+TTD  : ~215pt (last only)
+ * Card overhead: header(40) + paddingV(24) + marginBottom(14) = 78pt per card
  * ========================================================================== */
-const PAGE_H = 841.89;
 
+const PAGE_H = 842;
+
+// Page padding
+// - first : larger top for bg image aesthetic
+// - middle: tight top+bottom — no decorative elements, maximize card space
+// - last  : tight bottom, normal top
 const PAD_TOP_FIRST  = 80;
-const PAD_TOP_MIDDLE = 28;
-const PAD_TOP_LAST   = 28;
-const PAD_BOT_MIDDLE = 24;
+const PAD_TOP_MIDDLE = 28;   // was 55 — reduced to remove excess top space
+const PAD_TOP_LAST   = 28;   // same as middle
+const PAD_BOT_MIDDLE = 24;   // was 40 — reduced to remove excess bottom space
 const PAD_BOT_LAST   = 20;
 const PAD_BOT_FIRST  = 28;
 
+// Fixed block heights (measured from rendered components)
+// Student card: photoWrap(85) + scInfo paddingTop(10) + scName(18+12mb) +
+//               detailText×2(10.5×2+10mb×2) + studentCard marginBottom(24)
 const STUDENT_CARD_H  = 152;
+
+// Comment+bottom: commentHeader(34) + commentBody(min56+padding28) +
+//                 bottomSection paddingTop(14) + border(1) + skala(4×28=112) +
+//                 marginTop(8) = ~253; use conservative 215 since minHeight flexible
 const COMMENT_BLOCK_H = 215;
 
-const CARD_HEADER_H  = 40;
-const CARD_PADDING_V = 24;
-const CARD_MARGIN_B  = 14;
+// Per-card fixed overhead
+const CARD_HEADER_H  = 40;   // compHeader paddingV(10+10) + content
+const CARD_PADDING_V = 24;   // compIndicators paddingVertical (12+12)
+const CARD_MARGIN_B  = 14;   // compSection marginBottom
 
 const IND_ROW_MIN_H = 22;
+const IND_ROW_MAX_H = 34;
 
 type PageType = "first" | "middle" | "last" | "firstlast";
 
-function pageFixedOverhead(pageType: PageType, numMaterials = 2): number {
+/**
+ * Total fixed overhead (pt) consumed by non-indicator content on a given page.
+ */
+function pageFixedOverhead(pageType: PageType): number {
   let padTop: number;
   let padBot: number;
 
@@ -148,49 +125,48 @@ function pageFixedOverhead(pageType: PageType, numMaterials = 2): number {
 
   const studentCard  = pageType === "first" || pageType === "firstlast" ? STUDENT_CARD_H  : 0;
   const commentBlock = pageType === "last"  || pageType === "firstlast" ? COMMENT_BLOCK_H : 0;
-  // overhead per jumlah card aktual di halaman ini (bisa 1 atau 2)
-  const cardsOverhead = numMaterials * (CARD_HEADER_H + CARD_PADDING_V + CARD_MARGIN_B);
+  const cardsOverhead = 2 * (CARD_HEADER_H + CARD_PADDING_V + CARD_MARGIN_B);
 
   return padTop + padBot + studentCard + commentBlock + cardsOverhead;
 }
 
-// Hitung indRowH per-halaman agar rows mengisi penuh ruang yang tersedia.
-// Tidak ada batas atas (IND_ROW_MAX_H dihapus) — row membesar sampai mengisi halaman.
+/**
+ * Compute the ideal indicator row height so that all indicator rows across
+ * the 2 cards on this page fit exactly within A4 height.
+ * Clamped between IND_ROW_MIN_H and IND_ROW_MAX_H.
+ */
 function calcIndRowHeight(mats: PdfMaterial[], pageType: PageType): number {
   const totalInds    = mats.reduce((s, m) => s + m.indicators.length, 0);
-  const fixed        = pageFixedOverhead(pageType, mats.length);
+  const fixed        = pageFixedOverhead(pageType);
   const availForRows = PAGE_H - fixed;
-  const ideal        = totalInds > 0 ? availForRows / totalInds : IND_ROW_MIN_H;
-  return Math.max(IND_ROW_MIN_H, ideal); // tidak ada batas atas — mengisi halaman
+  const ideal        = totalInds > 0 ? availForRows / totalInds : IND_ROW_MAX_H;
+  return Math.max(IND_ROW_MIN_H, Math.min(IND_ROW_MAX_H, ideal));
 }
 
 /* ============================================================================
  * STATIC STYLES
  * ========================================================================== */
+
 const styles = StyleSheet.create({
   page: {
     position: "relative",
     backgroundColor: "#ffffff",
     fontFamily: "Helvetica",
     color: TEXT,
-    width: 595.28,
-    height: 841.89,
-    minWidth: 595.28,
-    maxWidth: 595.28,
-    minHeight: 841.89,
-    maxHeight: 841.89,
   },
 
   absoluteBg: {
     position: "absolute",
     top: 0, left: 0,
-    width: 595.28,
-    height: 841.89,
+    // Use explicit pt values (595×842) instead of "100%" to guarantee the image
+    // never exceeds the page dimensions — prevents landscape inference by viewers.
+    width: 595,
+    height: 842,
     objectFit: "fill",
   },
 
-  // FIX: flex: 1 agar pageContent bisa stretch penuh dan flex children bekerja
   pageContent: { flex: 1, position: "relative" },
+
   coverContent: { position: "relative", width: "100%", height: "100%" },
 
   coverStudentName: {
@@ -240,18 +216,18 @@ const styles = StyleSheet.create({
     color: "#334155", marginBottom: 14,
   },
 
-  // FIX: flex:1 agar reportBody stretch penuh dalam pageContent
+  // Base report body — applied to every report page (middle pages)
   reportBody: {
-    flex: 1,
-    flexDirection: "column",
     paddingTop: PAD_TOP_MIDDLE,
     paddingHorizontal: 42,
     paddingBottom: PAD_BOT_MIDDLE,
   },
 
+  // Overrides for first / last pages
   reportBodyFirst: { paddingTop: PAD_TOP_FIRST },
   reportBodyLast:  { paddingTop: PAD_TOP_LAST, paddingBottom: PAD_BOT_LAST },
 
+  // ── Student Card ─────────────────────────────────────────────────────────
   studentCard: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -308,6 +284,7 @@ const styles = StyleSheet.create({
     color: "#ffffff", fontSize: 10, fontFamily: "Helvetica-Bold",
   },
 
+  // ── Material Card ─────────────────────────────────────────────────────────
   compSection: {
     backgroundColor: "#ffffff",
     borderRadius: 10,
@@ -315,7 +292,6 @@ const styles = StyleSheet.create({
     borderColor: "#dbe4f0",
     overflow: "hidden",
     marginBottom: CARD_MARGIN_B,
-    // flex diset dinamis via inline style di MaterialCard
   },
 
   compHeader: {
@@ -338,7 +314,7 @@ const styles = StyleSheet.create({
     fontSize: 11, fontFamily: "Helvetica-Bold", color: "#111827",
   },
 
-  compIndicators: { flex: 1, paddingVertical: 8 },
+  compIndicators: { paddingVertical: 12 },
 
   indRow: {
     flexDirection: "row",
@@ -405,6 +381,7 @@ const styles = StyleSheet.create({
     color: "#ffffff", fontSize: 8, fontFamily: "Helvetica-Bold",
   },
 
+  // ── Comment + Bottom Section ──────────────────────────────────────────────
   commentOuter: {
     borderRadius: 8,
     borderWidth: 1,
@@ -509,6 +486,7 @@ const styles = StyleSheet.create({
 /* ============================================================================
  * HELPERS
  * ========================================================================== */
+
 function toDirectImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   const driveFileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
@@ -574,6 +552,7 @@ function splitSemesterLabel(label: string) {
   return null;
 }
 
+/** Selalu 2 material per halaman, kecuali sisa 1 */
 function chunkMaterials<T>(arr: T[], size = 2): T[][] {
   const result: T[][] = [];
   for (let i = 0; i < arr.length; i += size) result.push(arr.slice(i, i + size));
@@ -583,6 +562,7 @@ function chunkMaterials<T>(arr: T[], size = 2): T[][] {
 /* ============================================================================
  * PROGRESS BAR
  * ========================================================================== */
+
 function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
   const totalSegs = 5;
   const exactFill = (nilai / max) * totalSegs;
@@ -620,6 +600,7 @@ function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
 /* ============================================================================
  * SKALA ROW
  * ========================================================================== */
+
 function SkalaRow({ range, label, badgeColor, bgColor, textStyle }: {
   range: string; label: string; badgeColor: string; bgColor: string; textStyle: any;
 }) {
@@ -636,28 +617,38 @@ function SkalaRow({ range, label, badgeColor, bgColor, textStyle }: {
 }
 
 /* ============================================================================
- * MATERIAL CARD
+ * MATERIAL CARD — indRowH adaptif
  * ========================================================================== */
+
 function MaterialCard({
   material,
-  flexGrow,
+  indRowH,
 }: {
   material: PdfMaterial;
-  flexGrow: number;
+  indRowH: number;
 }) {
   const avg = calculateMaterialAverage([material]);
   return (
-    // flex: flexGrow agar card berbagi sisa ruang proporsional jumlah indikator
-    <View style={[styles.compSection, { flex: flexGrow }]}>
+    <View style={styles.compSection}>
+      {/* Header: fixed height = CARD_HEADER_H (40pt) */}
       <View style={styles.compHeader}>
         <Text style={styles.compTitleText}>{material.judul}</Text>
         <Text style={styles.compScoreText}>{avg.toFixed(1)}</Text>
       </View>
-      {/* compIndicators flex:1 → mengisi sisa tinggi card setelah header */}
+
+      {/* Indicators: paddingVertical 12pt each side = CARD_PADDING_V (24pt) total */}
       <View style={styles.compIndicators}>
         {material.indicators.map((ind, idx) => (
-          // flex:1 per row → tinggi terbagi rata di dalam card
-          <View key={ind.id} style={[styles.indRow, { flex: 1 }]}>
+          <View
+            key={ind.id}
+            style={[
+              styles.indRow,
+              {
+                height: indRowH,
+                // No extra marginBottom — height is the full row budget
+              },
+            ]}
+          >
             <Text style={styles.indNum}>{idx + 1}</Text>
             <Text style={styles.indText} numberOfLines={2}>{ind.deskripsi}</Text>
             <ProgressBar nilai={ind.nilai ?? 0} max={ind.nilai_max} />
@@ -671,6 +662,7 @@ function MaterialCard({
 /* ============================================================================
  * MAIN COMPONENT
  * ========================================================================== */
+
 export function StudentReportPdf({ data }: { data: PdfReportData }) {
   const overallAvg  = calculateOverallAverage(data.materials);
   const badgeColor  = getBadgeColor(overallAvg);
@@ -694,20 +686,15 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   const photoUrl      = toDirectImageUrl(data.student.photoDataUrl);
   const ttdUrl        = toDirectImageUrl(data.teacher?.ttdDataUrl);
 
+  // Always 2 materials per page (last page may have 1)
   const materialPages = chunkMaterials(data.materials, 2);
   const totalPages    = materialPages.length;
 
-  const PAGE_SIZE: [number, number] = [595.28, 841.89];
-
   return (
-    <Document
-      pageLayout="singlePage"
-      creator="StudentReport"
-      producer="react-pdf"
-    >
+    <Document pageLayout="singlePage">
 
-      {/* ── COVER ────────────────────────────────────────────────────────── */}
-      <Page size={PAGE_SIZE} orientation="portrait" wrap={false} style={styles.page}>
+      {/* ── COVER ──────────────────────────────────────────────────────────── */}
+      <Page size={[595, 842]} orientation="portrait" style={styles.page}>
         {data.coverBgDataUrl && (
           <Image src={data.coverBgDataUrl} style={styles.absoluteBg} fixed />
         )}
@@ -730,8 +717,8 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
         </View>
       </Page>
 
-      {/* ── FOREWORD ─────────────────────────────────────────────────────── */}
-      <Page size={PAGE_SIZE} orientation="portrait" wrap={false} style={styles.page}>
+      {/* ── FOREWORD ───────────────────────────────────────────────────────── */}
+      <Page size={[595, 842]} orientation="portrait" style={styles.page}>
         <View style={styles.forewordPage}>
           <Text style={styles.forewordHeading}>Foreword</Text>
           <Text style={styles.forewordSubheading}>Prakata</Text>
@@ -767,18 +754,28 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
         </View>
       </Page>
 
-      {/* ── DIVIDER ──────────────────────────────────────────────────────── */}
-      <Page size={PAGE_SIZE} orientation="portrait" wrap={false} style={styles.page}>
+      {/* ── DIVIDER ────────────────────────────────────────────────────────── */}
+      <Page size={[595, 842]} orientation="portrait" style={styles.page}>
         {data.dividerBgDataUrl && (
           <Image src={data.dividerBgDataUrl} style={styles.absoluteBg} />
         )}
       </Page>
 
-      {/* ── REPORT PAGES ─────────────────────────────────────────────────── */}
+      {/* ── REPORT PAGES — tepat 2 material per halaman, layout adaptif ───── */}
       {materialPages.map((pageMaterials, pageIndex) => {
         const isFirst     = pageIndex === 0;
         const isLast      = pageIndex === totalPages - 1;
+        const isFirstLast = isFirst && isLast;
 
+        const pageType: PageType = isFirstLast ? "firstlast"
+          : isFirst ? "first"
+          : isLast  ? "last"
+          : "middle";
+
+        // Adaptive row height: fills available space, never under-/over-flows A4
+        const indRowH = calcIndRowHeight(pageMaterials, pageType);
+
+        // Background image: first page uses reportFirstBg, last uses reportLastBg
         const bgUrl: string | null = isFirst
           ? (data.reportFirstBgDataUrl ?? null)
           : isLast
@@ -788,7 +785,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
         return (
           <Page
             key={pageIndex}
-            size={PAGE_SIZE}
+            size={[595, 842]}
             orientation="portrait"
             style={styles.page}
             wrap={false}
@@ -803,7 +800,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                   isLast  ? styles.reportBodyLast  : {},
                 ]}
               >
-                {/* Student card — hanya di halaman pertama */}
+                {/* ── Student Card — first page only ───────────────────────── */}
                 {isFirst && (
                   <View style={styles.studentCard}>
                     <View style={styles.scLeft}>
@@ -833,89 +830,81 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                   </View>
                 )}
 
-                {/* ── Outer wrapper mengisi seluruh sisa halaman ── */}
-                <View style={{ flex: 1, flexDirection: "column" }}>
+                {/* ── 2 Material Cards ─────────────────────────────────────── */}
+                {pageMaterials.map((material) => (
+                  <MaterialCard
+                    key={material.id}
+                    material={material}
+                    indRowH={indRowH}
+                  />
+                ))}
 
-                  {/* Bagian atas: cards + comment (auto height di last, flex mengisi di non-last) */}
-                  <View style={isLast ? { flexDirection: "column" } : { flex: 1, flexDirection: "column" }}>
-                    {pageMaterials.map((material) => (
-                      <MaterialCard
-                        key={material.id}
-                        material={material}
-                        flexGrow={material.indicators.length}
-                      />
-                    ))}
-
-                    {isLast && (
-                      <View style={styles.commentOuter}>
-                        <View style={styles.commentHeader}>
-                          <Text style={styles.commentTitle}>Comment</Text>
-                        </View>
-                        <View style={styles.commentBody}>
-                          <Text style={styles.commentText}>
-                            {data.comment ||
-                              "Disini akan tampil feedback dari guru pengampu tentang progres mapping skill dan ability siswa dalam pelajaran bahasa inggris dan praktek nya."}
-                          </Text>
-                        </View>
+                {/* ── Comment + Scale + Signature — last page only ─────────── */}
+                {isLast && (
+                  <>
+                    <View style={styles.commentOuter}>
+                      <View style={styles.commentHeader}>
+                        <Text style={styles.commentTitle}>Comment</Text>
                       </View>
-                    )}
-                  </View>
-
-                  {/* Skala nilai + TTD — selalu di paling bawah halaman terakhir */}
-                  {isLast && (
-                    <View style={{ flex: 1, justifyContent: "flex-end" }}>
-                      <View style={styles.bottomSection}>
-                        <View style={styles.scaleSection}>
-                          <Text style={styles.scaleTitle}>Skala Nilai Rata-rata :</Text>
-                          <SkalaRow
-                            range="0 - 2.4"
-                            label="Butuh Perbaikan"
-                            badgeColor="#dc2626"
-                            bgColor="#fee2e2"
-                            textStyle={styles.scaleLabelTextRed}
-                          />
-                          <SkalaRow
-                            range="2.5 - 3.5"
-                            label="Cukup"
-                            badgeColor="#ea580c"
-                            bgColor="#ffedd5"
-                            textStyle={styles.scaleLabelTextOrange}
-                          />
-                          <SkalaRow
-                            range="3.6 - 4.5"
-                            label="Sangat Baik"
-                            badgeColor="#2563eb"
-                            bgColor="#dbeafe"
-                            textStyle={styles.scaleLabelTextBlue}
-                          />
-                          <SkalaRow
-                            range="4.6 - 5"
-                            label="Sangat Memuaskan"
-                            badgeColor="#16a34a"
-                            bgColor="#dcfce7"
-                            textStyle={styles.scaleLabelTextGreen}
-                          />
-                        </View>
-
-                        <View style={styles.signatureSection}>
-                          <Text style={styles.signatureDate}>{data.generatedDate || "Tanggal"}</Text>
-                          {ttdUrl ? (
-                            <Image src={ttdUrl} style={styles.signatureImage} />
-                          ) : (
-                            <View style={styles.signaturePlaceholder}>
-                              <Text style={{ fontSize: 8, color: MUTED }}>TTD</Text>
-                            </View>
-                          )}
-                          <Text style={styles.signatureName}>{data.teacher?.nama || "Nama Guru"}</Text>
-                          <Text style={styles.signatureRole}>{data.teacher?.jabatan || "Guru"}</Text>
-                        </View>
+                      <View style={styles.commentBody}>
+                        <Text style={styles.commentText}>
+                          {data.comment ||
+                            "Disini akan tampil feedback dari guru pengampu tentang progres mapping skill dan ability siswa dalam pelajaran bahasa inggris dan praktek nya."}
+                        </Text>
                       </View>
                     </View>
-                  )}
 
-                </View>
+                    <View style={styles.bottomSection}>
+                      <View style={styles.scaleSection}>
+                        <Text style={styles.scaleTitle}>Skala Nilai Rata-rata :</Text>
+                        <SkalaRow
+                          range="0 - 2.4"
+                          label="Butuh Perbaikan"
+                          badgeColor="#dc2626"
+                          bgColor="#fee2e2"
+                          textStyle={styles.scaleLabelTextRed}
+                        />
+                        <SkalaRow
+                          range="2.5 - 3.5"
+                          label="Cukup"
+                          badgeColor="#ea580c"
+                          bgColor="#ffedd5"
+                          textStyle={styles.scaleLabelTextOrange}
+                        />
+                        <SkalaRow
+                          range="3.6 - 4.5"
+                          label="Sangat Baik"
+                          badgeColor="#2563eb"
+                          bgColor="#dbeafe"
+                          textStyle={styles.scaleLabelTextBlue}
+                        />
+                        <SkalaRow
+                          range="4.6 - 5"
+                          label="Sangat Memuaskan"
+                          badgeColor="#16a34a"
+                          bgColor="#dcfce7"
+                          textStyle={styles.scaleLabelTextGreen}
+                        />
+                      </View>
+
+                      <View style={styles.signatureSection}>
+                        <Text style={styles.signatureDate}>{data.generatedDate || "Tanggal"}</Text>
+                        {ttdUrl ? (
+                          <Image src={ttdUrl} style={styles.signatureImage} />
+                        ) : (
+                          <View style={styles.signaturePlaceholder}>
+                            <Text style={{ fontSize: 8, color: MUTED }}>TTD</Text>
+                          </View>
+                        )}
+                        <Text style={styles.signatureName}>{data.teacher?.nama || "Nama Guru"}</Text>
+                        <Text style={styles.signatureRole}>{data.teacher?.jabatan || "Guru"}</Text>
+                      </View>
+                    </View>
+                  </>
+                )}
               </View>
 
+              {/* Page number */}
               <Text
                 style={styles.pageNumber}
                 render={({ pageNumber }) => `${pageNumber}`}
