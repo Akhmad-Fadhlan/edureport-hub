@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer"; 
    
 /* ============================================================================
  * PRINT CSS
@@ -833,11 +833,20 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                   </View>
                 )}
 
-                {/* ── Outer wrapper mengisi seluruh sisa halaman ── */}
+                {/* ── Cards + Comment layout ──────────────────────────────
+                 * Wrapper flex:1 agar mengisi seluruh sisa halaman.
+                 * Di halaman non-last: cards saja, flex:1 → mengisi penuh.
+                 * Di halaman last: cards di atas, comment+TTD absolute bottom.
+                 * ─────────────────────────────────────────────────────────── */}
                 <View style={{ flex: 1, flexDirection: "column" }}>
 
-                  {/* Bagian atas: cards + comment (auto height di last, flex mengisi di non-last) */}
-                  <View style={isLast ? { flexDirection: "column" } : { flex: 1, flexDirection: "column" }}>
+                  {/* Cards — selalu flex:1 agar mengisi sisa, kecuali halaman
+                   * last di mana cards cukup mengikuti konten (auto height)
+                   * supaya comment+TTD bisa ditempatkan di bawah. */}
+                  <View style={isLast
+                    ? { flexDirection: "column" }
+                    : { flex: 1, flexDirection: "column" }
+                  }>
                     {pageMaterials.map((material) => (
                       <MaterialCard
                         key={material.id}
@@ -845,8 +854,13 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                         flexGrow={material.indicators.length}
                       />
                     ))}
+                  </View>
 
-                    {isLast && (
+                  {/* Comment & TTD — flex:1 agar mengisi sisa ruang di bawah
+                   * cards, dengan justifyContent:"flex-end" agar konten
+                   * menempel ke bawah halaman (sesuai paddingBottom margin). */}
+                  {isLast && (
+                    <View style={{ flex: 1, justifyContent: "flex-end" }}>
                       <View style={styles.commentOuter}>
                         <View style={styles.commentHeader}>
                           <Text style={styles.commentTitle}>Comment</Text>
@@ -858,12 +872,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                           </Text>
                         </View>
                       </View>
-                    )}
-                  </View>
 
-                  {/* Skala nilai + TTD — selalu di paling bawah halaman terakhir */}
-                  {isLast && (
-                    <View style={{ flex: 1, justifyContent: "flex-end" }}>
                       <View style={styles.bottomSection}>
                         <View style={styles.scaleSection}>
                           <Text style={styles.scaleTitle}>Skala Nilai Rata-rata :</Text>
