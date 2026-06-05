@@ -61,11 +61,11 @@ export interface PdfReportData {
  * COLORS
  * ========================================================================== */
 
-const NAVY = "#1e3a8a";
+const NAVY   = "#1e3a8a";
 const ORANGE = "#f59e0b";
-const TEXT = "#1e293b";
-const MUTED = "#64748b";
-const SOFT = "#f8fafc";
+const TEXT   = "#1e293b";
+const MUTED  = "#64748b";
+const SOFT   = "#f8fafc";
 
 /* ============================================================================
  * STYLES
@@ -77,6 +77,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     fontFamily: "Helvetica",
     color: TEXT,
+    width: "100%",
+    height: "100%",
   },
 
   absoluteBg: {
@@ -99,37 +101,6 @@ const styles = StyleSheet.create({
     height: "100%",
   },
 
-  coverTitle: {
-    position: "absolute",
-    top: 200,
-    left: 58,
-    fontSize: 30,
-    fontFamily: "Helvetica-Bold",
-    color: "#ffffff",
-    letterSpacing: 1.5,
-  },
-
-  coverSchoolName: {
-    position: "absolute",
-    top: 240,
-    left: 55,
-    fontSize: 65,
-    lineHeight: 2,
-    fontFamily: "Helvetica-Bold",
-    color: "#ffffff",
-    letterSpacing: 1,
-  },
-
-  coverSubtitle: {
-    position: "absolute",
-    top: 325,
-    left: 55,
-    fontSize: 20,
-    lineHeight: 1,
-    color: "#ffffff",
-    letterSpacing: 0.5,
-  },
-
   coverStudentName: {
     position: "absolute",
     bottom: 78,
@@ -138,18 +109,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#ffffff",
     fontFamily: "Helvetica-Bold",
-    letterSpacing: 0.5,
-    textAlign: "center",
-  },
-
-  coverBottomInfo: {
-    position: "absolute",
-    bottom: 50,
-    left: 0,
-    right: 0,
-    fontSize: 14,
-    color: "#ffffff",
-    fontFamily: "Helvetica",
     letterSpacing: 0.5,
     textAlign: "center",
   },
@@ -215,6 +174,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
+  /* ── REPORT BODY ──────────────────────────────────────────────────────── */
   reportBody: {
     paddingTop: 55,
     paddingHorizontal: 42,
@@ -229,6 +189,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
 
+  /* ── STUDENT CARD ─────────────────────────────────────────────────────── */
   studentCard: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -298,13 +259,6 @@ const styles = StyleSheet.create({
     paddingTop: 28,
   },
 
-  scAvgLabel: {
-    fontSize: 10,
-    color: MUTED,
-    marginBottom: 4,
-    textAlign: "right",
-  },
-
   scAvgValue: {
     fontSize: 38,
     lineHeight: 1,
@@ -327,6 +281,7 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
   },
 
+  /* ── MATERIAL CARD ────────────────────────────────────────────────────── */
   compSection: {
     backgroundColor: "#ffffff",
     borderRadius: 10,
@@ -393,6 +348,7 @@ const styles = StyleSheet.create({
     marginRight: 24,
   },
 
+  /* ── PROGRESS BAR ─────────────────────────────────────────────────────── */
   progressWrapper: {
     width: 130,
     flexShrink: 0,
@@ -449,13 +405,7 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
   },
 
-  progressLabel: {
-    fontSize: 7,
-    color: MUTED,
-    marginTop: 3,
-    textAlign: "right",
-  },
-
+  /* ── COMMENT ──────────────────────────────────────────────────────────── */
   commentOuter: {
     borderRadius: 8,
     borderWidth: 1,
@@ -489,6 +439,7 @@ const styles = StyleSheet.create({
     lineHeight: 1.6,
   },
 
+  /* ── BOTTOM SECTION (skala + TTD) ─────────────────────────────────────── */
   bottomSection: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -563,6 +514,7 @@ const styles = StyleSheet.create({
     color: "#16a34a",
   },
 
+  /* ── SIGNATURE ────────────────────────────────────────────────────────── */
   signatureSection: {
     alignItems: "center",
     minWidth: 160,
@@ -573,13 +525,6 @@ const styles = StyleSheet.create({
     color: MUTED,
     marginBottom: 2,
     textAlign: "center",
-  },
-
-  signatureSubLabel: {
-    fontSize: 9,
-    color: MUTED,
-    textAlign: "center",
-    marginBottom: 8,
   },
 
   signaturePlaceholder: {
@@ -630,17 +575,12 @@ const styles = StyleSheet.create({
 
 function toDirectImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
-
   const driveFileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
-  if (driveFileMatch) {
+  if (driveFileMatch)
     return `https://lh3.googleusercontent.com/d/${driveFileMatch[1]}`;
-  }
-
   const driveIdMatch = url.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([^&]+)/);
-  if (driveIdMatch) {
+  if (driveIdMatch)
     return `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}`;
-  }
-
   return url;
 }
 
@@ -650,40 +590,27 @@ function truncateText(text: string, maxLength = 26): string {
 }
 
 function calculateOverallAverage(materials: PdfMaterial[]) {
-  let total = 0;
-  let count = 0;
-  materials.forEach((m) => {
+  let total = 0, count = 0;
+  materials.forEach((m) =>
     m.indicators.forEach((i) => {
-      if (i.nilai !== null && i.nilai !== undefined) {
-        total += Number(i.nilai);
-        count++;
-      }
-    });
-  });
+      if (i.nilai !== null && i.nilai !== undefined) { total += Number(i.nilai); count++; }
+    })
+  );
   return count > 0 ? total / count : 0;
 }
 
 function calculateMaterialAverage(material: PdfMaterial[]) {
-  let total = 0;
-  let count = 0;
-  material.forEach((m) => {
+  let total = 0, count = 0;
+  material.forEach((m) =>
     m.indicators.forEach((i) => {
-      if (i.nilai !== null && i.nilai !== undefined) {
-        total += Number(i.nilai);
-        count++;
-      }
-    });
-  });
+      if (i.nilai !== null && i.nilai !== undefined) { total += Number(i.nilai); count++; }
+    })
+  );
   return count > 0 ? total / count : 0;
 }
 
 function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 }
 
 function getBadgeLabel(avg: number) {
@@ -700,14 +627,6 @@ function getBadgeColor(avg: number) {
   return "#dc2626";
 }
 
-function chunkMaterials<T>(arr: T[], size: number): T[][] {
-  const result: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) {
-    result.push(arr.slice(i, i + size));
-  }
-  return result;
-}
-
 function getScaleColor(nilai: number) {
   if (nilai >= 4.6) return "#16a34a";
   if (nilai >= 3.6) return "#2563eb";
@@ -716,68 +635,107 @@ function getScaleColor(nilai: number) {
 }
 
 function splitSemesterLabel(label: string) {
-  if (label === "1st Semester") return { number: "1", suffix: "st ", rest: " Semester" };
-  if (label === "2nd Semester") return { number: "2", suffix: "nd ", rest: " Semester" };
+  if (label === "1st semester") return { number: "1", suffix: "st ", rest: " Semester" };
+  if (label === "2nd semester") return { number: "2", suffix: "nd ", rest: " Semester" };
   return null;
 }
 
+/**
+ * Estimasi tinggi sebuah material card dalam satuan pt (points).
+ * Dipakai untuk memutuskan apakah material muat di satu halaman bersama lainnya.
+ *
+ * A4 usable height (842pt total):
+ *   - Halaman first : paddingTop 80 + paddingBottom 40 = 120pt overhead
+ *                     + student card ~115pt  → sisa ~607pt
+ *   - Halaman middle: paddingTop 55 + paddingBottom 40 =  95pt overhead → sisa ~747pt
+ *   - Halaman last  : paddingTop 55 + paddingBottom 20 =  75pt overhead
+ *                     + comment ~100pt + bottom ~100pt → sisa ~567pt
+ */
+const PAGE_H        = 842;   // A4 height in pt
+const PADDING_FIRST = 80 + 40;   // paddingTop + paddingBottom for first page
+const PADDING_MID   = 55 + 40;
+const PADDING_LAST  = 55 + 20;
+const STUDENT_CARD_H = 115;
+const COMMENT_BOTTOM_H = 210; // comment + bottomSection
+
+const COMP_HEADER_H = 40;    // compHeader
+const IND_ROW_H     = 32;    // each indicator row (approx)
+const COMP_MARGIN   = 14;    // marginBottom on compSection
+
+function estimateMaterialHeight(m: PdfMaterial): number {
+  return COMP_HEADER_H + m.indicators.length * IND_ROW_H + 24 + COMP_MARGIN;
+}
+
+/**
+ * Kelompokkan materials ke dalam halaman dengan mempertimbangkan tinggi
+ * konten agar tidak overflow A4.
+ */
+function groupMaterialsIntoPages(
+  materials: PdfMaterial[],
+  totalMaterials: number
+): PdfMaterial[][] {
+  const pages: PdfMaterial[][] = [];
+  let current: PdfMaterial[] = [];
+  let usedHeight = 0;
+
+  const getAvailableHeight = (pageIdx: number) => {
+    const isFirstPage = pageIdx === 0;
+    // Semua halaman bisa jadi last, hitung konservatif
+    const overhead = isFirstPage
+      ? PADDING_FIRST + STUDENT_CARD_H
+      : PADDING_MID;
+    return PAGE_H - overhead - COMMENT_BOTTOM_H - 20; // -20 safety margin
+  };
+
+  let pageIdx = 0;
+
+  for (const mat of materials) {
+    const matH = estimateMaterialHeight(mat);
+    const available = getAvailableHeight(pageIdx);
+
+    if (current.length > 0 && usedHeight + matH > available) {
+      // Halaman penuh, simpan dan mulai baru
+      pages.push(current);
+      pageIdx++;
+      current = [mat];
+      usedHeight = matH;
+    } else {
+      current.push(mat);
+      usedHeight += matH;
+    }
+  }
+
+  if (current.length > 0) pages.push(current);
+  return pages;
+}
+
 /* ============================================================================
- * PROGRESS BAR - CORRECTED VERSION WITH PARTIAL FILL
+ * PROGRESS BAR
  * ========================================================================== */
 
 function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
-  const totalSegs = 5;
-  // Calculate exact proportion (0 to totalSegs)
-  const exactFill = (nilai / max) * totalSegs;
-  
-  // Number of completely filled segments
-  const fullSegments = Math.floor(exactFill);
-  
-  // Partial fill percentage for the next segment (0 to 1)
-  const partialFill = exactFill - fullSegments;
-  
-  const color = getScaleColor(nilai);
+  const totalSegs  = 5;
+  const exactFill  = (nilai / max) * totalSegs;
+  const fullSegs   = Math.floor(exactFill);
+  const partial    = exactFill - fullSegs;
+  const color      = getScaleColor(nilai);
 
   return (
     <View style={styles.progressWrapper}>
       <View style={styles.progressBarWrap}>
         <View style={styles.progressSegmentsRow}>
           {Array.from({ length: totalSegs }).map((_, i) => {
-            if (i < fullSegments) {
-              // Fully filled segment
-              return (
-                <View
-                  key={i}
-                  style={[styles.progressSegment, { backgroundColor: color }]}
-                />
-              );
-            } else if (i === fullSegments && partialFill > 0 && partialFill < 1) {
-              // Partially filled segment
-              const fillWidthPercentage = partialFill * 100;
+            if (i < fullSegs) {
+              return <View key={i} style={[styles.progressSegment, { backgroundColor: color }]} />;
+            } else if (i === fullSegs && partial > 0 && partial < 1) {
               return (
                 <View key={i} style={styles.progressSegmentPartial}>
-                  <View
-                    style={[
-                      styles.progressSegmentPartialFill,
-                      { backgroundColor: color, width: `${fillWidthPercentage}%` }
-                    ]}
-                  />
-                  <View
-                    style={[
-                      styles.progressSegmentPartialEmpty,
-                      { width: `${100 - fillWidthPercentage}%` }
-                    ]}
-                  />
+                  <View style={[styles.progressSegmentPartialFill, { backgroundColor: color, width: `${partial * 100}%` }]} />
+                  <View style={[styles.progressSegmentPartialEmpty,  { width: `${(1 - partial) * 100}%` }]} />
                 </View>
               );
             } else {
-              // Empty segment
-              return (
-                <View
-                  key={i}
-                  style={[styles.progressSegment, { backgroundColor: "#dbe4f0" }]}
-                />
-              );
+              return <View key={i} style={[styles.progressSegment, { backgroundColor: "#dbe4f0" }]} />;
             }
           })}
         </View>
@@ -790,21 +748,13 @@ function ProgressBar({ nilai, max = 5 }: { nilai: number; max: number }) {
 }
 
 /* ============================================================================
- * SKALA NILAI
+ * SKALA NILAI ROW
  * ========================================================================== */
 
 function SkalaRow({
-  range,
-  label,
-  badgeColor,
-  bgColor,
-  textStyle,
+  range, label, badgeColor, bgColor, textStyle,
 }: {
-  range: string;
-  label: string;
-  badgeColor: string;
-  bgColor: string;
-  textStyle: any;
+  range: string; label: string; badgeColor: string; bgColor: string; textStyle: any;
 }) {
   return (
     <View style={styles.scaleRow}>
@@ -819,37 +769,64 @@ function SkalaRow({
 }
 
 /* ============================================================================
+ * MATERIAL CARD
+ * ========================================================================== */
+
+function MaterialCard({ material }: { material: PdfMaterial }) {
+  const avg = calculateMaterialAverage([material]);
+  return (
+    <View style={styles.compSection}>
+      <View style={styles.compHeader}>
+        <Text style={styles.compTitleText}>{material.judul}</Text>
+        <Text style={styles.compScoreText}>{avg.toFixed(1)}</Text>
+      </View>
+      <View style={styles.compIndicators}>
+        {material.indicators.map((ind, idx) => (
+          <View key={ind.id} style={styles.indRow}>
+            <Text style={styles.indNum}>{idx + 1}</Text>
+            <Text style={styles.indText}>{ind.deskripsi}</Text>
+            <ProgressBar nilai={ind.nilai || 0} max={ind.nilai_max} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/* ============================================================================
  * MAIN COMPONENT
  * ========================================================================== */
 
 export function StudentReportPdf({ data }: { data: PdfReportData }) {
-  const overallAvg = calculateOverallAverage(data.materials);
-  const badgeColor = getBadgeColor(overallAvg);
-  const badgeLabel = getBadgeLabel(overallAvg);
+  const overallAvg  = calculateOverallAverage(data.materials);
+  const badgeColor  = getBadgeColor(overallAvg);
+  const badgeLabel  = getBadgeLabel(overallAvg);
   const studentName = data.student.nama || "-";
+
+  // Resolve kelas label
   const namaKelasRaw = data.student.nama_kelas || "-";
-  const kelasMatch = namaKelasRaw.match(/^(\d+)/);
-  const kelasNum = kelasMatch ? parseInt(kelasMatch[1]) : null;
+  const kelasMatch   = namaKelasRaw.match(/^(\d+)/);
+  const kelasNum     = kelasMatch ? parseInt(kelasMatch[1]) : null;
   const studentClass = kelasNum === 7 || kelasNum === 8 ? String(kelasNum) : namaKelasRaw;
 
+  // Resolve semester label
   let semesterLabel = data.semester.nama_semester || "";
-  const semNum = data.semester.semester;
-  const lower = (data.semester.nama_semester || "").toLowerCase();
-  if (semNum === 1 || lower.includes("ganjil")) {
-    semesterLabel = "1st semester";
-  } else if (semNum === 2 || lower.includes("genap") || lower.includes("gasal")) {
-    semesterLabel = "2nd semester";
-  }
+  const semNum  = data.semester.semester;
+  const lower   = (data.semester.nama_semester || "").toLowerCase();
+  if (semNum === 1 || lower.includes("ganjil"))                          semesterLabel = "1st semester";
+  else if (semNum === 2 || lower.includes("genap") || lower.includes("gasal")) semesterLabel = "2nd semester";
 
-  const materialPages = chunkMaterials(data.materials, 2);
   const semesterParts = splitSemesterLabel(semesterLabel);
+  const photoUrl      = toDirectImageUrl(data.student.photoDataUrl);
+  const ttdUrl        = toDirectImageUrl(data.teacher?.ttdDataUrl);
 
-  const photoUrl = toDirectImageUrl(data.student.photoDataUrl);
-  const ttdUrl = toDirectImageUrl(data.teacher?.ttdDataUrl);
+  // ── Smart grouping: 1 material per halaman kalau besar, 2 kalau kecil ──
+  const materialPages = groupMaterialsIntoPages(data.materials, data.materials.length);
 
   return (
     <Document>
-      {/* COVER PAGE */}
+
+      {/* ── COVER PAGE ────────────────────────────────────────────────────── */}
       <Page size="A4" style={styles.page}>
         {data.coverBgDataUrl && (
           <Image src={data.coverBgDataUrl} style={styles.absoluteBg} fixed />
@@ -873,39 +850,34 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
         </View>
       </Page>
 
-      {/* FOREWORD PAGE */}
+      {/* ── FOREWORD PAGE ─────────────────────────────────────────────────── */}
       <Page size="A4" style={styles.page}>
         <View style={styles.forewordPage}>
           <Text style={styles.forewordHeading}>Foreword</Text>
           <Text style={styles.forewordSubheading}>Prakata</Text>
-
           <Text style={styles.forewordParagraph}>
             Alhamdulillahirabbil Alamin, segala puja dan puji syukur kami panjatkan kepada Allah
             subhanahu wa ta'ala, tanpa karunia-Nya, mustahil rasanya naskah laporan pencapaian
             belajar siswa ini terselesaikan tepat waktu mengingat tugas dan kewajiban lain yang
             bersamaan hadir.
           </Text>
-
           <Text style={styles.forewordParagraphNoIndent}>
-            Kami benar-benar merasa tertantang untuk untuk mewujudkan naskah laporan ini sebagai
+            Kami benar-benar merasa tertantang untuk mewujudkan naskah laporan ini sebagai
             bagian dari bentuk kewajiban kami sebagai guru untuk melaporkan pencapaian yang telah
             siswa dapatkan selama satu semester.
           </Text>
-
           <Text style={styles.forewordParagraphNoIndent}>
             Berdasarkan pembelajaran selama satu semester siswa mengalami berbagai perkembangan yang
             wajib kami laporkan kepada wali siswa gunanya sebagai motivasi bagi seluruh elemen baik
             guru, siswa, wali siswa untuk mewujudkan tujuan kita bersama yang sesuai dengan slogan
             SMP - SMK IDN Boarding School yaitu "Expert Factory".
           </Text>
-
           <Text style={styles.forewordParagraphNoIndent}>
             Kami juga menyampaikan ucapan terima kasih kepada seluruh elemen terkait yang telah
             memberikan sumbangsih terwujudnya laporan pencapaian siswa pada semester ini, kami
             menyadari bahwa masih banyak kekurangan dalam penyajian laporan ini, karena itu, kami
             berharap agar pembaca berkenan menyampaikan masukan yang membangun.
           </Text>
-
           <Text style={styles.forewordParagraphNoIndent}>
             Akhir kata, kami berharap agar laporan ini dapat membawa manfaat kepada pembaca. Secara
             khusus, kami berharap semoga laporan ini dapat menginspirasi siswa agar menjadi generasi
@@ -915,33 +887,43 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
         </View>
       </Page>
 
-      {/* DIVIDER PAGE (IT REPORT) */}
+      {/* ── DIVIDER PAGE (IT REPORT) ───────────────────────────────────────── */}
       <Page size="A4" style={styles.page}>
         {data.dividerBgDataUrl && (
           <Image src={data.dividerBgDataUrl} style={styles.absoluteBg} />
         )}
       </Page>
 
-      {/* REPORT PAGES */}
+      {/* ── REPORT PAGES ──────────────────────────────────────────────────── */}
       {materialPages.map((pageMaterials, pageIndex) => {
         const isFirst = pageIndex === 0;
-        const isLast = pageIndex === materialPages.length - 1;
+        const isLast  = pageIndex === materialPages.length - 1;
 
-        const bgUrl: string | null = isFirst ? (data.reportFirstBgDataUrl ?? null) : null;
+        // Background: first page pakai reportFirstBgDataUrl,
+        // last page (kalau beda dari first) pakai reportLastBgDataUrl,
+        // halaman tengah tidak pakai background gambar
+        const bgUrl: string | null = isFirst
+          ? (data.reportFirstBgDataUrl ?? null)
+          : isLast
+            ? (data.reportLastBgDataUrl ?? null)
+            : null;
 
         return (
           <Page key={pageIndex} size="A4" style={styles.page} wrap={false}>
-            {bgUrl && <Image src={bgUrl} style={styles.absoluteBg} fixed />}
+            {/* Background image */}
+            {bgUrl && (
+              <Image src={bgUrl} style={styles.absoluteBg} />
+            )}
 
             <View style={styles.pageContent}>
               <View
                 style={[
                   styles.reportBody,
-                  ...(isFirst ? [styles.reportBodyFirst] : []),
-                  ...(isLast ? [styles.reportBodyLast] : []),
+                  isFirst ? styles.reportBodyFirst : {},
+                  isLast  ? styles.reportBodyLast  : {},
                 ]}
               >
-                {/* Student Card - only on first page */}
+                {/* ── Student Card — hanya halaman pertama ── */}
                 {isFirst && (
                   <View style={styles.studentCard}>
                     <View style={styles.scLeft}>
@@ -956,13 +938,9 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                       </View>
                       <View style={styles.scInfo}>
                         <Text style={styles.scName}>{studentName}</Text>
-                        <Text style={styles.detailText}>
-                          {truncateText(data.student.email)}
-                        </Text>
+                        <Text style={styles.detailText}>{truncateText(data.student.email)}</Text>
                         {data.student.linkedin && (
-                          <Text style={styles.detailText}>
-                            {truncateText(data.student.linkedin)}
-                          </Text>
+                          <Text style={styles.detailText}>{truncateText(data.student.linkedin)}</Text>
                         )}
                       </View>
                     </View>
@@ -975,29 +953,12 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                   </View>
                 )}
 
-                {/* Material Cards */}
-                {pageMaterials.map((material) => {
-                  const avg = calculateMaterialAverage([material]);
-                  return (
-                    <View key={material.id} style={styles.compSection}>
-                      <View style={styles.compHeader}>
-                        <Text style={styles.compTitleText}>{material.judul}</Text>
-                        <Text style={styles.compScoreText}>{avg.toFixed(1)}</Text>
-                      </View>
-                      <View style={styles.compIndicators}>
-                        {material.indicators.map((indicator, index) => (
-                          <View key={indicator.id} style={styles.indRow}>
-                            <Text style={styles.indNum}>{index + 1}</Text>
-                            <Text style={styles.indText}>{indicator.deskripsi}</Text>
-                            <ProgressBar nilai={indicator.nilai || 0} max={indicator.nilai_max} />
-                          </View>
-                        ))}
-                      </View>
-                    </View>
-                  );
-                })}
+                {/* ── Material Cards ── */}
+                {pageMaterials.map((material) => (
+                  <MaterialCard key={material.id} material={material} />
+                ))}
 
-                {/* Last page: Comment + Skala Nilai + Teacher Signature */}
+                {/* ── Last page: Comment + Skala Nilai + TTD Guru ── */}
                 {isLast && (
                   <>
                     {/* Comment */}
@@ -1015,45 +976,18 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
                     {/* Bottom: Skala Nilai + TTD Guru */}
                     <View style={styles.bottomSection}>
-                      {/* Left: Skala Nilai */}
+                      {/* Skala Nilai */}
                       <View style={styles.scaleSection}>
                         <Text style={styles.scaleTitle}>Skala Nilai Rata-rata :</Text>
-                        <SkalaRow
-                          range="0 - 2.4"
-                          label="Butuh Perbaikan"
-                          badgeColor="#dc2626"
-                          bgColor="#fee2e2"
-                          textStyle={styles.scaleLabelTextRed}
-                        />
-                        <SkalaRow
-                          range="2.5 - 3.5"
-                          label="Cukup"
-                          badgeColor="#ea580c"
-                          bgColor="#ffedd5"
-                          textStyle={styles.scaleLabelTextOrange}
-                        />
-                        <SkalaRow
-                          range="3.6 - 4.5"
-                          label="Sangat Baik"
-                          badgeColor="#2563eb"
-                          bgColor="#dbeafe"
-                          textStyle={styles.scaleLabelTextBlue}
-                        />
-                        <SkalaRow
-                          range="4.6 - 5"
-                          label="Sangat Memuaskan"
-                          badgeColor="#16a34a"
-                          bgColor="#dcfce7"
-                          textStyle={styles.scaleLabelTextGreen}
-                        />
+                        <SkalaRow range="0 - 2.4"  label="Butuh Perbaikan"   badgeColor="#dc2626" bgColor="#fee2e2" textStyle={styles.scaleLabelTextRed}    />
+                        <SkalaRow range="2.5 - 3.5" label="Cukup"            badgeColor="#ea580c" bgColor="#ffedd5" textStyle={styles.scaleLabelTextOrange} />
+                        <SkalaRow range="3.6 - 4.5" label="Sangat Baik"      badgeColor="#2563eb" bgColor="#dbeafe" textStyle={styles.scaleLabelTextBlue}   />
+                        <SkalaRow range="4.6 - 5"   label="Sangat Memuaskan" badgeColor="#16a34a" bgColor="#dcfce7" textStyle={styles.scaleLabelTextGreen}  />
                       </View>
 
-                      {/* Right: Teacher Signature */}
+                      {/* TTD Guru */}
                       <View style={styles.signatureSection}>
-                        <Text style={styles.signatureDate}>
-                          {data.generatedDate || "Tanggal"}
-                        </Text>
-
+                        <Text style={styles.signatureDate}>{data.generatedDate || "Tanggal"}</Text>
                         {ttdUrl ? (
                           <Image src={ttdUrl} style={styles.signatureImage} />
                         ) : (
@@ -1061,19 +995,15 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                             <Text style={{ fontSize: 8, color: MUTED }}>TTD</Text>
                           </View>
                         )}
-
-                        <Text style={styles.signatureName}>
-                          {data.teacher?.nama || "Nama Guru"}
-                        </Text>
-                        <Text style={styles.signatureRole}>
-                          {data.teacher?.jabatan || "Guru"}
-                        </Text>
+                        <Text style={styles.signatureName}>{data.teacher?.nama || "Nama Guru"}</Text>
+                        <Text style={styles.signatureRole}>{data.teacher?.jabatan || "Guru"}</Text>
                       </View>
                     </View>
                   </>
                 )}
               </View>
 
+              {/* Page number */}
               <Text
                 style={styles.pageNumber}
                 render={({ pageNumber }) => `${pageNumber}`}
