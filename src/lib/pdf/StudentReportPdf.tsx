@@ -292,21 +292,17 @@ scAvgValue: {
   fontSize: 38, lineHeight: 1,
   fontFamily: "Helvetica-Bold", color: NAVY,
   marginBottom: 8,
-  textAlign: "center",
-  minWidth: 100,
+  marginLeft: 5,   // ← ganti paddingRight:5 dengan ini
 },
 
 scAvgBadge: {
   borderRadius: 20,
   paddingHorizontal: 12,
   paddingVertical: 5,
-  minWidth: 100,
-  alignItems: "center",
 },
 
 scAvgBadgeText: {
   color: "#ffffff", fontSize: 10, fontFamily: "Helvetica-Bold",
-  textAlign: "center",
 },
 
   compSection: {
