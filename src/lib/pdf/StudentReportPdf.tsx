@@ -6,6 +6,7 @@ import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/render
 export const PRINT_PORTRAIT_CSS = `
 @page {
   size: 210mm 297mm portrait;
+  orientation: portrait;
   margin: 0 !important;
 }
 @media print {
@@ -172,12 +173,12 @@ const styles = StyleSheet.create({
     color: TEXT,
     // FIX: Gunakan angka eksplisit untuk lock A4 portrait.
     // Tambah aspectRatio sebagai hint tambahan untuk viewer.
-    width: 595,
-    height: 842,
-    minWidth: 595,
-    maxWidth: 595,
-    minHeight: 842,
-    maxHeight: 842,
+  width: 595.28,
+  height: 841.89,
+  minWidth: 595.28,
+  maxWidth: 595.28,
+  minHeight: 841.89,
+  maxHeight: 841.89,
   },
 
   absoluteBg: {
@@ -687,7 +688,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
 
   // FIX: Gunakan "A4" bukan [595, 842] — react-pdf punya definisi mediabox
   // baku untuk "A4" yang lebih stabil di semua viewer & printer driver.
-  const PAGE_SIZE = "A4" as const;
+  const PAGE_SIZE: [number, number] = [595.28, 841.89];
 
   return (
     <Document
