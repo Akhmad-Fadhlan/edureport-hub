@@ -286,13 +286,13 @@ const styles = StyleSheet.create({
     paddingLeft: 25, fontSize: 10.5, color: MUTED, marginBottom: 10,
   },
 
-scRight: { alignItems: "flex-end", paddingRight: 33, paddingTop: 28 },
+scRight: { alignItems: "center", paddingRight: 33, paddingTop: 28 },
 
 scAvgValue: {
   fontSize: 38, lineHeight: 1,
   fontFamily: "Helvetica-Bold", color: NAVY,
   marginBottom: 8,
-  marginLeft: 5,   // ← ganti paddingRight:5 dengan ini
+  textAlign: "center",
 },
 
 scAvgBadge: {
@@ -303,6 +303,7 @@ scAvgBadge: {
 
 scAvgBadgeText: {
   color: "#ffffff", fontSize: 10, fontFamily: "Helvetica-Bold",
+  textAlign: "center",
 },
 
   compSection: {
@@ -817,12 +818,12 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                         )}
                       </View>
                     </View>
-                    <View style={styles.scRight}>
-                      <Text style={styles.scAvgValue}>{overallAvg.toFixed(2)}</Text>
-                      <View style={[styles.scAvgBadge, { backgroundColor: badgeColor }]}>
-                        <Text style={[styles.scAvgBadgeText, { textAlign: "center", width: "100%" }]}>{badgeLabel}</Text>
-                      </View>
-                    </View>
+               <View style={styles.scRight}>
+                 <Text style={styles.scAvgValue}>{overallAvg.toFixed(2)}</Text>
+                 <View style={[styles.scAvgBadge, { backgroundColor: badgeColor }]}>
+                   <Text style={styles.scAvgBadgeText}>{badgeLabel}</Text>
+                 </View>
+               </View>
                   </View>
                 )}
 
