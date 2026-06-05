@@ -455,13 +455,13 @@ const styles = StyleSheet.create({
   },
 
   scaleLabel: {
-    flex: 1, borderRadius: 4, paddingVertical: 4, paddingHorizontal: 8,
+    flex: 1, borderRadius: 4, paddingVertical: 4, paddingHorizontal: 8,alignItems: "center",  // ← tambahkan ini
   },
 
-  scaleLabelTextRed:    { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#dc2626" },
-  scaleLabelTextOrange: { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#ea580c" },
-  scaleLabelTextBlue:   { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#2563eb" },
-  scaleLabelTextGreen:  { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#16a34a" },
+scaleLabelTextRed:    { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#dc2626", textAlign: "center" },
+scaleLabelTextOrange: { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#ea580c", textAlign: "center" },
+scaleLabelTextBlue:   { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#2563eb", textAlign: "center" },
+scaleLabelTextGreen:  { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#16a34a", textAlign: "center" },
 
   signatureSection: { alignItems: "center", minWidth: 160 },
 
