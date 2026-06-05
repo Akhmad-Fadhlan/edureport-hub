@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
 
 scAvgBadge: {
   borderRadius: 20,
-  paddingLeft: 5,
+  // paddingLeft: 5,
   paddingHorizontal: 12, paddingVertical: 5,
   alignItems: "center",    // ← tambahkan ini
   alignSelf: "flex-end",   // ← pastikan tidak stretch
