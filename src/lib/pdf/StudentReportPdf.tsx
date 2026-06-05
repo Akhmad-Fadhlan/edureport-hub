@@ -67,7 +67,7 @@ export interface PdfMaterial {
   id: number;
   judul: string;
   kode_rapor: string;
-  nama_mapel?: string;
+  nama_mapel?: string; 
   indicators: PdfIndicator[];
 }
 
