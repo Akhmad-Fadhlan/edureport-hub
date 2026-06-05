@@ -287,17 +287,16 @@ const styles = StyleSheet.create({
   },
 
 scRight: { 
-  alignItems: "center",      // ← pertahankan ini (buat angka & badge sejajar)
-  alignSelf: "flex-end",     // ← tambahkan ini (buat blok tetap di kanan)
   paddingRight: 33, 
-  paddingTop: 28 
+  paddingTop: 28,
+  justifyContent: "flex-end",
+  alignItems: "flex-end",
 },
 
 scAvgValue: {
   fontSize: 38, lineHeight: 1,
   fontFamily: "Helvetica-Bold", color: NAVY,
   marginBottom: 8,
-  textAlign: "center",
 },
 
 scAvgBadge: {
@@ -308,7 +307,6 @@ scAvgBadge: {
 
 scAvgBadgeText: {
   color: "#ffffff", fontSize: 10, fontFamily: "Helvetica-Bold",
-  textAlign: "center",
 },
 
   compSection: {
@@ -824,12 +822,13 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                       </View>
                     </View>
                <View style={styles.scRight}>
-                 <Text style={styles.scAvgValue}>{overallAvg.toFixed(2)}</Text>
-                 <View style={[styles.scAvgBadge, { backgroundColor: badgeColor }]}>
-                   <Text style={styles.scAvgBadgeText}>{badgeLabel}</Text>
+                 <View style={{ alignItems: "center" }}>
+                   <Text style={styles.scAvgValue}>{overallAvg.toFixed(2)}</Text>
+                   <View style={[styles.scAvgBadge, { backgroundColor: badgeColor }]}>
+                     <Text style={styles.scAvgBadgeText}>{badgeLabel}</Text>
+                   </View>
                  </View>
                </View>
-                  </View>
                 )}
 
                 {/* FIX: flex:1 di semua halaman termasuk last agar cards tidak collapse */}
