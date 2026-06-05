@@ -8,7 +8,7 @@ export const PRINT_PORTRAIT_CSS = `
   size: 210mm 297mm portrait;
   orientation: portrait;
   margin: 0 !important;
-}
+} 
 @media print {
   * {
     -webkit-print-color-adjust: exact !important;
