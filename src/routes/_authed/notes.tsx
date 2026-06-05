@@ -1,11 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router"; 
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, 
+  Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -115,7 +115,7 @@ function NotesPage() {
   const classesData = useApiData<Klass[]>("/classes", listParams);
   const studentsData = useApiData<{ items: Student[]; pagination?: any }>(
     "/students",
-    { per_page: all, ...listParams }
+    { per_page: 9999, ...listParams }
   );
   const {
     data: rawNotesData,
@@ -217,11 +217,17 @@ function NotesPage() {
     setOpen(true);
   }
 
-  // Siswa yang tampil di dropdown form: filter per kelas aktif
+  // Siswa yang tampil di dropdown form: selalu tampilkan SEMUA siswa
+  // (classFilter hanya untuk filter tampilan tabel, bukan dropdown input)
   const studentsForForm = useMemo(() => {
-    if (classFilter === "all") return allStudents;
-    return allStudents.filter((s) => String(s.class_id) === classFilter);
-  }, [allStudents, classFilter]);
+    return [...allStudents].sort((a, b) => {
+      // Urutkan per kelas dulu, lalu per nama
+      const kelasA = a.nama_kelas ?? "";
+      const kelasB = b.nama_kelas ?? "";
+      if (kelasA !== kelasB) return kelasA.localeCompare(kelasB);
+      return (a.nama ?? "").localeCompare(b.nama ?? "");
+    });
+  }, [allStudents]);
 
   async function save() {
     if (!form.student_id || !form.semester_id || !form.catatan.trim()) {
@@ -347,7 +353,7 @@ function NotesPage() {
           <SelectTrigger className="w-[260px]">
             <SelectValue placeholder="Pilih Semester" />
           </SelectTrigger>
-          <SelectContent className="max-h-60 overflow-y-auto">
+          <SelectContent>
             <SelectItem value="all">Semua Semester</SelectItem>
             {(Array.isArray(semesters.data) ? semesters.data : []).map((s) => (
               <SelectItem key={s.id} value={String(s.id)}>
@@ -369,7 +375,7 @@ function NotesPage() {
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Semua Cabang" />
             </SelectTrigger>
-            <SelectContent className="max-h-60 overflow-y-auto">
+            <SelectContent>
               <SelectItem value="all">Semua Cabang</SelectItem>
               {CABANG_LIST.map((c) => (
                 <SelectItem key={c} value={c}>
@@ -385,7 +391,7 @@ function NotesPage() {
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Semua Kelas" />
           </SelectTrigger>
-          <SelectContent className="max-h-60 overflow-y-auto">
+          <SelectContent>
             <SelectItem value="all">Semua Kelas</SelectItem>
             {(Array.isArray(classesData.data) ? classesData.data : []).map((k) => (
               <SelectItem key={k.id} value={String(k.id)}>
@@ -534,7 +540,7 @@ function NotesPage() {
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih semester" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-60 overflow-y-auto">
                   {(Array.isArray(semesters.data) ? semesters.data : []).map((s) => (
                     <SelectItem key={s.id} value={String(s.id)}>
                       {s.nama_semester || `${s.tahun_ajaran} - Semester ${s.semester}`}
