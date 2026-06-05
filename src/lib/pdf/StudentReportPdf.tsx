@@ -821,15 +821,16 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                         )}
                       </View>
                     </View>
-               <View style={styles.scRight}>
-                 <View style={{ alignItems: "center" }}>
-                   <Text style={styles.scAvgValue}>{overallAvg.toFixed(2)}</Text>
-                   <View style={[styles.scAvgBadge, { backgroundColor: badgeColor }]}>
-                     <Text style={styles.scAvgBadgeText}>{badgeLabel}</Text>
+                   <View style={styles.scRight}>
+                     <View style={{ alignItems: "center" }}>
+                       <Text style={styles.scAvgValue}>{overallAvg.toFixed(2)}</Text>
+                       <View style={[styles.scAvgBadge, { backgroundColor: badgeColor }]}>
+                         <Text style={styles.scAvgBadgeText}>{badgeLabel}</Text>
+                       </View>
+                     </View>
                    </View>
                  </View>
-               </View>
-                )}
+               )}
 
                 {/* FIX: flex:1 di semua halaman termasuk last agar cards tidak collapse */}
                 <View style={{ flex: 1, flexDirection: "column" }}>
