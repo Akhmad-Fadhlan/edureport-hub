@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router"; 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";  
+import { Textarea } from "@/components/ui/textarea"; 
 import {
   Dialog, 
   DialogContent,
@@ -115,7 +115,7 @@ function NotesPage() {
   const classesData = useApiData<Klass[]>("/classes", listParams);
   const studentsData = useApiData<{ items: Student[]; pagination?: any }>(
     "/students",
-    { per_page: all, ...listParams }
+    { per_page: 1000, ...listParams }
   );
   const {
     data: rawNotesData,
@@ -189,16 +189,59 @@ function NotesPage() {
     return rows;
   }, [notesData, classFilter, studentMap]);
 
-  // ── Form state ────────────────────────────────────────────────────────────
+  // ── Form state untuk dialog (SAMA PERSIS dengan portofolio) ───────────────
   const [open, setOpen]             = useState(false);
   const [editing, setEditing]       = useState<Note | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Note | null>(null);
   const [form, setForm]             = useState({ student_id: "", semester_id: "", catatan: "" });
   const [saving, setSaving]         = useState(false);
   const [deleting, setDeleting]     = useState(false);
+  
+  // State untuk dropdown kelas dan siswa di dialog (SAMA PERSIS dengan portofolio)
+  const [formClassId, setFormClassId] = useState<string>("");
+  const [formStudents, setFormStudents] = useState<Student[]>([]);
+  const [loadingFormStudents, setLoadingFormStudents] = useState(false);
+
+  // Fungsi untuk load siswa berdasarkan kelas yang dipilih di form (SAMA PERSIS dengan portofolio)
+  const loadFormStudents = useCallback(async (classId: string) => {
+    if (!classId || classId === "all") {
+      setFormStudents([]);
+      return;
+    }
+    
+    setLoadingFormStudents(true);
+    try {
+      const params: Record<string, unknown> = {
+        class_id: classId,
+        per_page: 1000
+      };
+      if (cabangParam) params.cabang = cabangParam;
+      
+      const res = await apiGet<{ items: Student[] }>("/students", params);
+      const students = res?.items || [];
+      setFormStudents(students);
+    } catch (error) {
+      console.error("Gagal load siswa:", error);
+      setFormStudents([]);
+      toast.error("Gagal memuat data siswa");
+    } finally {
+      setLoadingFormStudents(false);
+    }
+  }, [cabangParam]);
+
+  // Effect untuk load siswa ketika formClassId berubah (SAMA PERSIS dengan portofolio)
+  useEffect(() => {
+    if (formClassId && formClassId !== "all") {
+      loadFormStudents(formClassId);
+    } else {
+      setFormStudents([]);
+    }
+  }, [formClassId, loadFormStudents]);
 
   function openNew() {
     setEditing(null);
+    setFormClassId(""); // Reset pilihan kelas
+    setFormStudents([]); // Reset daftar siswa
     setForm({
       student_id: "",
       semester_id: semesterId !== "all" ? semesterId : "",
@@ -209,6 +252,15 @@ function NotesPage() {
 
   function openEdit(n: Note) {
     setEditing(n);
+    // Untuk edit, kita perlu mencari kelas dari siswa yang diedit
+    const student = studentMap.get(n.student_id);
+    const studentClassId = student ? String(student.class_id) : "";
+    
+    setFormClassId(studentClassId);
+    if (studentClassId) {
+      loadFormStudents(studentClassId); // Load siswa dari kelas tersebut
+    }
+    
     setForm({
       student_id: String(n.student_id),
       semester_id: String(n.semester_id),
@@ -217,15 +269,9 @@ function NotesPage() {
     setOpen(true);
   }
 
-  // Siswa yang tampil di dropdown form: filter per kelas aktif
-  const studentsForForm = useMemo(() => {
-    if (classFilter === "all") return allStudents;
-    return allStudents.filter((s) => String(s.class_id) === classFilter);
-  }, [allStudents, classFilter]);
-
   async function save() {
-    if (!form.student_id || !form.semester_id || !form.catatan.trim()) {
-      toast.error("Lengkapi siswa, semester, dan catatan");
+    if (!formClassId || !form.student_id || !form.semester_id || !form.catatan.trim()) {
+      toast.error("Lengkapi kelas, siswa, semester, dan catatan");
       return;
     }
     if (!teacherId) {
@@ -484,111 +530,135 @@ function NotesPage() {
           </TableBody>
         </Table>
       </Card>
-// Di dalam komponen NotesPage, cari bagian form dialog dan ubah bagian siswa menjadi:
 
-{/* ── Dialog Tambah / Edit ── */}
-<Dialog open={open} onOpenChange={setOpen}>
-  <DialogContent className="max-w-lg">
-    <DialogHeader>
-      <DialogTitle>{editing ? "Edit Catatan" : "Tambah Catatan Baru"}</DialogTitle>
-    </DialogHeader>
+      {/* ── Dialog Tambah / Edit ── SAMA PERSIS DENGAN PORTOFOLIO ── */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit Catatan" : "Tambah Catatan Baru"}</DialogTitle>
+          </DialogHeader>
 
-    <div className="space-y-4">
-      {/* Siswa - dengan metode yang sama seperti portofolio */}
-      <div className="space-y-2">
-        <Label>
-          Siswa <span className="text-destructive">*</span>
-        </Label>
-        <Select
-          value={form.student_id}
-          onValueChange={(v) => setForm({ ...form, student_id: v })}
-          disabled={saving}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Pilih siswa" />
-          </SelectTrigger>
-          <SelectContent className="max-h-60 overflow-y-auto">
-            {studentsForForm.length === 0 && (
-              <SelectItem value="_empty" disabled>
-                Tidak ada siswa tersedia
-              </SelectItem>
-            )}
-            {studentsForForm.map((s) => (
-              <SelectItem key={s.id} value={String(s.id)}>
-                {s.nama} {s.nama_kelas ? `(${s.nama_kelas})` : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {classFilter !== "all" && studentsForForm.length === 0 && (
-          <p className="text-xs text-amber-600 mt-1">
-            Tidak ada siswa di kelas yang dipilih. Pilih kelas lain atau tambahkan siswa terlebih dahulu.
-          </p>
-        )}
-      </div>
+          <div className="space-y-4">
+            {/* Pilih Kelas - SAMA PERSIS dengan portofolio */}
+            <div className="space-y-2">
+              <Label>Kelas</Label>
+              <Select 
+                value={formClassId} 
+                onValueChange={(v) => {
+                  setFormClassId(v);
+                  setForm({ ...form, student_id: "" }); // Reset siswa saat ganti kelas
+                }}
+                disabled={saving || !!editing} // Disable saat edit
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih kelas" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 overflow-y-auto">
+                  {(Array.isArray(classesData.data) ? classesData.data : []).map((k) => (
+                    <SelectItem key={k.id} value={String(k.id)}>
+                      {k.nama_kelas}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-      {/* Semester */}
-      <div className="space-y-2">
-        <Label>
-          Semester <span className="text-destructive">*</span>
-        </Label>
-        <Select
-          value={form.semester_id}
-          onValueChange={(v) => setForm({ ...form, semester_id: v })}
-          disabled={saving}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Pilih semester" />
-          </SelectTrigger>
-          <SelectContent>
-            {(Array.isArray(semesters.data) ? semesters.data : []).map((s) => (
-              <SelectItem key={s.id} value={String(s.id)}>
-                {s.nama_semester || `${s.tahun_ajaran} - Semester ${s.semester}`}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+            {/* Pilih Siswa - SAMA PERSIS dengan portofolio */}
+            <div className="space-y-2">
+              <Label>
+                Siswa <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={form.student_id}
+                onValueChange={(v) => setForm({ ...form, student_id: v })}
+                disabled={saving || !formClassId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={!formClassId ? "Pilih kelas terlebih dahulu" : "Pilih siswa"} />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 overflow-y-auto">
+                  {loadingFormStudents ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="ml-2">Memuat siswa...</span>
+                    </div>
+                  ) : formStudents.length === 0 ? (
+                    <SelectItem value="_empty" disabled>
+                      Tidak ada siswa di kelas ini
+                    </SelectItem>
+                  ) : (
+                    formStudents.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>
+                        {s.nama} {s.nama_kelas ? `(${s.nama_kelas})` : ""}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
 
-      {/* Catatan */}
-      <div className="space-y-2">
-        <Label>
-          Catatan <span className="text-destructive">*</span>
-        </Label>
-        <Textarea
-          rows={6}
-          value={form.catatan}
-          onChange={(e) => setForm({ ...form, catatan: e.target.value })}
-          placeholder="Tulis catatan untuk siswa..."
-          className="resize-none"
-          disabled={saving}
-        />
-        <p className="text-xs text-muted-foreground">{form.catatan.length} karakter</p>
-      </div>
-    </div>
+            {/* Semester */}
+            <div className="space-y-2">
+              <Label>
+                Semester <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={form.semester_id}
+                onValueChange={(v) => setForm({ ...form, semester_id: v })}
+                disabled={saving}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih semester" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Array.isArray(semesters.data) ? semesters.data : []).map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>
+                      {s.nama_semester || `${s.tahun_ajaran} - Semester ${s.semester}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-    <DialogFooter>
-      <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
-        Batal
-      </Button>
-      <Button
-        onClick={save}
-        disabled={
-          !form.student_id || !form.semester_id || !form.catatan.trim() || saving
-        }
-      >
-        {saving ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Menyimpan...
-          </>
-        ) : (
-          "Simpan"
-        )}
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+            {/* Catatan */}
+            <div className="space-y-2">
+              <Label>
+                Catatan <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                rows={6}
+                value={form.catatan}
+                onChange={(e) => setForm({ ...form, catatan: e.target.value })}
+                placeholder="Tulis catatan untuk siswa..."
+                className="resize-none"
+                disabled={saving}
+              />
+              <p className="text-xs text-muted-foreground">{form.catatan.length} karakter</p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
+              Batal
+            </Button>
+            <Button
+              onClick={save}
+              disabled={
+                !formClassId || !form.student_id || !form.semester_id || !form.catatan.trim() || saving
+              }
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Menyimpan...
+                </>
+              ) : (
+                "Simpan"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Konfirmasi Hapus ── */}
       <AlertDialog
