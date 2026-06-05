@@ -115,7 +115,7 @@ function NotesPage() {
   const classesData = useApiData<Klass[]>("/classes", listParams);
   const studentsData = useApiData<{ items: Student[]; pagination?: any }>(
     "/students",
-    { per_page: 500, ...listParams }
+    { per_page: all, ...listParams }
   );
   const {
     data: rawNotesData,
