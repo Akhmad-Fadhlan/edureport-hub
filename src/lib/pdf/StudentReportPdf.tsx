@@ -588,6 +588,8 @@ function getScaleColor(nilai: number) {
 function splitSemesterLabel(label: string) {
   if (label === "1st semester") return { number: "1", suffix: "st ", rest: " Semester" };
   if (label === "2nd semester") return { number: "2", suffix: "nd ", rest: " Semester" };
+  if (label === "3rd semester") return { number: "3", suffix: "rd ", rest: " Semester" };
+  if (label === "4th semester") return { number: "4", suffix: "th ", rest: " Semester" };
   return null;
 }
 
@@ -702,7 +704,7 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
   if (semNum === 1 || lower.includes("ganjil"))
     semesterLabel = "1st semester";
   else if (semNum === 2 || lower.includes("genap") || lower.includes("gasal"))
-    semesterLabel = "2nd semester";
+    semesterLabel = kelasNum === 8 ? "4th semester" : "2nd semester";
 
   const semesterParts = splitSemesterLabel(semesterLabel);
   const photoUrl      = toDirectImageUrl(data.student.photoDataUrl);
