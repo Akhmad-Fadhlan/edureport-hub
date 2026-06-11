@@ -535,7 +535,7 @@ function toDirectImageUrl(url: string | null | undefined): string | null {
   return url;
 }
 
-function truncateText(text: string, maxLength = 40): string {
+function truncateText(text: string, maxLength = 42): string {
   if (!text) return text;
   return text.length > maxLength ? text.slice(0, maxLength) : text;
 }
