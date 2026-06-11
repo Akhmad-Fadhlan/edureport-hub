@@ -535,7 +535,7 @@ function toDirectImageUrl(url: string | null | undefined): string | null {
   return url;
 }
 
-function truncateText(text: string, maxLength = 29): string {
+function truncateText(text: string, maxLength = 30): string {
   if (!text) return text;
   return text.length > maxLength ? text.slice(0, maxLength) : text;
 }
@@ -836,8 +836,12 @@ export function StudentReportPdf({ data }: { data: PdfReportData }) {
                         <Text style={styles.scName}>{studentName}</Text>
                         <Text style={styles.detailText}>{truncateText(data.student.email)}</Text>
                         {data.student.linkedin && (
-                          <Text style={styles.detailText}>{truncateText(data.student.linkedin)}</Text>
-                        )}
+                             <View style={{ flexDirection: "row", paddingLeft: 25, marginBottom: 10 }}>
+    <Text style={{ fontSize: 10.5, color: MUTED, flex: 1 }}>
+      {data.student.linkedin}
+    </Text>
+  </View>
+                  )}
                       </View>
                     </View>
                        <View style={[
